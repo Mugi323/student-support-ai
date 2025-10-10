@@ -1,4 +1,4 @@
-# Student Support AI (FastAPI + conda)
+# Student Support AI
 
 ChatGPT API を **FastAPI** でラップした最小 Web サービスのテンプレートです。  
 ローカルは **conda 環境**で開発し、CI は **GitHub Actions (micromamba)** で同一環境を再現します。  
