@@ -26,22 +26,29 @@ GUI クライアント **SourceTree** を使った GitHub Flow（ブランチ→
   }
 
 # 1) クローン
+```
 git clone git@github.com:Mugi3233/student-support-ai.git
 cd student-support-ai
-
+```
 # 2) conda 環境作成＆有効化
+```
 conda env create -f environment.yml
 conda activate student-support-ai
-
+```
 # 3) .env を作成（コミットしない）
+```
 cp .env.example .env
 # エディタで OPENAI_API_KEY=... を設定
+```
 
 # 4) 起動
+```
 uvicorn app.main:app --reload --port 3000
-
+```
 # 5) 動作確認（別ターミナル）
+```
 curl -s http://localhost:3000/health
 curl -s http://localhost:3000/api/chat \
   -H 'Content-Type: application/json' \
   -d '{"messages":[{"role":"user","content":"こんにちは"}]}'
+```
