@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  python-conda:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # micromamba で environment.yml を解決
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+          cache-downloads: true
+          init-shell: bash
+          create-args: >-
+            python=3.11
+
+      # テスト実行
+      - name: Run tests
+        shell: bash -l {0}
+        run: |
+          pytest -q
+        env:
+          # 統合テストで OpenAI を叩く場合のみ設定（この最小CIでは未使用）
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+
+# Env
+.env
+
+# VSCode など
+.vscode/

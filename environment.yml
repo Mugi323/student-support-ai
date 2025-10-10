@@ -1,0 +1,12 @@
+name: student-support-ai
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - uvicorn
+  - httpx
+  - pytest
+  - pip:
+      - fastapi>=0.115.0
+      - python-dotenv>=1.0.1
