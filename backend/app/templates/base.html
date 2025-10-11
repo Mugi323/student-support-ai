@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title or "Student Support MVP" }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+<header class="bg-indigo-600 text-white">
+  <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+    <a href="/" class="font-semibold">学生相談</a>
+    <nav class="space-x-4 text-sm">
+      <a href="/" class="hover:underline">ホーム</a>
+      <a href="/dashboard" class="hover:underline">教員ダッシュボード</a>
+    </nav>
+  </div>
+</header>
+<main class="max-w-5xl mx-auto px-4 py-6">
+  {% block content %}{% endblock %}
+</main>
+<footer class="text-center text-xs text-gray-500 py-6">© Student Support MVP</footer>
+</body>
+</html>
