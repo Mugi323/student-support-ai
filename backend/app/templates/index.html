@@ -25,11 +25,12 @@
     <h3 class="text-lg font-semibold mb-3">AIリスク（最新）</h3>
     <p id="aiSummary" class="text-sm text-gray-800 mb-3">要約：—</p>
     <div class="text-sm space-y-2">
-      <div class="flex justify-between"><span>総合</span><span id="riskOverall">—</span></div>
-      <div class="flex justify-between"><span>希死念慮(self_harm)</span><span id="riskSelfHarm">—</span></div>
-      <div class="flex justify-between"><span>いじめ(bullying)</span><span id="riskBullying">—</span></div>
-      <div class="flex justify-between"><span>不登校(truancy)</span><span id="riskTruancy">—</span></div>
-      <div class="flex justify-between"><span>健康(health)</span><span id="riskHealth">—</span></div>
+    <div class="flex justify-between"><span>総合</span><span id="riskOverall">—</span></div>
+    <div class="flex justify-between"><span>健康(health)</span><span id="riskHealth">—</span></div>
+    <div class="flex justify-between"><span>家族(family)</span><span id="riskFamily">—</span></div>
+    <div class="flex justify-between"><span>友人(friends)</span><span id="riskFriends">—</span></div>
+    <div class="flex justify-between"><span>学習(learning)</span><span id="riskLearning">—</span></div>
+    <div class="flex justify-between"><span>いじめ(bullying)</span><span id="riskBullying">—</span></div>
     </div>
     <p id="riskReason" class="text-xs text-gray-500 mt-3">根拠：—</p>
     <hr class="my-3">
@@ -58,17 +59,23 @@ function line(text, side='left'){
 function setRiskPanel(res){
   document.getElementById('aiSummary').textContent = '要約：' + (res.ai_summary ?? '—');
   document.getElementById('riskOverall').textContent = (res.ai_risk_overall ?? '—');
+
   const det = res.ai_risk_detail || {};
   const sc = det.scores || {};
-  document.getElementById('riskSelfHarm').textContent = sc.self_harm ?? '—';
+
+  document.getElementById('riskHealth').textContent   = sc.health   ?? '—';
+  document.getElementById('riskFamily').textContent   = sc.family   ?? '—';
+  document.getElementById('riskFriends').textContent  = sc.friends  ?? '—';
+  document.getElementById('riskLearning').textContent = sc.learning ?? '—';
   document.getElementById('riskBullying').textContent = sc.bullying ?? '—';
-  document.getElementById('riskTruancy').textContent = sc.truancy ?? '—';
-  document.getElementById('riskHealth').textContent = sc.health ?? '—';
+
   document.getElementById('riskReason').textContent = '根拠：' + (det.reason ?? '—');
 
   const overall = Number(res.ai_risk_overall || 0);
-  document.getElementById('riskOverall').className = overall >= 7 ? 'text-red-600 font-semibold' : '';
+  document.getElementById('riskOverall').className =
+    overall >= 7 ? 'text-red-600 font-semibold' : '';
 }
+
 
 async function sendMsg(){
   const text = document.getElementById('msg').value.trim();
