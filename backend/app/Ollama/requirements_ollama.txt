@@ -1,0 +1,9 @@
+# Ollama版 Student Support AI の依存パッケージ
+
+fastapi
+uvicorn[standard]
+jinja2
+pydantic
+python-multipart
+ollama
+python-dotenv
