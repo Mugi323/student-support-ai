@@ -117,7 +117,9 @@ def ai_risk_schema():
                 "risk_reason": {"type": "string", "maxLength": 240},
                 "tags": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
             },
-            "required": ["summary", "risk_scores"],
+            # ← 'tags' を追加
+            "required": ["summary", "risk_scores", "risk_reason", "tags"],
+            "additionalProperties": False,
         },
         "strict": True,
     }
@@ -190,8 +192,8 @@ def api_chat_stream(payload: ChatIn):
 
     async def generator():
         # ---- 第1段: 応答テキストをストリーム出力 ----
-        sys = "あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を1-2文で出力してください。助言は穏やかに、過度な断定を避けてください。"
-        user = f"相談文:\n{payload.text}\n\nまずは短く共感的に応答してください。"
+        sys = "あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を出力してください。助言は穏やかに、過度な断定を避けてください。"
+        user = f"相談文:\n{payload.text}\n\nまずは短く共感してください。その後、現実的な解決策や今からすべきことを助言してください。"
 
         # OpenAI Responses API の同期ストリーム
         with openai_client.responses.stream(
