@@ -1,30 +1,5 @@
 # Student Support AI
 
-ChatGPT API を **FastAPI** でラップした最小 Web サービスのテンプレートです。  
-ローカルは **conda 環境**で開発し、CI は **GitHub Actions (micromamba)** で同一環境を再現します。  
-GUI クライアント **SourceTree** を使った GitHub Flow（ブランチ→PR→レビュー→マージ）で共同開発できます。
-
----
-
-## 特長
-- FastAPI（`/api/chat`）で OpenAI API をサーバ側から呼び出し
-- conda / micromamba で依存を固定（`environment.yml`）
-- 最小の自動テスト（`pytest`）と CI（`.github/workflows/ci.yml`）
-- `.env` による秘密情報のローカル管理（**コミット禁止**）
-- SourceTree で回しやすい GitHub Flow
-
----
-
-## デモ API
-- `GET /health` — 稼働チェック  
-- `POST /api/chat` — ChatGPT へのプロキシ
-  ```json
-  {
-    "messages": [
-      { "role": "user", "content": "こんにちは" }
-    ]
-  }
-
 # 1) クローン
 ```
 git clone git@github.com:Mugi3233/student-support-ai.git
