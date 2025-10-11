@@ -3,12 +3,12 @@
 # 1) クローン
 ```
 git clone git@github.com:Mugi3233/student-support-ai.git
-cd student-support-ai
+cd student-support-ai/backend
 ```
 # 2) conda 環境作成＆有効化
 ```
-conda env create -f environment.yml
-conda activate student-support-ai
+conda env create -f environment.yml -n stu_sup
+conda activate stu-sup
 ```
 # 3) .env を作成（コミットしない）
 ```
