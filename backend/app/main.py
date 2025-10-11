@@ -106,18 +106,18 @@ def ai_risk_schema():
                 "risk_scores": {
                     "type": "object",
                     "properties": {
-                        "self_harm": {"type": "number", "minimum": 0, "maximum": 10},
-                        "bullying": {"type": "number", "minimum": 0, "maximum": 10},
-                        "truancy": {"type": "number", "minimum": 0, "maximum": 10},
                         "health": {"type": "number", "minimum": 0, "maximum": 10},
+                        "family": {"type": "number", "minimum": 0, "maximum": 10},
+                        "friends": {"type": "number", "minimum": 0, "maximum": 10},
+                        "learning": {"type": "number", "minimum": 0, "maximum": 10},
+                        "bullying": {"type": "number", "minimum": 0, "maximum": 10},
                     },
-                    "required": ["self_harm", "bullying", "truancy", "health"],
+                    "required": ["health", "family", "friends", "learning", "bullying"],
                     "additionalProperties": False,
                 },
                 "risk_reason": {"type": "string", "maxLength": 240},
                 "tags": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
             },
-            # ← 'tags' を追加
             "required": ["summary", "risk_scores", "risk_reason", "tags"],
             "additionalProperties": False,
         },
@@ -192,8 +192,8 @@ def api_chat_stream(payload: ChatIn):
 
     async def generator():
         # ---- 第1段: 応答テキストをストリーム出力 ----
-        sys = "あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を出力してください。助言は穏やかに、過度な断定を避けてください。"
-        user = f"相談文:\n{payload.text}\n\nまずは短く共感してください。その後、現実的な解決策や今からすべきことを助言してください。"
+        sys = "あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を出力してください。小学生にも伝わるように話してください。"
+        user = f"相談文:\n{payload.text}\n\nまずは短く共感してください。その後、具体的な解決策を助言してください。"
 
         # OpenAI Responses API の同期ストリーム
         with openai_client.responses.stream(
@@ -215,7 +215,7 @@ def api_chat_stream(payload: ChatIn):
         schema = ai_risk_schema()
         sys2 = (
             "あなたは学校の相談支援AI。日本語で、短く正確に要約し、"
-            "いじめ/不登校/希死念慮/健康の4カテゴリのリスクを0〜10で数値化します。"
+            "健康・家族・友人・学習・いじめ の5カテゴリのリスクを0〜10で数値化します。"
             "会話文のみから判断し、医療的診断は行いません。"
         )
         user2 = f"相談文:\n{payload.text}\n\n出力は付与のJSONスキーマに完全準拠で。"
@@ -336,6 +336,46 @@ def api_chat_stream(payload: ChatIn):
         "X-Accel-Buffering": "no",
     }
     return StreamingResponse(generator(), headers=headers)
+
+
+# ====== 追加: ユーザ別ログ取得エンドポイント ======
+# フロントの loadMyLogs() は /api/messages/{user_id} を期待しているため実装する
+@app.get("/api/messages/{user_id}")
+def api_get_user_messages(user_id: str):
+    """
+    指定 user_id のメッセージ最新100件を返す。
+    フロント側は ai_risk_detail.scores.* を参照するので、JSONを復元して返却。
+    """
+    rows = query_all(
+        """
+        SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at
+        FROM messages
+        WHERE user_id=?
+        ORDER BY id DESC
+        LIMIT 100
+        """,
+        (user_id,),
+    )
+
+    out = []
+    for mid, uid, text, ai_summary, ai_overall, ai_detail, created_at in rows:
+        detail_obj = {}
+        try:
+            detail_obj = json.loads(ai_detail) if ai_detail else {}
+        except Exception:
+            detail_obj = {}
+        out.append(
+            {
+                "id": mid,
+                "user_id": uid,
+                "text": text,
+                "ai_summary": ai_summary,
+                "ai_risk_overall": ai_overall,
+                "ai_risk_detail": detail_obj,
+                "created_at": created_at,
+            }
+        )
+    return JSONResponse(out)
 
 
 # ====== 非ストリーミング版 (/api/chat) はそのまま使えます ======
