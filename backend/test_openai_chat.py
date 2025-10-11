@@ -13,7 +13,7 @@ def main():
         model="gpt-4o-mini",  # 例：高速・安価な汎用モデル
         messages=[
             {"role": "system", "content": "あなたは新設な日本語カウンセラーです。"},
-            {"role": "user", "content": "加藤先生が、生徒が少ないことで拗ねてしまいました。どうしたらいいでしょうか？"}
+            {"role": "user", "content": "先生が、生徒が少ないことで拗ねてしまいました。どうしたらいいでしょうか？"}
         ],
         temperature=0.3,
         max_tokens=200,
