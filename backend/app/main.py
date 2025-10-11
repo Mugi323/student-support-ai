@@ -1,3 +1,8 @@
+"""
+使用方法:
+uvicorn app.main:app --reload --port 8000
+"""
+
 from __future__ import annotations
 from typing import Optional, Dict, Any, Iterable
 import os, json, asyncio
