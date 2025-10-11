@@ -40,15 +40,8 @@ conda activate student-support-ai
 cp .env.example .env
 # エディタで OPENAI_API_KEY=... を設定
 ```
-
-# 4) 起動
+# 4) OpneAI APIをテスト
 ```
-uvicorn app.main:app --reload --port 3000
-```
-# 5) 動作確認（別ターミナル）
-```
-curl -s http://localhost:3000/health
-curl -s http://localhost:3000/api/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"messages":[{"role":"user","content":"こんにちは"}]}'
+cd backend
+python test_opneai_api.py
 ```
