@@ -9,6 +9,7 @@ cd student-support-ai/backend
 ```
 conda env create -f environment.yml -n stu_sup
 conda activate stu-sup
+pip install -r requirements.txt
 ```
 # 3) .env を作成（コミットしない）
 ```
