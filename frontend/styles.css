@@ -1,0 +1,600 @@
+/* ==================== リセットと基本設定 ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #FEE8D9;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ==================== カラー変数（参考用） ==================== */
+/* 
+    メインカラー: #CADCAE
+    サブカラー: #E1E9C9
+    サブカラー2: #EDA35A
+    サブカラー3: #FEE8D9
+*/
+
+/* ==================== ヘッダー ==================== */
+.app-header {
+    background-color: #CADCAE;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 100;
+}
+
+.hamburger-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 40px;
+    height: 40px;
+}
+
+.hamburger-btn span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: #333;
+    transition: 0.3s;
+}
+
+.hamburger-btn.active span:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-btn.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.hamburger-btn.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(7px, -6px);
+}
+
+.app-title {
+    flex: 1;
+    text-align: center;
+    color: #333;
+    cursor: pointer;
+    user-select: none;
+    font-size: 1.5rem;
+}
+
+/* ==================== サイドナビゲーション ==================== */
+.side-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 200;
+    pointer-events: none;
+}
+
+.nav-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.nav-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background-color: #E1E9C9;
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.side-nav.active {
+    pointer-events: auto;
+}
+
+.side-nav.active .nav-overlay {
+    opacity: 1;
+}
+
+.side-nav.active .nav-content {
+    transform: translateX(0);
+}
+
+.nav-header {
+    background-color: #CADCAE;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid rgba(0,0,0,0.1);
+}
+
+.nav-header h2 {
+    color: #333;
+    font-size: 1.2rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #333;
+    transition: transform 0.2s;
+}
+
+.close-btn:hover {
+    transform: scale(1.1);
+}
+
+.nav-list {
+    list-style: none;
+    padding: 1rem 0;
+    flex: 1;
+}
+
+.nav-item {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #333;
+    transition: background-color 0.3s;
+    position: relative;
+}
+
+.nav-item:hover {
+    background-color: #CADCAE;
+}
+
+.nav-item::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 2px;
+    background-color: #EDA35A;
+    transition: width 0.3s;
+}
+
+.nav-item:hover::after {
+    width: 100%;
+}
+
+/* ==================== メインコンテンツ ==================== */
+.main-content {
+    height: calc(100vh - 73px);
+    overflow-y: auto;
+    position: relative;
+}
+
+.page {
+    display: none;
+    min-height: 100%;
+    animation: fadeIn 0.3s;
+}
+
+.page.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ==================== ホーム画面 ==================== */
+.home-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    min-height: 100%;
+}
+
+.welcome-section {
+    width: 100%;
+    max-width: 1000px;
+}
+
+.welcome-text {
+    text-align: center;
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 3rem;
+    animation: slideDown 0.5s;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.feature-card {
+    background-color: #E1E9C9;
+    border: none;
+    border-radius: 15px;
+    padding: 2rem;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, transparent, rgba(237, 163, 90, 0.1));
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+}
+
+.feature-card:hover::before {
+    transform: translateX(0);
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    background-color: #CADCAE;
+}
+
+.card-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.feature-card h3 {
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.feature-card p {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* ==================== チャット画面 ==================== */
+.chat-page {
+    height: 100%;
+}
+
+.chat-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: #FEE8D9;
+}
+
+.chat-header {
+    background-color: #E1E9C9;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.chat-header h2 {
+    color: #333;
+    font-size: 1.3rem;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: linear-gradient(to bottom, #FEE8D9, #FDDFC8);
+}
+
+/* カスタムスクロールバー */
+.chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: rgba(202, 220, 174, 0.2);
+    border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #CADCAE;
+    border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #B5C99A;
+}
+
+.message {
+    display: flex;
+    animation: slideIn 0.3s;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message-content {
+    max-width: 70%;
+    padding: 0.8rem 1rem;
+    border-radius: 15px;
+    word-wrap: break-word;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.user-message {
+    justify-content: flex-end;
+}
+
+.user-message .message-content {
+    background-color: #EDA35A;
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+
+.bot-message .message-content {
+    background-color: #E1E9C9;
+    color: #333;
+    border-bottom-left-radius: 5px;
+}
+
+/* メッセージの吹き出しの尻尾 */
+.user-message .message-content::after {
+    content: '';
+    position: absolute;
+    right: -10px;
+    bottom: 10px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid #EDA35A;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+}
+
+.bot-message .message-content::after {
+    content: '';
+    position: absolute;
+    left: -10px;
+    bottom: 10px;
+    width: 0;
+    height: 0;
+    border-right: 10px solid #E1E9C9;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+}
+
+.chat-input-area {
+    padding: 1rem;
+    background-color: #CADCAE;
+    display: flex;
+    gap: 0.5rem;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+}
+
+.chat-input {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    background-color: white;
+    outline: none;
+    transition: box-shadow 0.3s;
+}
+
+.chat-input:focus {
+    box-shadow: 0 0 0 2px #EDA35A;
+}
+
+.send-btn {
+    padding: 0.8rem 1.5rem;
+    background-color: #EDA35A;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+.send-btn:hover {
+    background-color: #d89248;
+    transform: scale(1.05);
+}
+
+.send-btn:active {
+    transform: scale(0.98);
+}
+
+/* ==================== レコメンド画面 ==================== */
+.recommend-page {
+    padding: 2rem;
+    background-color: #FEE8D9;
+    min-height: 100%;
+}
+
+.recommend-container h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+}
+
+.recommend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.recommend-card {
+    background-color: #E1E9C9;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.recommend-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(237, 163, 90, 0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.recommend-card:hover::before {
+    opacity: 1;
+}
+
+.recommend-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.recommend-image {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    transition: transform 0.3s;
+}
+
+.recommend-card:hover .recommend-image {
+    transform: scale(1.2);
+}
+
+.recommend-card h3 {
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.recommend-card p {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* ==================== レスポンシブデザイン ==================== */
+@media (max-width: 768px) {
+    .feature-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .welcome-text {
+        font-size: 2rem;
+    }
+    
+    .message-content {
+        max-width: 85%;
+    }
+    
+    .nav-content {
+        width: 250px;
+    }
+    
+    .app-title {
+        font-size: 1.3rem;
+    }
+    
+    .recommend-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .welcome-text {
+        font-size: 1.5rem;
+    }
+    
+    .feature-card {
+        padding: 1.5rem;
+    }
+    
+    .card-icon {
+        font-size: 2.5rem;
+    }
+    
+    .chat-input {
+        font-size: 0.9rem;
+    }
+    
+    .send-btn {
+        padding: 0.8rem 1rem;
+        font-size: 0.9rem;
+    }
+}

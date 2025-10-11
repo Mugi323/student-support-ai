@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEST APP</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="app-header">
+        <button class="hamburger-btn" id="hamburgerBtn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <h1 class="app-title" id="appTitle">TEST APP</h1>
+    </header>
+
+    <!-- サイドナビゲーション -->
+    <nav class="side-nav" id="sideNav">
+        <div class="nav-overlay" id="navOverlay"></div>
+        <div class="nav-content">
+            <div class="nav-header">
+                <h2>メニュー</h2>
+                <button class="close-btn" id="closeNav">×</button>
+            </div>
+            <ul class="nav-list">
+                <li><button class="nav-item" data-page="home">ホーム</button></li>
+                <li><button class="nav-item" data-page="daily-chat">日常会話</button></li>
+                <li><button class="nav-item" data-page="ai-chat">AIと匿名会話</button></li>
+                <li><button class="nav-item" data-page="teacher-chat">先生と匿名会話</button></li>
+                <li><button class="nav-item" data-page="recommend">レコメンド</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content" id="mainContent">
+        <!-- ホーム画面 -->
+        <div class="page home-page active" id="homePage">
+            <div class="welcome-section">
+                <h2 class="welcome-text">ようこそ、TEST APPへ</h2>
+                <div class="feature-grid">
+                    <button class="feature-card" data-page="daily-chat">
+                        <div class="card-icon">💬</div>
+                        <h3>日常会話</h3>
+                        <p>気軽に日常的な会話を楽しもう</p>
+                    </button>
+                    <button class="feature-card" data-page="ai-chat">
+                        <div class="card-icon">🤖</div>
+                        <h3>AIと匿名会話</h3>
+                        <p>AIと匿名で自由に話そう</p>
+                    </button>
+                    <button class="feature-card" data-page="teacher-chat">
+                        <div class="card-icon">👨‍🏫</div>
+                        <h3>先生と匿名会話</h3>
+                        <p>先生に匿名で相談しよう</p>
+                    </button>
+                    <button class="feature-card" data-page="recommend">
+                        <div class="card-icon">⭐</div>
+                        <h3>レコメンド</h3>
+                        <p>あなたの好みに合わせたおすすめ</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- チャット画面（共通テンプレート） -->
+        <div class="page chat-page" id="dailyChatPage">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2>日常会話</h2>
+                </div>
+                <div class="chat-messages" id="dailyChatMessages">
+                    <div class="message bot-message">
+                        <div class="message-content">こんにちは！今日はどんな一日でしたか？</div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" placeholder="メッセージを入力..." id="dailyChatInput">
+                    <button class="send-btn" data-chat="daily">送信</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="page chat-page" id="aiChatPage">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2>AIと匿名会話</h2>
+                </div>
+                <div class="chat-messages" id="aiChatMessages">
+                    <div class="message bot-message">
+                        <div class="message-content">AIアシスタントです。何でもお気軽にお話しください。</div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" placeholder="メッセージを入力..." id="aiChatInput">
+                    <button class="send-btn" data-chat="ai">送信</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="page chat-page" id="teacherChatPage">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2>先生と匿名会話</h2>
+                </div>
+                <div class="chat-messages" id="teacherChatMessages">
+                    <div class="message bot-message">
+                        <div class="message-content">こんにちは。何か相談したいことはありますか？</div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" placeholder="メッセージを入力..." id="teacherChatInput">
+                    <button class="send-btn" data-chat="teacher">送信</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- レコメンド画面 -->
+        <div class="page recommend-page" id="recommendPage">
+            <div class="recommend-container">
+                <h2>あなたへのおすすめ</h2>
+                <div class="recommend-grid">
+                    <div class="recommend-card">
+                        <div class="recommend-image">📚</div>
+                        <h3>おすすめの本</h3>
+                        <p>あなたの興味に合わせた書籍</p>
+                    </div>
+                    <div class="recommend-card">
+                        <div class="recommend-image">🎬</div>
+                        <h3>おすすめの映画</h3>
+                        <p>今週末に観たい映画</p>
+                    </div>
+                    <div class="recommend-card">
+                        <div class="recommend-image">🍜</div>
+                        <h3>おすすめのレストラン</h3>
+                        <p>近くの美味しいお店</p>
+                    </div>
+                    <div class="recommend-card">
+                        <div class="recommend-image">🎮</div>
+                        <h3>おすすめのゲーム</h3>
+                        <p>楽しめるゲーム</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
