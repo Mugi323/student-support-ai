@@ -37,9 +37,13 @@ def dashboard(request: Request, q: Optional[str] = None):
         if last:
             text, ai_summary, ai_overall, ts = last[0]
             preview = ai_summary or ((text[:50] + "…") if len(text) > 50 else text)
+            # get display name from users table when available
+            user_rows = query_all("SELECT name FROM users WHERE user_id=?", (user_id,))
+            display_name = user_rows[0][0] if user_rows else user_id
             items.append(
                 {
                     "user_id": user_id,
+                    "display_name": display_name,
                     "avg_ai_risk": round(avg_ai or 0.0, 2),
                     "cnt": cnt,
                     "last_summary": preview,

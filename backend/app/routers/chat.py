@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
-from typing import Dict, Any, Iterable
-from fastapi import APIRouter
+
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from app.core.schemas import ChatIn
 from app.core.config import OPENAI_MODEL
@@ -15,8 +15,23 @@ router = APIRouter(prefix="/api")
 
 
 @router.post("/chat_stream")
-def api_chat_stream(payload: ChatIn):
-    uid = stable_user_id(payload.name, payload.is_anonymous)
+def api_chat_stream(request: Request, payload: ChatIn):
+    # Prefer logged-in session user when available
+    session_uid = None
+    session_name = None
+    try:
+        session_uid = request.session.get("user_id")
+        session_name = request.session.get("name")
+    except Exception:
+        session_uid = None
+        session_name = None
+
+    if session_uid and not payload.is_anonymous:
+        uid = session_uid
+        display_name = session_name
+    else:
+        uid = stable_user_id(payload.name, payload.is_anonymous)
+        display_name = payload.name
 
     async def generator():
         # ---- 第1段: 応答テキストをストリーム出力 ----
@@ -56,6 +71,7 @@ def api_chat_stream(payload: ChatIn):
             ai_tags = result["tags"]
             ai_overall = result["overall"]
 
+            # use session uid if available; text owner should be session user id when logged in
             execute(
                 "INSERT INTO messages (user_id, is_anonymous, text, risk_score, sentiment, tags, created_at, ai_summary, ai_risk_detail, ai_risk_overall) "
                 "VALUES (?,?,?,?,?,?,?,?,?,?)",
