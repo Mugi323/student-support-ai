@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Chat -->
+  <div class="lg:col-span-2 bg-white rounded-2xl shadow p-4">
+    <h2 class="text-lg font-semibold mb-3">AIチャット</h2>
+
+    <div id="status" class="text-xs text-gray-500 mb-2">未送信</div>
+    <div id="chat" class="h-[50vh] overflow-y-auto space-y-3 border rounded p-3 bg-gray-50"></div>
+
+    <div class="mt-3 flex items-center gap-2">
+      <textarea id="msg" class="flex-1 border rounded p-2 h-24" placeholder="いまの気持ちや状況を書いてください"></textarea>
+      <div class="w-40 space-y-2">
+        <button id="sendBtn" onclick="sendMsg()" class="w-full bg-indigo-600 text-white rounded py-2">送信</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AIリスクパネル -->
+  <div class="bg-white rounded-2xl shadow p-4">
+    <h3 class="text-lg font-semibold mb-3">AIリスク（最新）</h3>
+    <p id="aiSummary" class="text-sm text-gray-800 mb-3">要約：—</p>
+    <div class="text-sm space-y-2">
+    <div class="flex justify-between"><span>総合</span><span id="riskOverall">—</span></div>
+    <div class="flex justify-between"><span>健康</span><span id="riskHealth">—</span></div>
+    <div class="flex justify-between"><span>家族</span><span id="riskFamily">—</span></div>
+    <div class="flex justify-between"><span>友人</span><span id="riskFriends">—</span></div>
+    <div class="flex justify-between"><span>学習</span><span id="riskLearning">—</span></div>
+    <div class="flex justify-between"><span>いじめ</span><span id="riskBullying">—</span></div>
+    </div>
+    <p id="riskReason" class="text-xs text-gray-500 mt-3">根拠：—</p>
+    <hr class="my-3">
+    <button id="toggleLogsBtn" class="text-sm text-indigo-600 underline inline-flex items-center gap-2" onclick="toggleMyLogs()">
+      <span>ログを読み直す</span>
+      <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+      </svg>
+    </button>
+    <div id="myLogsWrapper" class="mt-2 overflow-hidden transition-all duration-300" style="max-height:0; opacity:0;">
+      <div id="myLogs" class="space-y-2 text-xs p-1"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 以下は index.html のチャットスクリプトをそのまま流用します
+let currentUserId = null;
+const chatEl = document.getElementById('chat');
+const statusEl = document.getElementById('status');
+
+function line(text, side='left'){
+  const wrap = document.createElement('div');
+  wrap.className = `flex ${side==='right'?'justify-end':''}`;
+  const bubble = document.createElement('div');
+  bubble.className = `max-w-[80%] p-2 rounded-xl ${side==='right'?'bg-indigo-600 text-white':'bg-white border'} shadow whitespace-pre-wrap`;
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  chatEl.appendChild(wrap);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return bubble;
+}
+
+function setRiskPanel(res){
+  document.getElementById('aiSummary').textContent = '要約：' + (res.ai_summary ?? '—');
+  document.getElementById('riskOverall').textContent = (res.ai_risk_overall ?? '—');
+
+  const det = res.ai_risk_detail || {};
+  const sc = det.scores || {};
+
+  document.getElementById('riskHealth').textContent   = sc.health   ?? '—';
+  document.getElementById('riskFamily').textContent   = sc.family   ?? '—';
+  document.getElementById('riskFriends').textContent  = sc.friends  ?? '—';
+  document.getElementById('riskLearning').textContent = sc.learning ?? '—';
+  document.getElementById('riskBullying').textContent = sc.bullying ?? '—';
+
+  document.getElementById('riskReason').textContent = '根拠：' + (det.reason ?? '—');
+
+  const overall = Number(res.ai_risk_overall || 0);
+  document.getElementById('riskOverall').className =
+    overall >= 7 ? 'text-red-600 font-semibold' : '';
+}
+
+async function sendMsg(){
+  const text = document.getElementById('msg').value.trim();
+  if(!text){ return; }
+
+  line(text, 'right');
+  document.getElementById('msg').value = '';
+  statusEl.textContent = '送信中…';
+
+  const aiBubble = line('', 'left');
+
+  const res = await fetch('/api/chat_stream', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ text }),
+  });
+
+  if(res.status === 401){
+    alert('ログインが必要です。ログインページに移動します');
+    window.location.href = '/login';
+    return;
+  }
+
+  if(!res.ok || !res.body){
+    statusEl.textContent = '送信失敗';
+    aiBubble.textContent = 'サーバエラーが発生しました。';
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+
+  while(true){
+    const { value, done } = await reader.read();
+    if(done) break;
+    buffer += decoder.decode(value, {stream:true});
+
+    let idx;
+    while((idx = buffer.indexOf('\n\n')) >= 0){
+      const eventChunk = buffer.slice(0, idx).trim();
+      buffer = buffer.slice(idx + 2);
+
+      if(eventChunk.startsWith('data:')){
+        const jsonStr = eventChunk.slice(5).trim();
+        if(!jsonStr) continue;
+        try{
+          const evt = JSON.parse(jsonStr);
+          if(evt.type === 'delta'){
+            aiBubble.textContent += evt.text || '';
+            chatEl.scrollTop = chatEl.scrollHeight;
+          }else if(evt.type === 'final'){
+            const result = evt.result || {};
+            setRiskPanel(result);
+            statusEl.textContent = '送信完了';
+          }else if(evt.type === 'error'){
+            aiBubble.textContent += `\n[エラー] ${evt.message || '不明なエラー'}`;
+            statusEl.textContent = '送信失敗';
+          }
+        }catch(_e){ }
+      }
+    }
+  }
+}
+
+async function loadMyLogs(){
+  const r = await fetch(`/api/messages/me`, { credentials: 'same-origin' });
+  if(r.status === 401){
+    alert('ログインが必要です。ログインページに移動します');
+    window.location.href = '/login';
+    return [];
+  }
+  const data = await r.json();
+  const box = document.getElementById('myLogs');
+  box.innerHTML = '';
+  data.forEach(m=>{
+    const div = document.createElement('div');
+    div.className = 'border rounded p-2 bg-gray-50';
+    const det = m.ai_risk_detail || {};
+    const sc = det.scores || {};
+    const text = `[${m.created_at}] 総合:${m.ai_risk_overall ?? '-'} / `+
+                 `self:${sc.self_harm ?? '-'} bully:${sc.bullying ?? '-'} tru:${sc.truancy ?? '-'} health:${sc.health ?? '-'}`;
+    div.textContent = text;
+
+    const btn = document.createElement('button');
+    btn.className = 'ml-2 text-xs text-indigo-600 underline';
+    btn.textContent = '再現';
+    btn.onclick = (e)=>{
+      e.preventDefault();
+      replayMessage(m.text);
+    };
+    div.appendChild(btn);
+    box.appendChild(div);
+  });
+  return data;
+}
+
+function replayMessage(text){
+  const ta = document.getElementById('msg');
+  ta.value = text;
+  setTimeout(()=>{ sendMsg(); }, 50);
+}
+
+async function toggleMyLogs(){
+  const wrapper = document.getElementById('myLogsWrapper');
+  const icon = document.getElementById('toggleIcon');
+  const isOpen = wrapper.style.maxHeight && wrapper.style.maxHeight !== '0px';
+  if(isOpen){
+    wrapper.style.maxHeight = '0';
+    wrapper.style.opacity = '0';
+    icon.style.transform = '';
+    return;
+  }
+  await loadMyLogs();
+  wrapper.style.opacity = '1';
+  requestAnimationFrame(()=>{
+    const h = wrapper.scrollHeight;
+    wrapper.style.maxHeight = h + 'px';
+    icon.style.transform = 'rotate(180deg)';
+  });
+}
+</script>
+{% endblock %}
