@@ -50,12 +50,22 @@
 </div>
 
 <script>
+let currentLogsUid = null;
 async function openLogs(uid){
+  const wrap = document.getElementById('logs');
+  const list = document.getElementById('logsList');
+
+  // Toggle: if same uid is already shown, hide it
+  if(!wrap.classList.contains('hidden') && currentLogsUid === uid){
+    wrap.classList.add('hidden');
+    currentLogsUid = null;
+    return;
+  }
+
+  // otherwise load and show logs for uid
   const res = await fetch(`/api/messages/${uid}`);
   const data = await res.json();
 
-  const wrap = document.getElementById('logs');
-  const list = document.getElementById('logsList');
   list.innerHTML = '';
 
   data.forEach(m=>{
@@ -99,8 +109,10 @@ async function openLogs(uid){
     list.appendChild(div);
   });
 
+  // show and remember
   wrap.classList.remove('hidden');
   wrap.scrollIntoView({behavior:'smooth'});
+  currentLogsUid = uid;
 }
 </script>
 <!-- Radar modal -->
