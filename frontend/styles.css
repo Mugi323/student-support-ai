@@ -1,3 +1,37 @@
+/* ==================== カスタムプロパティ（カラー変数） ==================== */
+:root {
+    /* * 元のカラーパレット:
+     * メインカラー: #CADCAE
+     * サブカラー1: #E1E9C9
+     * サブカラー2: #EDA35A (アクセント)
+     * サブカラー3: #FEE8D9 (背景)
+     * * その他ユーティリティカラー
+     * テキストカラー（濃）: #333
+     * テキストカラー（中）: #666
+     * 白: white
+    */
+    --color-main: #CADCAE;
+    --color-sub1: #E1E9C9;
+    --color-accent: #EDA35A;
+    --color-background: #FEE8D9;
+    
+    --color-text-dark: #333;
+    --color-text-mid: #666;
+    --color-white: white;
+    
+    /* ホバーや影などに使用するアクセントカラーの透明版 */
+    --color-accent-transparent: rgba(237, 163, 90, 0.1); /* #EDA35Aの0.1透明度 */
+    /* メインカラーより少し暗い色（スクロールバーホバー用） */
+    --color-main-darker: #B5C99A; /* CADCAEより暗い色 */
+    /* アクセントカラーより少し暗い色（ボタンホバー用） */
+    --color-accent-darker: #d89248; /* EDA35Aより暗い色 */
+    /* チャット背景のグラデーション終点（背景色より少し暗い色） */
+    --color-chat-gradient-end: #FDDFC8; /* FEE8D9より暗い色 */
+    /* スクロールバーのトラックの透明度 */
+    --color-scrollbar-track: rgba(202, 220, 174, 0.2); /* CADCAEの0.2透明度 */
+}
+
+
 /* ==================== リセットと基本設定 ==================== */
 * {
     margin: 0;
@@ -7,22 +41,14 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: #FEE8D9;
+    background-color: var(--color-background);
     height: 100vh;
     overflow: hidden;
 }
 
-/* ==================== カラー変数（参考用） ==================== */
-/* 
-    メインカラー: #CADCAE
-    サブカラー: #E1E9C9
-    サブカラー2: #EDA35A
-    サブカラー3: #FEE8D9
-*/
-
 /* ==================== ヘッダー ==================== */
 .app-header {
-    background-color: #CADCAE;
+    background-color: var(--color-main);
     padding: 1rem;
     display: flex;
     align-items: center;
@@ -47,7 +73,7 @@ body {
     display: block;
     width: 25px;
     height: 3px;
-    background-color: #333;
+    background-color: var(--color-text-dark);
     transition: 0.3s;
 }
 
@@ -66,7 +92,7 @@ body {
 .app-title {
     flex: 1;
     text-align: center;
-    color: #333;
+    color: var(--color-text-dark);
     cursor: pointer;
     user-select: none;
     font-size: 1.5rem;
@@ -99,7 +125,7 @@ body {
     left: 0;
     width: 280px;
     height: 100vh;
-    background-color: #E1E9C9;
+    background-color: var(--color-sub1);
     transform: translateX(-100%);
     transition: transform 0.3s;
     display: flex;
@@ -120,7 +146,7 @@ body {
 }
 
 .nav-header {
-    background-color: #CADCAE;
+    background-color: var(--color-main);
     padding: 1rem;
     display: flex;
     justify-content: space-between;
@@ -129,7 +155,7 @@ body {
 }
 
 .nav-header h2 {
-    color: #333;
+    color: var(--color-text-dark);
     font-size: 1.2rem;
 }
 
@@ -138,7 +164,7 @@ body {
     border: none;
     font-size: 2rem;
     cursor: pointer;
-    color: #333;
+    color: var(--color-text-dark);
     transition: transform 0.2s;
 }
 
@@ -160,13 +186,13 @@ body {
     text-align: left;
     cursor: pointer;
     font-size: 1rem;
-    color: #333;
+    color: var(--color-text-dark);
     transition: background-color 0.3s;
     position: relative;
 }
 
 .nav-item:hover {
-    background-color: #CADCAE;
+    background-color: var(--color-main);
 }
 
 .nav-item::after {
@@ -176,7 +202,7 @@ body {
     bottom: 0;
     width: 0;
     height: 2px;
-    background-color: #EDA35A;
+    background-color: var(--color-accent);
     transition: width 0.3s;
 }
 
@@ -217,6 +243,13 @@ body {
     justify-content: center;
     padding: 2rem;
     min-height: 100%;
+
+    /* 非アクティ愚な時のデフォルト表示を非表示にする */
+    display: none;
+}
+
+.home-page.active {
+    display: flex; 
 }
 
 .welcome-section {
@@ -227,7 +260,7 @@ body {
 .welcome-text {
     text-align: center;
     font-size: 2.5rem;
-    color: #333;
+    color: var(--color-text-dark);
     margin-bottom: 3rem;
     animation: slideDown 0.5s;
 }
@@ -252,7 +285,7 @@ body {
 }
 
 .feature-card {
-    background-color: #E1E9C9;
+    background-color: var(--color-sub1);
     border: none;
     border-radius: 15px;
     padding: 2rem;
@@ -270,7 +303,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, transparent, rgba(237, 163, 90, 0.1));
+    background: linear-gradient(135deg, transparent, var(--color-accent-transparent));
     transform: translateX(-100%);
     transition: transform 0.5s;
 }
@@ -282,7 +315,7 @@ body {
 .feature-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-    background-color: #CADCAE;
+    background-color: var(--color-main);
 }
 
 .card-icon {
@@ -301,13 +334,13 @@ body {
 }
 
 .feature-card h3 {
-    color: #333;
+    color: var(--color-text-dark);
     margin-bottom: 0.5rem;
     font-size: 1.2rem;
 }
 
 .feature-card p {
-    color: #666;
+    color: var(--color-text-mid);
     font-size: 0.9rem;
 }
 
@@ -320,18 +353,18 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    background-color: #FEE8D9;
+    background-color: var(--color-background);
 }
 
 .chat-header {
-    background-color: #E1E9C9;
+    background-color: var(--color-sub1);
     padding: 1rem;
     text-align: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .chat-header h2 {
-    color: #333;
+    color: var(--color-text-dark);
     font-size: 1.3rem;
 }
 
@@ -342,7 +375,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    background: linear-gradient(to bottom, #FEE8D9, #FDDFC8);
+    /* グラデーションは、背景色からチャットグラデーション終点に。これは動的設定が難しいので、そのままにします。*/
+    background: linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end)); 
 }
 
 /* カスタムスクロールバー */
@@ -351,17 +385,17 @@ body {
 }
 
 .chat-messages::-webkit-scrollbar-track {
-    background: rgba(202, 220, 174, 0.2);
+    background: var(--color-scrollbar-track); 
     border-radius: 10px;
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-    background: #CADCAE;
+    background: var(--color-main);
     border-radius: 10px;
 }
 
 .chat-messages::-webkit-scrollbar-thumb:hover {
-    background: #B5C99A;
+    background: var(--color-main-darker);
 }
 
 .message {
@@ -394,14 +428,14 @@ body {
 }
 
 .user-message .message-content {
-    background-color: #EDA35A;
-    color: white;
+    background-color: var(--color-accent);
+    color: var(--color-white);
     border-bottom-right-radius: 5px;
 }
 
 .bot-message .message-content {
-    background-color: #E1E9C9;
-    color: #333;
+    background-color: var(--color-sub1);
+    color: var(--color-text-dark);
     border-bottom-left-radius: 5px;
 }
 
@@ -413,7 +447,7 @@ body {
     bottom: 10px;
     width: 0;
     height: 0;
-    border-left: 10px solid #EDA35A;
+    border-left: 10px solid var(--color-accent);
     border-top: 5px solid transparent;
     border-bottom: 5px solid transparent;
 }
@@ -425,14 +459,14 @@ body {
     bottom: 10px;
     width: 0;
     height: 0;
-    border-right: 10px solid #E1E9C9;
+    border-right: 10px solid var(--color-sub1);
     border-top: 5px solid transparent;
     border-bottom: 5px solid transparent;
 }
 
 .chat-input-area {
     padding: 1rem;
-    background-color: #CADCAE;
+    background-color: var(--color-main);
     display: flex;
     gap: 0.5rem;
     box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
@@ -444,19 +478,19 @@ body {
     border: none;
     border-radius: 25px;
     font-size: 1rem;
-    background-color: white;
+    background-color: var(--color-white);
     outline: none;
     transition: box-shadow 0.3s;
 }
 
 .chat-input:focus {
-    box-shadow: 0 0 0 2px #EDA35A;
+    box-shadow: 0 0 0 2px var(--color-accent);
 }
 
 .send-btn {
     padding: 0.8rem 1.5rem;
-    background-color: #EDA35A;
-    color: white;
+    background-color: var(--color-accent);
+    color: var(--color-white);
     border: none;
     border-radius: 25px;
     cursor: pointer;
@@ -465,7 +499,7 @@ body {
 }
 
 .send-btn:hover {
-    background-color: #d89248;
+    background-color: var(--color-accent-darker);
     transform: scale(1.05);
 }
 
@@ -476,13 +510,13 @@ body {
 /* ==================== レコメンド画面 ==================== */
 .recommend-page {
     padding: 2rem;
-    background-color: #FEE8D9;
+    background-color: var(--color-background);
     min-height: 100%;
 }
 
 .recommend-container h2 {
     text-align: center;
-    color: #333;
+    color: var(--color-text-dark);
     margin-bottom: 2rem;
     font-size: 1.8rem;
 }
@@ -496,7 +530,7 @@ body {
 }
 
 .recommend-card {
-    background-color: #E1E9C9;
+    background-color: var(--color-sub1);
     padding: 2rem;
     border-radius: 15px;
     text-align: center;
@@ -513,7 +547,8 @@ body {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(237, 163, 90, 0.2), transparent);
+    /* グラデーションの色の指定もカスタムプロパティに。透明度はここで設定します */
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 20%, transparent), transparent); 
     opacity: 0;
     transition: opacity 0.3s;
 }
@@ -538,13 +573,13 @@ body {
 }
 
 .recommend-card h3 {
-    color: #333;
+    color: var(--color-text-dark);
     margin-bottom: 0.5rem;
     font-size: 1.1rem;
 }
 
 .recommend-card p {
-    color: #666;
+    color: var(--color-text-mid);
     font-size: 0.9rem;
 }
 
