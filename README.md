@@ -19,5 +19,9 @@ cp .env.example .env
 # 4) OpneAI APIをテスト
 ```
 cd backend
-python test_opneai_api.py
+uvicorn app.main:app --reload --port 8000
+```
+# 5) Webページにアクセス
+```
+http://127.0.0.1:8000
 ```
