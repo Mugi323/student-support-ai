@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from app.db import execute, query_all
 
@@ -13,7 +13,25 @@ router = APIRouter(prefix="/api")
 
 
 @router.get("/messages/{user_id}")
-def api_get_user_messages(user_id: str):
+def api_get_user_messages(request: Request, user_id: str):
+    # allow access only if the requester is the same user or a teacher
+    session_uid = None
+    session_role = None
+    try:
+        session_uid = request.session.get("user_id")
+        session_role = request.session.get("role")
+    except Exception:
+        session_uid = None
+        session_role = None
+
+    if session_uid != user_id and session_role != "teacher":
+        # Allow anonymous ids (generated for non-logged-in users) to be read without session.
+        # This keeps previous UX where anonymous users who stored anon id in localStorage
+        # can retrieve their own logs. Note: anon ids are not strongly unique.
+        if not user_id.startswith("anon_"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
+            )
     rows = query_all(
         """
         SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at
@@ -43,6 +61,21 @@ def api_get_user_messages(user_id: str):
             }
         )
     return JSONResponse(out)
+
+
+@router.get("/messages/me")
+def api_get_my_messages(request: Request):
+    try:
+        uid = request.session.get("user_id")
+    except Exception:
+        uid = None
+
+    if not uid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
+        )
+
+    return api_get_user_messages(request, uid)
 
 
 @router.post("/messages/erase_anonymous")
