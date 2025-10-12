@@ -33,6 +33,9 @@
           <td class="py-2 pr-4">{{ x.last_at }}</td>
           <td class="py-2">
             <button class="text-indigo-600 underline" onclick="openLogs('{{ x.user_id }}')">表示</button>
+            {% if request.session.role == 'teacher' %}
+              <button class="text-sm ml-3 bg-gray-100 px-2 py-1 rounded" onclick="openRadar('{{ x.user_id }}')">レーダー</button>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
@@ -98,6 +101,72 @@ async function openLogs(uid){
 
   wrap.classList.remove('hidden');
   wrap.scrollIntoView({behavior:'smooth'});
+}
+</script>
+<!-- Radar modal -->
+<div id="radarModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+  <div class="bg-white rounded p-4 w-96">
+    <h3 class="font-semibold mb-2">AIリスクレーダー</h3>
+    <canvas id="radarChart" width="320" height="320"></canvas>
+    <div class="mt-3 text-right">
+      <button onclick="closeRadar()" class="px-3 py-1 bg-gray-200 rounded">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let radarChartInstance = null;
+async function openRadar(uid){
+  // fetch messages for uid and compute average of risk scores
+  const res = await fetch(`/api/messages/${uid}`);
+  if(!res.ok) return alert('データ取得失敗');
+  const data = await res.json();
+
+  // aggregate scores from ai_risk_detail.scores
+  const keys = ['health','family','friends','learning','bullying'];
+  const sums = {health:0,family:0,friends:0,learning:0,bullying:0};
+  let count = 0;
+  data.forEach(m=>{
+    const det = m.ai_risk_detail || {};
+    const sc = det.scores || {};
+    if(Object.keys(sc).length){
+      keys.forEach(k=>{ if(typeof sc[k] === 'number') sums[k]+=sc[k]; });
+      count++;
+    }
+  });
+  if(count === 0) return alert('スコアがありません');
+  const avg = keys.map(k=> (sums[k]/count));
+
+  const modal = document.getElementById('radarModal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  if(radarChartInstance) radarChartInstance.destroy();
+  radarChartInstance = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['health','family','friends','learning','bullying'],
+      datasets: [{
+        label: uid + ' AI Risk',
+        data: avg,
+        backgroundColor: 'rgba(99,102,241,0.2)',
+        borderColor: 'rgba(99,102,241,1)',
+        pointBackgroundColor: 'rgba(99,102,241,1)'
+      }]
+    },
+    options: {
+      scales: {
+        r: {min:0, max:10, ticks:{stepSize:1}}
+      }
+    }
+  });
+}
+function closeRadar(){
+  const modal = document.getElementById('radarModal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
 }
 </script>
 {% endblock %}

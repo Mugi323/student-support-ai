@@ -9,6 +9,7 @@ from app.utils.user import (
     set_password_for_user,
     verify_user_password,
     get_user_by_id,
+    set_user_role,
 )
 
 router = APIRouter()
@@ -45,8 +46,15 @@ def login_action(
 
     # セッションに user_id / role を保存
     full = get_user_by_id(uid)
+    # update role if form selected role differs
+    if full[3] != role:
+        set_user_role(uid, role)
+        full = get_user_by_id(uid)
+
     request.session["user_id"] = full[0]
     request.session["role"] = full[3]
+    # store display name in session for header
+    request.session["name"] = full[1]
 
     return RedirectResponse(url="/dashboard", status_code=302)
 
