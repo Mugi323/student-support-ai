@@ -63,3 +63,8 @@ def login_action(
 def logout_action(request: Request):
     request.session.clear()
     return RedirectResponse(url="/", status_code=302)
+
+
+@router.post("/login/google", include_in_schema=False)
+def login_google_action(request: Request):
+    return

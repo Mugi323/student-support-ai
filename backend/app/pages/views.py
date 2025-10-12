@@ -21,6 +21,12 @@ def chat_page(request: Request):
     return templates.TemplateResponse("chat.html", {"request": request})
 
 
+@router.get("/chat_from_ai", include_in_schema=False)
+def chat_from_ai_page(request: Request):
+    # Chat page for users - requires login at API level for sending messages
+    return templates.TemplateResponse("chat_from_ai.html", {"request": request})
+
+
 @router.get("/messages", include_in_schema=False)
 def my_messages_page(request: Request):
     # Page that displays the current user's logs by calling /api/messages/me
