@@ -26,16 +26,23 @@
     <p id="aiSummary" class="text-sm text-gray-800 mb-3">要約：—</p>
     <div class="text-sm space-y-2">
     <div class="flex justify-between"><span>総合</span><span id="riskOverall">—</span></div>
-    <div class="flex justify-between"><span>健康(health)</span><span id="riskHealth">—</span></div>
-    <div class="flex justify-between"><span>家族(family)</span><span id="riskFamily">—</span></div>
-    <div class="flex justify-between"><span>友人(friends)</span><span id="riskFriends">—</span></div>
-    <div class="flex justify-between"><span>学習(learning)</span><span id="riskLearning">—</span></div>
-    <div class="flex justify-between"><span>いじめ(bullying)</span><span id="riskBullying">—</span></div>
+    <div class="flex justify-between"><span>健康</span><span id="riskHealth">—</span></div>
+    <div class="flex justify-between"><span>家族</span><span id="riskFamily">—</span></div>
+    <div class="flex justify-between"><span>友人</span><span id="riskFriends">—</span></div>
+    <div class="flex justify-between"><span>学習</span><span id="riskLearning">—</span></div>
+    <div class="flex justify-between"><span>いじめ</span><span id="riskBullying">—</span></div>
     </div>
     <p id="riskReason" class="text-xs text-gray-500 mt-3">根拠：—</p>
     <hr class="my-3">
-    <button class="text-sm text-indigo-600 underline" onclick="loadMyLogs()">自分のログを読み直す</button>
-    <div id="myLogs" class="mt-2 space-y-2 text-xs"></div>
+    <button id="toggleLogsBtn" class="text-sm text-indigo-600 underline inline-flex items-center gap-2" onclick="toggleMyLogs()">
+      <span>自分のログを読み直す</span>
+      <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+      </svg>
+    </button>
+    <div id="myLogsWrapper" class="mt-2 overflow-hidden transition-all duration-300" style="max-height:0; opacity:0;">
+      <div id="myLogs" class="space-y-2 text-xs p-1"></div>
+    </div>
   </div>
 </div>
 
@@ -152,7 +159,7 @@ async function sendMsg(){
 async function loadMyLogs(){
   if(!currentUserId){
     document.getElementById('myLogs').innerHTML = '<div class="text-gray-500">まだ送信履歴がありません。</div>';
-    return;
+    return [];
   }
   const r = await fetch(`/api/messages/${currentUserId}`);
   const data = await r.json();
@@ -166,6 +173,28 @@ async function loadMyLogs(){
     div.textContent = `[${m.created_at}] 総合:${m.ai_risk_overall ?? '-'} / `+
                       `self:${sc.self_harm ?? '-'} bully:${sc.bullying ?? '-'} tru:${sc.truancy ?? '-'} health:${sc.health ?? '-'}`;
     box.appendChild(div);
+  });
+  return data;
+}
+
+async function toggleMyLogs(){
+  const wrapper = document.getElementById('myLogsWrapper');
+  const icon = document.getElementById('toggleIcon');
+  const isOpen = wrapper.style.maxHeight && wrapper.style.maxHeight !== '0px';
+  if(isOpen){
+    wrapper.style.maxHeight = '0';
+    wrapper.style.opacity = '0';
+    icon.style.transform = '';
+    return;
+  }
+  // load and open
+  await loadMyLogs();
+  wrapper.style.opacity = '1';
+  // allow next paint to compute scrollHeight correctly
+  requestAnimationFrame(()=>{
+    const h = wrapper.scrollHeight;
+    wrapper.style.maxHeight = h + 'px';
+    icon.style.transform = 'rotate(180deg)';
   });
 }
 </script>
