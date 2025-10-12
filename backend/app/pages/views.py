@@ -15,6 +15,31 @@ def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@router.get("/chat", include_in_schema=False)
+def chat_page(request: Request):
+    # Chat page for users - requires login at API level for sending messages
+    return templates.TemplateResponse("chat.html", {"request": request})
+
+
+@router.get("/messages", include_in_schema=False)
+def my_messages_page(request: Request):
+    # Page that displays the current user's logs by calling /api/messages/me
+    # expose current session user/role into template for debugging/UI
+    sess_uid = None
+    sess_role = None
+    try:
+        sess_uid = request.session.get("user_id")
+        sess_role = request.session.get("role")
+    except Exception:
+        sess_uid = None
+        sess_role = None
+
+    return templates.TemplateResponse(
+        "messages.html",
+        {"request": request, "session_user": sess_uid, "session_role": sess_role},
+    )
+
+
 @router.get("/dashboard", include_in_schema=False)
 def dashboard(request: Request, q: Optional[str] = None):
     # 教員のみ閲覧可能

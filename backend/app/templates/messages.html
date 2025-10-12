@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white p-5 rounded-2xl shadow">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold">自分のログ</h2>
+    <div class="text-sm text-gray-600">
+      <div>セッションユーザー: {{ session_user or '（未ログイン）' }}</div>
+      <div>セッションロール: {{ session_role or '—' }}</div>
+    </div>
+  </div>
+
+  <div class="flex justify-between items-center mb-3">
+    <div class="text-sm text-gray-500">ログを読み込んでください（ログインが必要です）。</div>
+    <div>
+      <button onclick="loadLogs()" class="px-3 py-1 bg-gray-100 rounded">更新</button>
+    </div>
+  </div>
+  <div id="logsList" class="space-y-3 text-sm">
+  </div>
+</div>
+
+<script>
+async function loadLogs(){
+  const res = await fetch('/api/messages/me', { credentials: 'same-origin' });
+  if(res.status === 401){
+    alert('ログインが必要です。ログインページに移動します');
+    window.location.href = '/login';
+    return;
+  }
+  if(!res.ok){
+    alert('ログ取得に失敗しました');
+    return;
+  }
+  const data = await res.json();
+  const list = document.getElementById('logsList');
+  list.innerHTML = '';
+  if(!data.length){
+    list.innerHTML = '<p class="text-gray-500">ログはありません</p>';
+    return;
+  }
+  data.forEach(m=>{
+    const div = document.createElement('div');
+    div.className = 'border rounded p-3 bg-gray-50';
+    const pSum = document.createElement('p');
+    pSum.className = 'font-medium';
+    pSum.textContent = m.ai_summary || '(要約なし)';
+    const pText = document.createElement('p');
+    pText.className = 'mt-1';
+    pText.textContent = m.text;
+    const pInfo = document.createElement('p');
+    pInfo.className = 'text-xs text-gray-600 mt-1';
+    pInfo.textContent = `AI総合: ${Number(m.ai_risk_overall || 0).toFixed(2)} / ${m.created_at}`;
+    div.appendChild(pSum);
+    div.appendChild(pText);
+    div.appendChild(pInfo);
+    list.appendChild(div);
+  });
+}
+
+// auto-load on page open
+window.addEventListener('DOMContentLoaded', ()=>{
+  loadLogs();
+});
+</script>
+{% endblock %}
