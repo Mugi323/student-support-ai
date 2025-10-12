@@ -25,7 +25,13 @@ def api_get_user_messages(request: Request, user_id: str):
         session_role = None
 
     if session_uid != user_id and session_role != "teacher":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+        # Allow anonymous ids (generated for non-logged-in users) to be read without session.
+        # This keeps previous UX where anonymous users who stored anon id in localStorage
+        # can retrieve their own logs. Note: anon ids are not strongly unique.
+        if not user_id.startswith("anon_"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden"
+            )
     rows = query_all(
         """
         SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at
@@ -55,6 +61,21 @@ def api_get_user_messages(request: Request, user_id: str):
             }
         )
     return JSONResponse(out)
+
+
+@router.get("/messages/me")
+def api_get_my_messages(request: Request):
+    try:
+        uid = request.session.get("user_id")
+    except Exception:
+        uid = None
+
+    if not uid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
+        )
+
+    return api_get_user_messages(request, uid)
 
 
 @router.post("/messages/erase_anonymous")
