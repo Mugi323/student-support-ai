@@ -75,3 +75,10 @@ def get_user_by_id(user_id: str):
     if not rows:
         return None
     return rows[0]
+
+
+def set_user_role(user_id: str, role: str):
+    try:
+        execute("UPDATE users SET role=? WHERE user_id=?", (role, user_id))
+    except Exception:
+        pass
