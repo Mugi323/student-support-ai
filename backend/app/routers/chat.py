@@ -9,7 +9,7 @@ from app.db import execute, now_iso
 from app.services.openai_client import client
 from app.services.risk import analyze_risk_sync
 from app.utils.sse import sse_event
-from app.utils.user import stable_user_id
+
 
 router = APIRouter(prefix="/api")
 
@@ -18,20 +18,21 @@ router = APIRouter(prefix="/api")
 def api_chat_stream(request: Request, payload: ChatIn):
     # Prefer logged-in session user when available
     session_uid = None
-    session_name = None
     try:
         session_uid = request.session.get("user_id")
-        session_name = request.session.get("name")
     except Exception:
         session_uid = None
-        session_name = None
+        pass
 
-    if session_uid and not payload.is_anonymous:
+    # require login: must have session user_id
+    if session_uid:
         uid = session_uid
-        display_name = session_name
     else:
-        uid = stable_user_id(payload.name, payload.is_anonymous)
-        display_name = payload.name
+        from fastapi import HTTPException, status
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
+        )
 
     async def generator():
         # ---- 第1段: 応答テキストをストリーム出力 ----
@@ -77,7 +78,7 @@ def api_chat_stream(request: Request, payload: ChatIn):
                 "VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (
                     uid,
-                    1 if payload.is_anonymous else 0,
+                    0,
                     payload.text,
                     0.0,
                     0.0,
