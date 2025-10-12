@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from fastapi import APIRouter
+from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from app.db import execute, query_all
 
@@ -13,7 +13,19 @@ router = APIRouter(prefix="/api")
 
 
 @router.get("/messages/{user_id}")
-def api_get_user_messages(user_id: str):
+def api_get_user_messages(request: Request, user_id: str):
+    # allow access only if the requester is the same user or a teacher
+    session_uid = None
+    session_role = None
+    try:
+        session_uid = request.session.get("user_id")
+        session_role = request.session.get("role")
+    except Exception:
+        session_uid = None
+        session_role = None
+
+    if session_uid != user_id and session_role != "teacher":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
     rows = query_all(
         """
         SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at

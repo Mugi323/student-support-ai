@@ -13,7 +13,7 @@
     <table class="min-w-full text-sm">
       <thead>
         <tr class="text-left border-b">
-          <th class="py-2 pr-4">ユーザーID</th>
+          <th class="py-2 pr-4">ユーザー名</th>
           <th class="py-2 pr-4">平均AIリスク</th>
           <th class="py-2 pr-4">件数</th>
           <th class="py-2 pr-4">直近AI要約</th>
@@ -25,7 +25,7 @@
       <tbody>
         {% for x in items %}
         <tr class="border-b align-top">
-          <td class="py-2 pr-4 font-mono">{{ x.user_id }}</td>
+          <td class="py-2 pr-4 font-mono">{{ x.display_name }}</td>
           <td class="py-2 pr-4">{{ '%.2f'|format(x.avg_ai_risk) }}</td>
           <td class="py-2 pr-4">{{ x.cnt }}</td>
           <td class="py-2 pr-4">{{ x.last_summary }}</td>
