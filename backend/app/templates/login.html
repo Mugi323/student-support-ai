@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow">
+  <h2 class="text-lg font-semibold mb-4">ログイン / 新規登録</h2>
+  <form method="post" action="/login" class="space-y-3">
+    <div>
+      <label class="block text-sm">表示名</label>
+      <input name="name" required class="w-full border rounded px-2 py-1" placeholder="例: tanaka" />
+    </div>
+    <div>
+      <label class="block text-sm">パスワード</label>
+      <input name="password" type="password" required class="w-full border rounded px-2 py-1" placeholder="パスワードを入力" />
+    </div>
+    <div>
+      <label class="block text-sm">役割</label>
+      <select name="role" class="w-full border rounded px-2 py-1">
+        <option value="student">学生</option>
+        <option value="teacher">教員</option>
+      </select>
+    </div>
+    {% if error %}
+      <div class="text-sm text-red-600">{{ error }}</div>
+    {% endif %}
+    <div class="flex justify-end">
+      <button class="bg-indigo-600 text-white px-4 py-2 rounded">ログイン</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
