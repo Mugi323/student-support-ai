@@ -31,6 +31,15 @@ def init_db() -> None:
         created_at TEXT NOT NULL
     )
     """)
+    
+    # googleアカウント用関連テーブル(email <-> user_id)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS google_accounts (
+            email TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(user_id)
+        )
+        """)
     con.commit()
 
     # 追加カラム（AI用）
@@ -46,6 +55,7 @@ def init_db() -> None:
     # ensure users.role exists for existing DBs
     ensure_column("users", "role", "TEXT NOT NULL DEFAULT 'student'")
     ensure_column("users", "password_hash", "TEXT")
+    ensure_column("users", "grade", "TEXT")
 
     con.commit()
     con.close()
