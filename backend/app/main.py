@@ -19,7 +19,16 @@ templates = Jinja2Templates(directory=TEMPLATE_DIR)
 init_db()
 
 # セッションミドルウェア（簡易クッキーセッション）
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+#app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+# セッションミドルウェア Googleログイン用（OAuth用に設定を最適化）
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    max_age=3600,  # 1時間
+    same_site="lax",  # 重要: OAuth リダイレクトで必要
+    https_only=False  # ローカル開発環境(http)では False
+)
 
 # ルータ登録（既存のパスを維持）
 app.include_router(pages_router)
