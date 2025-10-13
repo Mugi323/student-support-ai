@@ -10,3 +10,4 @@ build/
 
 # VSCode など
 .vscode/
+student_support.db
