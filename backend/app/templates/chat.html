@@ -8,11 +8,39 @@
     <div id="status" class="text-xs text-gray-500 mb-2">未送信</div>
     <div id="chat" class="h-[50vh] overflow-y-auto space-y-3 border rounded p-3 bg-gray-50"></div>
 
-    <div class="mt-3 flex items-center gap-2">
-      <textarea id="msg" class="flex-1 border rounded p-2 h-24" placeholder="いまの気持ちや状況を書いてください"></textarea>
-      <div class="w-40 space-y-2">
-        <button id="sendBtn" onclick="sendMsg()" class="w-full bg-indigo-600 text-white rounded py-2">送信</button>
-        <button id="sendBtn" onclick="sendImg()" class="">画像</button>
+    <!-- 入力エリア -->
+    <div class="mt-3 border-2 border-gray-300 rounded-xl p-3 bg-white">
+      <!-- 画像プレビューエリア -->
+      <div id="imagePreviewContainer" class="mb-2 flex flex-wrap gap-2"></div>
+      
+      <!-- テキスト入力と送信ボタン -->
+      <div class="flex items-end gap-2">
+        <!-- 画像添付ボタン（左端） -->
+        <label for="imageInput" class="cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition self-end" title="画像を添付">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
+          </svg>
+          <input type="file" id="imageInput" accept="image/*" multiple class="hidden" onchange="handleImageSelect(event)">
+        </label>
+        
+        <textarea 
+          id="msg" 
+          class="flex-1 border-0 focus:outline-none resize-none p-2 min-h-[60px] max-h-[200px]" 
+          placeholder="いまの気持ちや状況を書いてください"
+          onkeydown="handleKeyDown(event)"
+        ></textarea>
+        
+        <!-- 送信ボタン（右端・90度回転） -->
+        <button 
+          id="sendBtn" 
+          onclick="sendMsg()" 
+          class="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed self-end" 
+          title="送信"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -49,12 +77,46 @@ let currentUserId = null;
 const chatEl = document.getElementById('chat');
 const statusEl = document.getElementById('status');
 
-function line(text, side='left'){
+// ファイルをData URLに変換するヘルパー関数
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+}
+
+function line(text, side='left', images=[]){
   const wrap = document.createElement('div');
   wrap.className = `flex ${side==='right'?'justify-end':''}`;
   const bubble = document.createElement('div');
   bubble.className = `max-w-[80%] p-2 rounded-xl ${side==='right'?'bg-indigo-600 text-white':'bg-white border'} shadow whitespace-pre-wrap`;
-  bubble.textContent = text;
+  
+  // 画像がある場合は画像を表示
+  if(images && images.length > 0){
+    const imgContainer = document.createElement('div');
+    imgContainer.className = 'flex flex-wrap gap-2 mb-2';
+    images.forEach(imgSrc => {
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.className = 'max-w-[200px] max-h-[200px] rounded cursor-pointer hover:opacity-80';
+      img.onclick = () => {
+        // クリックで拡大表示
+        window.open(imgSrc, '_blank');
+      };
+      imgContainer.appendChild(img);
+    });
+    bubble.appendChild(imgContainer);
+  }
+  
+  // テキストを表示
+  if(text){
+    const textNode = document.createElement('div');
+    textNode.textContent = text;
+    bubble.appendChild(textNode);
+  }
+  
   wrap.appendChild(bubble);
   chatEl.appendChild(wrap);
   chatEl.scrollTop = chatEl.scrollHeight;
@@ -83,19 +145,48 @@ function setRiskPanel(res){
 
 async function sendMsg(){
   const text = document.getElementById('msg').value.trim();
-  if(!text){ return; }
+  if(!text && selectedImages.length === 0){ 
+    return; 
+  }
 
-  line(text, 'right');
+  // 画像をData URLに変換
+  const imageDataUrls = [];
+  for(const img of selectedImages){
+    const dataUrl = await fileToDataURL(img);
+    imageDataUrls.push(dataUrl);
+  }
+
+  // メッセージを画像と一緒に表示
+  line(text, 'right', imageDataUrls);
+  
+  const imagesToSend = [...selectedImages]; // コピーを作成
   document.getElementById('msg').value = '';
+  clearAllImages();
   statusEl.textContent = '送信中…';
 
   const aiBubble = line('', 'left');
 
-  const res = await fetch('/api/chat_stream', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ text }),
-  });
+  // 画像がある場合はFormDataを使用
+  let res;
+  if(imagesToSend.length > 0){
+    const formData = new FormData();
+    formData.append('text', text || '画像を送信しました');
+    imagesToSend.forEach(img => {
+      formData.append('images', img);
+    });
+
+    res = await fetch('/api/chat_stream_with_images', {
+      method: 'POST',
+      body: formData,
+    });
+  } else {
+    // テキストのみの場合は既存のエンドポイント
+    res = await fetch('/api/chat_stream', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ text }),
+    });
+  }
 
   if(res.status === 401){
     alert('ログインが必要です。ログインページに移動します');
@@ -200,6 +291,96 @@ async function toggleMyLogs(){
     wrapper.style.maxHeight = h + 'px';
     icon.style.transform = 'rotate(180deg)';
   });
+}
+
+// 画像選択処理（複数対応）
+let selectedImages = [];
+
+function handleImageSelect(event){
+  const files = Array.from(event.target.files);
+  
+  files.forEach(file => {
+    // ファイルサイズチェック（5MB制限）
+    if(file.size > 5 * 1024 * 1024){
+      alert(`${file.name} は5MB以下にしてください`);
+      return;
+    }
+    
+    // 画像タイプチェック
+    if(!file.type.startsWith('image/')){
+      alert(`${file.name} は画像ファイルではありません`);
+      return;
+    }
+    
+    // 重複チェック
+    if(selectedImages.some(img => img.name === file.name && img.size === file.size)){
+      return;
+    }
+    
+    selectedImages.push(file);
+    
+    // プレビュー表示
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      addImagePreview(e.target.result, selectedImages.length - 1);
+    };
+    reader.readAsDataURL(file);
+  });
+  
+  // inputをリセット（同じファイルを再選択可能にする）
+  event.target.value = '';
+}
+
+function addImagePreview(src, index){
+  const container = document.getElementById('imagePreviewContainer');
+  
+  const wrapper = document.createElement('div');
+  wrapper.className = 'relative';
+  wrapper.dataset.index = index;
+  
+  const img = document.createElement('img');
+  img.src = src;
+  img.className = 'w-20 h-20 object-cover rounded-lg border-2 border-gray-200';
+  
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 shadow-lg';
+  removeBtn.innerHTML = '×';
+  removeBtn.onclick = () => removeImage(index);
+  
+  wrapper.appendChild(img);
+  wrapper.appendChild(removeBtn);
+  container.appendChild(wrapper);
+}
+
+function removeImage(index){
+  selectedImages.splice(index, 1);
+  updateImagePreviews();
+}
+
+function updateImagePreviews(){
+  const container = document.getElementById('imagePreviewContainer');
+  container.innerHTML = '';
+  
+  selectedImages.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      addImagePreview(e.target.result, index);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function clearAllImages(){
+  selectedImages = [];
+  document.getElementById('imagePreviewContainer').innerHTML = '';
+}
+
+// Enterキーで送信（Shift+Enterで改行）
+function handleKeyDown(event){
+  if(event.key === 'Enter' && !event.shiftKey){
+    event.preventDefault();
+    sendMsg();
+  }
 }
 </script>
 {% endblock %}

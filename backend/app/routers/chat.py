@@ -1,7 +1,9 @@
 from __future__ import annotations
 import json
+import base64
+from typing import List, Optional
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, File, UploadFile, Form
 from fastapi.responses import StreamingResponse
 from app.core.schemas import ChatIn
 from app.core.config import OPENAI_MODEL
@@ -116,6 +118,131 @@ def api_chat_stream(request: Request, payload: ChatIn):
                     "message": f"AI解析に失敗しました: {type(e).__name__}: {str(e)}",
                 }
             )
+
+    headers = {
+        "Cache-Control": "no-cache",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "X-Accel-Buffering": "no",
+    }
+    return StreamingResponse(generator(), headers=headers)
+
+
+@router.post("/chat_stream_with_images")
+async def api_chat_stream_with_images(
+    request: Request,
+    text: str = Form(...),
+    images: List[UploadFile] = File(default=[])
+):
+    """画像付きチャットのストリーミングエンドポイント"""
+    
+    # セッションからユーザーIDを取得
+    session_uid = None
+    try:
+        session_uid = request.session.get("user_id")
+    except Exception:
+        pass
+
+    if not session_uid:
+        from fastapi import HTTPException, status
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Login required"
+        )
+
+    uid = session_uid
+
+    async def generator():
+        # 画像をBase64エンコード
+        image_contents = []
+        for img in images:
+            content = await img.read()
+            b64 = base64.b64encode(content).decode('utf-8')
+            image_contents.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:{img.content_type};base64,{b64}"
+                }
+            })
+
+        # ---- 第1段: 応答テキストをストリーム出力（画像対応） ----
+        sys = "あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を出力してください。小学生にも伝わるように話してください。画像がある場合は、その内容も考慮して回答してください。"
+        
+        # メッセージコンテンツを構築
+        user_content = [{"type": "text", "text": f"相談文:\n{text}\n\nまずは短く共感してください。その後、具体的な解決策を助言してください。"}]
+        user_content.extend(image_contents)
+
+        try:
+            # 画像がある場合はchat.completions APIを使用
+            stream = client.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=[
+                    {"role": "system", "content": sys},
+                    {"role": "user", "content": user_content},
+                ],
+                stream=True
+            )
+            
+            reply_text = ""
+            for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    reply_text += content
+                    yield sse_event({"type": "delta", "text": content})
+                    
+        except Exception as e:
+            yield sse_event({
+                "type": "error",
+                "message": f"Streaming failed: {type(e).__name__}: {str(e)}"
+            })
+            reply_text = ""
+
+        # ---- 第2段: リスク分析 → DB保存 ----
+        try:
+            # テキストと画像の枚数情報を記録
+            full_text = text
+            if images:
+                full_text += f"\n[画像{len(images)}枚添付]"
+            
+            result = analyze_risk_sync(full_text)
+            ai_summary = result["summary"]
+            ai_scores = result["scores"]
+            ai_reason = result["reason"]
+            ai_tags = result["tags"]
+            ai_overall = result["overall"]
+
+            execute(
+                "INSERT INTO messages (user_id, is_anonymous, text, risk_score, sentiment, tags, created_at, ai_summary, ai_risk_detail, ai_risk_overall) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (
+                    uid, 0, full_text, 0.0, 0.0, '["general"]', now_iso(),
+                    ai_summary,
+                    json.dumps(
+                        {"scores": ai_scores, "reason": ai_reason, "tags": ai_tags},
+                        ensure_ascii=False,
+                    ),
+                    ai_overall,
+                ),
+            )
+
+            yield sse_event({
+                "type": "final",
+                "result": {
+                    "user_id": uid,
+                    "reply": reply_text,
+                    "ai_summary": ai_summary,
+                    "ai_risk_overall": ai_overall,
+                    "ai_risk_detail": {
+                        "scores": ai_scores,
+                        "reason": ai_reason,
+                        "tags": ai_tags,
+                    },
+                },
+            })
+        except Exception as e:
+            yield sse_event({
+                "type": "error",
+                "message": f"AI解析に失敗しました: {type(e).__name__}: {str(e)}"
+            })
 
     headers = {
         "Cache-Control": "no-cache",
