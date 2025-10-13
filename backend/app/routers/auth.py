@@ -12,6 +12,9 @@ from app.utils.user import (
     verify_user_password,
     get_user_by_id,
     set_user_role,
+    link_google_account,
+    get_user_id_by_google_email,
+    update_user_name,
 )
 
 config = Config()
@@ -84,31 +87,46 @@ async def login_google(request: Request):
 @router.get("/authorize/google", include_in_schema=False)
 async def authorize_google(request: Request):
     """Googleからのコールバックを処理"""
-    print("Google認証コールバック受信")
     try:
-        print("Google認証コールバック処理開始")
         token = await oauth.google.authorize_access_token(request)
         user_info = token.get('userinfo')
-        print(f"Googleユーザー情報: {user_info}")
         if not user_info:
             return templates.TemplateResponse(
                 "login.html", 
                 {"request": request, "error": "Google認証に失敗しました。"}
             )
-        print("Google認証成功")
-        print("ユーザー情報取得中...")
         # メールアドレスからユーザー名を取得(またはメールアドレスをそのまま使用)
         email = user_info.get('email')
-        name = user_info.get('name', email.split('@')[0])
+        initial_name = user_info.get('name', email.split('@')[0])
         
-        # ユーザーが存在しない場合は作成
-        user = get_user_by_name(name)
-        if not user:
-            # Google認証ユーザーはデフォルトで学生として登録 
-            #あとで選択可能にする機能を実装する
-            uid = create_user(name=name, role="student")
+        uid = get_user_id_by_google_email(email)
+        is_new_user = False
+
+        if not uid:
+            # ユーザーIDが見つからない場合（新規登録）
+            
+            # 1. Googleの表示名を検索キーとして既存ユーザーが存在するかをチェック (二重登録防止のための簡易チェック)
+            #    ただし、このnameは変更される可能性があるので、メインの認証キーにはしない
+            existing_user_by_name = get_user_by_name(initial_name)
+            if existing_user_by_name:
+                # 既存ユーザーが見つかった場合、そのユーザーIDを使用
+                uid = existing_user_by_name[0]
+            else:
+                # 完全に新規の場合、メールアドレスを使って新しいユーザーを作成
+                # user_idは安定したもの (stable_user_id) が生成される
+                uid = create_user(name=initial_name, role="student")
+                is_new_user = True
+            
+            # 2. Googleアカウントのメールアドレスをユーザーidにリンク
+            link_google_account(uid, email)
+
+            # 3. 新規ユーザーの場合、プロファイル設定へリダイレクト
+            if is_new_user:
+                # DBには既にinitial_nameが入っている
+                # setup-profileページへリダイレクト
+                pass # 次のセッション保存後にリダイレクト
         else:
-            uid = user[0]
+            print(f"既存のGoogle連携ユーザー: {uid}")
         
         # セッションに情報を保存
         full = get_user_by_id(uid)
@@ -117,6 +135,10 @@ async def authorize_google(request: Request):
         request.session["name"] = full[1]
         request.session["google_email"] = email
         request.session["google_picture"] = user_info.get('picture', '')
+        
+        if is_new_user:
+            # 新規ユーザーの場合、パスワード設定ページへリダイレクト
+            return RedirectResponse(url="/setup-profile", status_code=302)
         
         return RedirectResponse(url="/dashboard", status_code=302)
         
@@ -131,3 +153,54 @@ async def authorize_google(request: Request):
 def logout_action(request: Request):
     request.session.clear()
     return RedirectResponse(url="/", status_code=302)
+
+@router.get("/setup-profile", include_in_schema=False)
+def setup_profile_page(request: Request):
+    user_id = request.session.get("user_id")
+    # user_idがない、またはGoogle認証直後ではない場合はログインページへ
+    if not user_id:
+        return RedirectResponse(url="/login", status_code=302)
+
+    # 既存のユーザー情報を取得
+    user = get_user_by_id(user_id)
+    if not user:
+        request.session.clear()
+        return RedirectResponse(url="/login", status_code=302)
+
+    # Note: 本来はis_new_userフラグなどで制御すべきですが、今回は簡易的に既存情報を渡す
+    initial_name = user[1] 
+    initial_role = user[3] # 仮登録されたrole
+
+    return templates.TemplateResponse(
+        "setup_profile.html", 
+        {
+            "request": request,
+            "initial_name": initial_name,
+            "initial_role": initial_role
+        }
+    )
+
+@router.post("/setup-profile", include_in_schema=False)
+def setup_profile_action(
+    request: Request,
+    name: str = Form(...),
+    role: str = Form(...),
+):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return RedirectResponse(url="/login", status_code=302)
+
+    # ユーザー名と役割を更新
+    # ユーザー名 (name) の更新
+    from app.utils.user import update_user_name, set_user_role
+    
+    update_user_name(user_id, name)
+    
+    # 役割 (role) の更新
+    set_user_role(user_id, role)
+
+    # セッション内の情報を更新
+    request.session["name"] = name
+    request.session["role"] = role
+    
+    return RedirectResponse(url="/dashboard", status_code=302)
