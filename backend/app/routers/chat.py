@@ -129,12 +129,10 @@ def api_chat_stream(request: Request, payload: ChatIn):
 
 @router.post("/chat_stream_with_images")
 async def api_chat_stream_with_images(
-    request: Request,
-    text: str = Form(...),
-    images: List[UploadFile] = File(default=[])
+    request: Request, text: str = Form(...), images: List[UploadFile] = File(default=[])
 ):
     """画像付きチャットのストリーミングエンドポイント"""
-    
+
     # セッションからユーザーIDを取得
     session_uid = None
     try:
@@ -144,9 +142,9 @@ async def api_chat_stream_with_images(
 
     if not session_uid:
         from fastapi import HTTPException, status
+
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Login required"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
         )
 
     uid = session_uid
@@ -156,19 +154,24 @@ async def api_chat_stream_with_images(
         image_contents = []
         for img in images:
             content = await img.read()
-            b64 = base64.b64encode(content).decode('utf-8')
-            image_contents.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:{img.content_type};base64,{b64}"
+            b64 = base64.b64encode(content).decode("utf-8")
+            image_contents.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{img.content_type};base64,{b64}"},
                 }
-            })
+            )
 
         # ---- 第1段: 応答テキストをストリーム出力（画像対応） ----
         sys = "あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を出力してください。小学生にも伝わるように話してください。画像がある場合は、その内容も考慮して回答してください。"
-        
+
         # メッセージコンテンツを構築
-        user_content = [{"type": "text", "text": f"相談文:\n{text}\n\nまずは短く共感してください。その後、具体的な解決策を助言してください。"}]
+        user_content = [
+            {
+                "type": "text",
+                "text": f"相談文:\n{text}\n\nまずは短く共感してください。その後、具体的な解決策を助言してください。",
+            }
+        ]
         user_content.extend(image_contents)
 
         try:
@@ -179,21 +182,23 @@ async def api_chat_stream_with_images(
                     {"role": "system", "content": sys},
                     {"role": "user", "content": user_content},
                 ],
-                stream=True
+                stream=True,
             )
-            
+
             reply_text = ""
             for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta.content:
                     content = chunk.choices[0].delta.content
                     reply_text += content
                     yield sse_event({"type": "delta", "text": content})
-                    
+
         except Exception as e:
-            yield sse_event({
-                "type": "error",
-                "message": f"Streaming failed: {type(e).__name__}: {str(e)}"
-            })
+            yield sse_event(
+                {
+                    "type": "error",
+                    "message": f"Streaming failed: {type(e).__name__}: {str(e)}",
+                }
+            )
             reply_text = ""
 
         # ---- 第2段: リスク分析 → DB保存 ----
@@ -202,7 +207,7 @@ async def api_chat_stream_with_images(
             full_text = text
             if images:
                 full_text += f"\n[画像{len(images)}枚添付]"
-            
+
             result = analyze_risk_sync(full_text)
             ai_summary = result["summary"]
             ai_scores = result["scores"]
@@ -214,7 +219,13 @@ async def api_chat_stream_with_images(
                 "INSERT INTO messages (user_id, is_anonymous, text, risk_score, sentiment, tags, created_at, ai_summary, ai_risk_detail, ai_risk_overall) "
                 "VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (
-                    uid, 0, full_text, 0.0, 0.0, '["general"]', now_iso(),
+                    uid,
+                    0,
+                    full_text,
+                    0.0,
+                    0.0,
+                    '["general"]',
+                    now_iso(),
                     ai_summary,
                     json.dumps(
                         {"scores": ai_scores, "reason": ai_reason, "tags": ai_tags},
@@ -224,25 +235,29 @@ async def api_chat_stream_with_images(
                 ),
             )
 
-            yield sse_event({
-                "type": "final",
-                "result": {
-                    "user_id": uid,
-                    "reply": reply_text,
-                    "ai_summary": ai_summary,
-                    "ai_risk_overall": ai_overall,
-                    "ai_risk_detail": {
-                        "scores": ai_scores,
-                        "reason": ai_reason,
-                        "tags": ai_tags,
+            yield sse_event(
+                {
+                    "type": "final",
+                    "result": {
+                        "user_id": uid,
+                        "reply": reply_text,
+                        "ai_summary": ai_summary,
+                        "ai_risk_overall": ai_overall,
+                        "ai_risk_detail": {
+                            "scores": ai_scores,
+                            "reason": ai_reason,
+                            "tags": ai_tags,
+                        },
                     },
-                },
-            })
+                }
+            )
         except Exception as e:
-            yield sse_event({
-                "type": "error",
-                "message": f"AI解析に失敗しました: {type(e).__name__}: {str(e)}"
-            })
+            yield sse_event(
+                {
+                    "type": "error",
+                    "message": f"AI解析に失敗しました: {type(e).__name__}: {str(e)}",
+                }
+            )
 
     headers = {
         "Cache-Control": "no-cache",
@@ -250,3 +265,8 @@ async def api_chat_stream_with_images(
         "X-Accel-Buffering": "no",
     }
     return StreamingResponse(generator(), headers=headers)
+
+
+@router.post("/chat_stream_local")
+async def chat_stream_local(request: Request):
+    return
