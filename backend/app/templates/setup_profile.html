@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow">
+  <h2 class="text-lg font-semibold mb-4">プロファイル設定</h2>
+  <p class="mb-4 text-sm text-gray-600">
+    Googleアカウントで新規登録しました。表示名と役割を選択してください。
+  </p>
+  <form method="post" action="/setup-profile" class="space-y-3">
+    <div>
+      <label class="block text-sm font-medium text-gray-700">表示名</label>
+      <input 
+        name="name" 
+        required 
+        class="w-full border rounded px-3 py-2 mt-1" 
+        placeholder="例: 山田太郎"
+        value="{{ initial_name }}"
+      />
+      <p class="text-xs text-gray-500 mt-1">他のユーザーに表示される名前です。</p>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">役割</label>
+      <select name="role" class="w-full border rounded px-3 py-2 mt-1">
+        <option value="student" {% if initial_role == 'student' %}selected{% endif %}>学生</option>
+        <option value="teacher" {% if initial_role == 'teacher' %}selected{% endif %}>教員</option>
+      </select>
+    </div>
+    <div class="flex justify-end pt-4">
+      <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-150">設定を完了して開始</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

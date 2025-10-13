@@ -82,3 +82,39 @@ def set_user_role(user_id: str, role: str):
         execute("UPDATE users SET role=? WHERE user_id=?", (role, user_id))
     except Exception:
         pass
+
+def update_user_name(user_id: str, new_name: str):
+    try:
+        execute("UPDATE users SET name=? WHERE user_id=?", (new_name, user_id))
+        return True
+    except Exception as e:
+        print(f"ユーザー名更新エラー: {e}")
+        return False
+    
+def update_user_grade(user_id: str, new_grade: str) -> bool:
+    """ユーザーIDを指定して学年(grade)を更新します。"""
+    try:
+        execute("UPDATE users SET grade=? WHERE user_id=?", (new_grade, user_id))
+        return True
+    except Exception as e:
+        print(f"学年更新エラー: {e}")
+        return False
+
+# get user id from Google Account (email<->user_id)
+def link_google_account(user_id: str, google_email: str) -> None:
+    try:
+        execute(
+            "INSERT OR IGNORE INTO google_accounts (email, user_id) VALUES (?,?)",
+            (google_email, user_id),
+        )
+    except Exception as e:
+        print(f"Googleアカウント連携エラー: {e}")
+        pass
+
+def get_user_id_by_google_email(google_email: str) -> str | None:
+    rows = query_all(
+        "SELECT user_id FROM google_accounts WHERE email=?", (google_email,)
+    )
+    if not rows:
+        return None
+    return rows[0][0]
