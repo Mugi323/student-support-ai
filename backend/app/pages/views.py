@@ -11,7 +11,7 @@ templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
 
 @router.get("/", include_in_schema=False)
-def index(request: Request):
+def index_page(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -21,6 +21,12 @@ def chat_page(request: Request):
     return templates.TemplateResponse("chat.html", {"request": request})
 
 
+@router.get("/chat_teacher", include_in_schema=False)
+def chat_teacher_page(request: Request):
+    # Chat page for users - requires login at API level for sending messages
+    return templates.TemplateResponse("chat_teacher.html", {"request": request})
+
+
 @router.get("/chat_from_ai", include_in_schema=False)
 def chat_from_ai_page(request: Request):
     # Chat page for users - requires login at API level for sending messages
@@ -28,7 +34,7 @@ def chat_from_ai_page(request: Request):
 
 
 @router.get("/admin", include_in_schema=False)
-def admin(request: Request):
+def admin_page(request: Request):
     # Admin page - requires login at API level for sending messages
     return templates.TemplateResponse("admin.html", {"request": request})
 
