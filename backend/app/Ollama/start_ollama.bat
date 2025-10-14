@@ -30,12 +30,12 @@ if errorlevel 1 (
 )
 
 REM .envファイルの存在チェック
-if not exist "app\Ollama\.env" (
+if not exist ".env" (
     echo.
     echo 警告: .env ファイルが見つかりません
-    echo app\Ollama\.env ファイルを作成してください
+    echo backend\.env ファイルを作成してください
     echo.
-    echo 例: app\Ollama\.env_ollama.example を参考に作成
+    echo 例: backend\app\Ollama\.env_ollama.example を参考に作成
     echo.
     pause
 )

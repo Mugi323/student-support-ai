@@ -17,14 +17,14 @@ pip install -r requirements_ollama.txt
 ```
 
 ### 4️⃣ 設定ファイルを作成
-`backend/app/Ollama/.env` ファイルを作成し、以下を記述:
+`backend/.env` ファイルを作成し、以下を記述:
 ```bash
 OLLAMA_MODEL=qwen3:8b
 OLLAMA_HOST=http://localhost:11434
 PORT=8000
 ```
 
-**ヒント:** `.env_ollama.example` を参考にしてください。
+**ヒント:** `backend/app/Ollama/.env_ollama.example` を参考にしてください。
 
 ### 5️⃣ 起動！
 ```bash
