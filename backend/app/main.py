@@ -9,16 +9,18 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import APP_TITLE, TEMPLATE_DIR, SECRET_KEY
 from app.db import init_db
+from app.db.teacher import init_teacher_db  # 追加
 from app.pages.views import router as pages_router
 from app.routers.chat import router as chat_router
 from app.routers.messages import router as messages_router
 from app.routers import auth as auth_router
 from app.routers.direct_chat import router as direct_chat_router
+from app.routers.admin import router as admin_router
 
 app = FastAPI(title=APP_TITLE)
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 init_db()
-
+init_teacher_db()  # 追加
 # セッションミドルウェア（簡易クッキーセッション）
 # app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
@@ -37,3 +39,4 @@ app.include_router(chat_router)
 app.include_router(messages_router)
 app.include_router(auth_router.router)
 app.include_router(direct_chat_router)
+app.include_router(admin_router)  # 修正

@@ -3,16 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>管理者画面（見た目のみ）</title>
+  <title>管理者画面</title>
   <style>
-    :root{--bg:#0b1020;--card:#0f162f;--line:#1f2a44;--fg:#e5e7eb;--muted:#9ca3af;--acc:#6366f1}
+    :root{--bg:#0b1020;--card:#0f162f;--line:#1f2a44;--fg:#e5e7eb;--muted:#9ca3af;--acc:#6366f1;--acc-hover:#5558e3;--danger:#ef4444}
+    *{box-sizing:border-box}
     html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
     .container{max-width:1100px;margin:40px auto;padding:0 16px}
     h1{font-size:1.4rem;margin:0 0 14px}
     .hint{font-size:.9rem;color:var(--muted);margin-bottom:14px}
-    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-    .btn{background:var(--acc);color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:12px}
+    .toolbar-buttons{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{background:var(--acc);color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer;transition:background .2s;text-decoration:none;display:inline-block}
+    .btn:hover{background:var(--acc-hover)}
     .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--fg)}
+    .btn.ghost:hover{background:rgba(255,255,255,.05)}
+    .btn.danger{background:var(--danger)}
+    .btn.danger:hover{background:#dc2626}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
     .grid{display:grid;gap:16px}
     @media(min-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
     .card{background:linear-gradient(180deg,#0e152e 0%, #0a1124 100%);border:1px solid var(--line);border-radius:16px;padding:14px}
@@ -23,6 +30,25 @@
     tbody td{border-bottom:1px solid var(--line);padding:8px}
     .cell{display:block;background:#0b1226;border:1px solid #1f2937;color:var(--fg);padding:9px 10px;border-radius:10px}
     .placeholder{opacity:.6}
+    .empty-msg{text-align:center;padding:20px;color:var(--muted);font-size:.9rem}
+    
+    /* モーダル */
+    .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center}
+    .modal.active{display:flex}
+    .modal-content{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;max-width:800px;width:90%;max-height:80vh;overflow-y:auto}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+    .modal-header h3{margin:0;font-size:1.2rem}
+    .close-btn{background:transparent;border:none;color:var(--fg);font-size:1.5rem;cursor:pointer;padding:0;width:32px;height:32px;line-height:32px}
+    .close-btn:hover{color:var(--acc)}
+    
+    /* チェックボックス付きテーブル */
+    .select-table{margin:20px 0}
+    .select-table input[type="checkbox"]{width:18px;height:18px;cursor:pointer}
+    .select-table select{background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:6px 10px;border-radius:8px;font-size:.9rem}
+    
+    .modal-footer{margin-top:20px;display:flex;gap:10px;justify-content:flex-end}
+    
+    .loading{text-align:center;padding:20px;color:var(--muted)}
   </style>
 </head>
 <body>
@@ -30,33 +56,22 @@
     <div class="toolbar">
       <div>
         <h1>管理者画面</h1>
-        <div class="hint">※これはUIの見た目だけのモックです（機能なし）。</div>
+        <div class="hint">教師・養護教諭・カウンセラーの管理</div>
       </div>
-      <button class="btn" aria-disabled="true">メンバーを追加</button>
+      <div class="toolbar-buttons">
+        <a href="/" class="btn ghost">ホームに戻る</a>
+        <button class="btn" onclick="openRequestModal()">リクエスト管理</button>
+      </div>
     </div>
 
-    <div class="grid">
+    <div class="grid" id="teacherGrid">
       <!-- 教員 -->
       <section class="card" aria-label="教員リスト">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <h2>教員リスト</h2>
           <span class="tag">名前 / メール</span>
         </div>
-        <table>
-          <thead>
-            <tr><th style="width:42%">名前</th><th style="width:58%">メールアドレス</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="cell">山田 太郎</span></td>
-              <td><span class="cell">taro.yamada@example.com</span></td>
-            </tr>
-            <tr>
-              <td><span class="cell placeholder">（名前）</span></td>
-              <td><span class="cell placeholder">（email@example.com）</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <div id="teacherList" class="loading">読み込み中...</div>
       </section>
 
       <!-- 養護教諭 -->
@@ -65,21 +80,7 @@
           <h2>養護教諭リスト</h2>
           <span class="tag">名前 / メール</span>
         </div>
-        <table>
-          <thead>
-            <tr><th style="width:42%">名前</th><th style="width:58%">メールアドレス</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="cell">佐藤 花子</span></td>
-              <td><span class="cell">hanako.sato@example.jp</span></td>
-            </tr>
-            <tr>
-              <td><span class="cell placeholder">（名前）</span></td>
-              <td><span class="cell placeholder">（email@example.com）</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <div id="schoolNurseList" class="loading">読み込み中...</div>
       </section>
 
       <!-- カウンセラー -->
@@ -88,23 +89,205 @@
           <h2>カウンセラーリスト</h2>
           <span class="tag">名前 / メール</span>
         </div>
+        <div id="counselorList" class="loading">読み込み中...</div>
+      </section>
+    </div>
+  </div>
+
+  <!-- リクエスト管理モーダル -->
+  <div class="modal" id="requestModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>未登録教師の追加</h3>
+        <button class="close-btn" onclick="closeRequestModal()">&times;</button>
+      </div>
+      
+      <div id="pendingTeachersContainer" class="loading">読み込み中...</div>
+      
+      <div class="modal-footer">
+        <button class="btn ghost" onclick="closeRequestModal()">キャンセル</button>
+        <button class="btn" onclick="addSelectedTeachers()" id="addButton" disabled>選択した教師を追加</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let pendingTeachers = [];
+    
+    // 初期読み込み
+    async function loadTeachers() {
+      try {
+        const res = await fetch('/api/admin/teachers');
+        const data = await res.json();
+        
+        if (data.success) {
+          renderTeacherList('teacherList', data.teachers.teacher || []);
+          renderTeacherList('schoolNurseList', data.teachers.school_nurse || []);
+          renderTeacherList('counselorList', data.teachers.counselor || []);
+        }
+      } catch (error) {
+        console.error('教師リスト読み込みエラー:', error);
+        showError('教師リストの読み込みに失敗しました');
+      }
+    }
+    
+    function renderTeacherList(containerId, teachers) {
+      const container = document.getElementById(containerId);
+      
+      if (teachers.length === 0) {
+        container.innerHTML = '<div class="empty-msg">登録されていません</div>';
+        return;
+      }
+      
+      const tableHTML = `
         <table>
           <thead>
             <tr><th style="width:42%">名前</th><th style="width:58%">メールアドレス</th></tr>
           </thead>
           <tbody>
-            <tr>
-              <td><span class="cell">田中 司</span></td>
-              <td><span class="cell">tsukasa.tanaka@example.net</span></td>
-            </tr>
-            <tr>
-              <td><span class="cell placeholder">（名前）</span></td>
-              <td><span class="cell placeholder">（email@example.com）</span></td>
-            </tr>
+            ${teachers.map(t => `
+              <tr>
+                <td><span class="cell">${escapeHtml(t.name || '(名前なし)')}</span></td>
+                <td><span class="cell">${escapeHtml(t.email || '(メールなし)')}</span></td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
-      </section>
-    </div>
-  </div>
+      `;
+      
+      container.innerHTML = tableHTML;
+    }
+    
+    async function openRequestModal() {
+      document.getElementById('requestModal').classList.add('active');
+      await loadPendingTeachers();
+    }
+    
+    function closeRequestModal() {
+      document.getElementById('requestModal').classList.remove('active');
+    }
+    
+    async function loadPendingTeachers() {
+      const container = document.getElementById('pendingTeachersContainer');
+      container.innerHTML = '<div class="loading">読み込み中...</div>';
+      
+      try {
+        const res = await fetch('/api/admin/teachers/pending');
+        const data = await res.json();
+        
+        if (data.success) {
+          pendingTeachers = data.pending_teachers || [];
+          renderPendingTeachers();
+        }
+      } catch (error) {
+        console.error('未登録教師読み込みエラー:', error);
+        container.innerHTML = '<div class="empty-msg">読み込みに失敗しました</div>';
+      }
+    }
+    
+    function renderPendingTeachers() {
+      const container = document.getElementById('pendingTeachersContainer');
+      
+      if (pendingTeachers.length === 0) {
+        container.innerHTML = '<div class="empty-msg">未登録の教師ユーザーはいません</div>';
+        document.getElementById('addButton').disabled = true;
+        return;
+      }
+      
+      const tableHTML = `
+        <table class="select-table">
+          <thead>
+            <tr>
+              <th style="width:10%">選択</th>
+              <th style="width:25%">名前</th>
+              <th style="width:35%">メール</th>
+              <th style="width:30%">種別</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pendingTeachers.map((t, idx) => `
+              <tr>
+                <td><input type="checkbox" data-index="${idx}" onchange="updateAddButton()"></td>
+                <td><span class="cell">${escapeHtml(t.name || '(名前なし)')}</span></td>
+                <td><span class="cell">${escapeHtml(t.email || '(メールなし)')}</span></td>
+                <td>
+                  <select data-index="${idx}" class="teacher-type-select">
+                    <option value="teacher">教員</option>
+                    <option value="school_nurse">養護教諭</option>
+                    <option value="counselor">カウンセラー</option>
+                  </select>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      container.innerHTML = tableHTML;
+      updateAddButton();
+    }
+    
+    function updateAddButton() {
+      const checkboxes = document.querySelectorAll('.select-table input[type="checkbox"]');
+      const hasChecked = Array.from(checkboxes).some(cb => cb.checked);
+      document.getElementById('addButton').disabled = !hasChecked;
+    }
+    
+    async function addSelectedTeachers() {
+      const checkboxes = document.querySelectorAll('.select-table input[type="checkbox"]:checked');
+      const selects = document.querySelectorAll('.teacher-type-select');
+      
+      const teachersToAdd = Array.from(checkboxes).map(cb => {
+        const idx = parseInt(cb.dataset.index);
+        const teacher = pendingTeachers[idx];
+        const typeSelect = Array.from(selects).find(s => parseInt(s.dataset.index) === idx);
+        
+        return {
+          user_id: teacher.user_id,
+          name: teacher.name || '(名前なし)',
+          email: teacher.email || '',
+          teacher_type: typeSelect ? typeSelect.value : 'teacher'
+        };
+      });
+      
+      if (teachersToAdd.length === 0) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/teachers/bulk-add', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({teachers: teachersToAdd})
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(data.message || '教師を追加しました');
+          closeRequestModal();
+          await loadTeachers();
+        } else {
+          alert('追加に失敗しました');
+        }
+      } catch (error) {
+        console.error('教師追加エラー:', error);
+        alert('追加に失敗しました');
+      }
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    function showError(msg) {
+      alert(msg);
+    }
+    
+    // 初期化
+    loadTeachers();
+  </script>
 </body>
 </html>
