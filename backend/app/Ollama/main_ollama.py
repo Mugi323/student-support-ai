@@ -21,6 +21,7 @@ from fastapi.responses import (
     StreamingResponse,
 )
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
@@ -33,9 +34,14 @@ from .OllamaAdapter import OllamaAdapter
 load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ollama_adapter = OllamaAdapter(model_name=OLLAMA_MODEL, host=OLLAMA_HOST)
 
 app = FastAPI(title="Student Support (Ollama + Streaming)")
+
+# SessionMiddlewareを追加
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
 templates = Jinja2Templates(directory="app/templates")
 init_db()
 
