@@ -23,7 +23,10 @@ def chat_page(request: Request):
 
 @router.get("/chat_teacher", include_in_schema=False)
 def chat_teacher_page(request: Request):
-    # Chat page for users - requires login at API level for sending messages
+    # ログインしていない場合はログインページへ
+    uid = request.session.get("user_id") if hasattr(request, "session") else None
+    if not uid:
+        return RedirectResponse(url="/login", status_code=302)
     return templates.TemplateResponse("chat_teacher.html", {"request": request})
 
 

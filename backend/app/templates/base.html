@@ -12,6 +12,7 @@
     <a href="/" class="font-semibold">学生相談</a>
     <nav class="space-x-4 text-sm flex items-center">
       <a href="/" class="hover:underline">ホーム</a>
+      <a href="/chat_teacher" class="hover:underline">1対1チャット</a>
       {% if request.session.role == 'teacher' %}
         <a href="/dashboard" class="hover:underline mr-4">教員ダッシュボード</a>
       {% endif %}

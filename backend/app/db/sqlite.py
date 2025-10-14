@@ -31,7 +31,28 @@ def init_db() -> None:
         created_at TEXT NOT NULL
     )
     """)
-    
+    # 1:1ダイレクトメッセージ用テーブル（生徒-教員チャット）
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS direct_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sender_id TEXT NOT NULL,
+        recipient_id TEXT NOT NULL,
+        text TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        is_read INTEGER NOT NULL DEFAULT 0
+    )
+    """)
+    # インデックス
+    try:
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_dm_pair ON direct_messages(sender_id, recipient_id)"
+        )
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_dm_recipient ON direct_messages(recipient_id, is_read)"
+        )
+    except Exception:
+        pass
+
     # googleアカウント用関連テーブル(email <-> user_id)
     cur.execute("""
         CREATE TABLE IF NOT EXISTS google_accounts (
