@@ -33,6 +33,7 @@
           <td class="py-2 pr-4">{{ x.last_at }}</td>
           <td class="py-2">
             <button class="text-indigo-600 underline" onclick="openLogs('{{ x.user_id }}')">表示</button>
+            <a class="text-blue-600 underline ml-3" href="/chat_teacher?uid={{ x.user_id }}">チャット</a>
             {% if request.session.role == 'teacher' %}
               <button class="text-sm ml-3 bg-gray-100 px-2 py-1 rounded" onclick="openRadar('{{ x.user_id }}')">レーダー</button>
             {% endif %}
