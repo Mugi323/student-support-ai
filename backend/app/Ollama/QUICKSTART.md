@@ -16,14 +16,15 @@ cd backend/app/Ollama
 pip install -r requirements_ollama.txt
 ```
 
-### 4️⃣ 設定ファイルをコピー
+### 4️⃣ 設定ファイルを作成
+`backend/app/Ollama/.env` ファイルを作成し、以下を記述:
 ```bash
-# Windows
-copy .env_ollama.example .env_ollama
-
-# Linux/Mac
-cp .env_ollama.example .env_ollama
+OLLAMA_MODEL=qwen3:8b
+OLLAMA_HOST=http://localhost:11434
+PORT=8000
 ```
+
+**ヒント:** `.env_ollama.example` を参考にしてください。
 
 ### 5️⃣ 起動！
 ```bash
