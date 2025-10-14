@@ -1,1 +1,149 @@
-<h1>これは教員/養護教諭/カウンセラーへの相談ページです</h1>
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+	<!-- 相手一覧 -->
+	<div class="bg-white rounded-2xl shadow p-4">
+		<div class="flex items-center justify-between mb-2">
+			<h2 class="text-lg font-semibold">相手を選ぶ</h2>
+			<span id="unreadBadge" class="text-xs bg-red-500 text-white px-2 py-0.5 rounded hidden"></span>
+		</div>
+		<div id="participants" class="space-y-2"></div>
+	</div>
+
+	<!-- チャット本体 -->
+	<div class="lg:col-span-2 bg-white rounded-2xl shadow p-4 flex flex-col">
+		<div class="flex items-center justify-between mb-2">
+			<h2 id="chatTitle" class="text-lg font-semibold">1対1チャット</h2>
+			<div id="status" class="text-xs text-gray-500">未接続</div>
+		</div>
+		<div id="chat" class="flex-1 overflow-y-auto space-y-3 border rounded p-3 bg-gray-50"></div>
+		<div class="mt-3 flex gap-2">
+			<textarea id="msg" class="flex-1 border rounded p-2 min-h-[60px]" placeholder="メッセージを入力" onkeydown="handleKeyDown(event)"></textarea>
+			<button class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="sendMsg()">送信</button>
+		</div>
+	</div>
+</div>
+
+<script>
+let currentOtherId = null;
+const chatEl = document.getElementById('chat');
+const statusEl = document.getElementById('status');
+
+function line(text, side='left'){
+	const wrap = document.createElement('div');
+	wrap.className = `flex ${side==='right'?'justify-end':''}`;
+	const bubble = document.createElement('div');
+	bubble.className = `max-w-[80%] p-2 rounded-xl ${side==='right'?'bg-indigo-600 text-white':'bg-white border'} shadow whitespace-pre-wrap`;
+	bubble.textContent = text;
+	wrap.appendChild(bubble);
+	chatEl.appendChild(wrap);
+	chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+async function loadParticipants(){
+	const r = await fetch('/api/direct/participants', {credentials:'same-origin'});
+	if(r.status === 401){
+		alert('ログインが必要です');
+		location.href = '/login';
+		return;
+	}
+	const data = await r.json();
+	const box = document.getElementById('participants');
+	box.innerHTML = '';
+		data.forEach(p=>{
+		const btn = document.createElement('button');
+		btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50';
+		btn.textContent = `${p.name} (${p.role})`;
+		btn.onclick = ()=> selectOther(p.user_id, p.name);
+		box.appendChild(btn);
+	});
+}
+
+async function selectOther(uid, name){
+	currentOtherId = uid;
+	document.getElementById('chatTitle').textContent = `1対1チャット: ${name}`;
+	chatEl.innerHTML = '';
+	await loadMessages();
+	// 既読化
+	await fetch(`/api/direct/messages/${currentOtherId}/read`, {method:'POST'});
+	statusEl.textContent = '接続中';
+}
+
+async function loadMessages(){
+	if(!currentOtherId) return;
+	const r = await fetch(`/api/direct/messages/${currentOtherId}`);
+	const data = await r.json();
+	chatEl.innerHTML = '';
+	data.forEach(m=>{
+		const side = (m.sender_id === currentOtherId) ? 'left' : 'right';
+		line(m.text, side);
+	});
+}
+
+async function sendMsg(){
+	const ta = document.getElementById('msg');
+	const text = ta.value.trim();
+	if(!text || !currentOtherId) return;
+	ta.value = '';
+	line(text, 'right');
+	const r = await fetch(`/api/direct/messages/${currentOtherId}`, {
+		method: 'POST',
+		headers: {'Content-Type':'application/json'},
+		body: JSON.stringify({text})
+	});
+	if(!r.ok){
+		alert('送信に失敗しました');
+		return;
+	}
+	// 再読込（相手側のボットなどはないので自分側は末尾だけでOK）
+}
+
+function handleKeyDown(e){
+	if(e.key === 'Enter' && !e.shiftKey){
+		e.preventDefault();
+		sendMsg();
+	}
+}
+
+async function refreshUnread(){
+	const r = await fetch('/api/direct/unread_count');
+	if(!r.ok) return;
+	const {count} = await r.json();
+	const badge = document.getElementById('unreadBadge');
+	if(count>0){
+		badge.textContent = `未読 ${count}`;
+		badge.classList.remove('hidden');
+	}else{
+		badge.classList.add('hidden');
+	}
+}
+
+function getQuery(key){
+	const u = new URL(location.href);
+	return u.searchParams.get(key);
+}
+
+async function boot(){
+	await loadParticipants();
+	refreshUnread();
+	setInterval(refreshUnread, 10000);
+	// クエリのuidがあれば自動選択
+	const pre = getQuery('uid');
+	if(pre){
+		// 参加者情報を取得し、名前解決
+		try{
+			const r = await fetch('/api/direct/participants');
+			const arr = await r.json();
+			const hit = arr.find(x=>x.user_id===pre);
+			if(hit){
+				await selectOther(hit.user_id, hit.name);
+			}
+		}catch(_e){/* ignore */}
+	}
+	// 10秒ごとにメッセージ一覧を再取得（簡易ポーリング）
+	setInterval(()=>{ if(currentOtherId) loadMessages(); }, 10000);
+}
+
+boot();
+</script>
+{% endblock %}
