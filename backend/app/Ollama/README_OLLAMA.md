@@ -8,15 +8,15 @@
 1. [Ollama公式サイト](https://ollama.ai/)からダウンロードしてインストール
 2. インストール後、自動的にOllamaサービスが起動
 
+
+
 ### 2. モデルのダウンロード
 
-ターミナルで以下のコマンドを実行：
+ターミナルで以下のコマンドを実行(GUIでも可)：
 
 ```bash
 # 推奨モデル（日本語対応が良好）
 ollama pull qwen3:8b
-
-
 ```
 
 利用可能なモデルを確認：
@@ -36,19 +36,15 @@ pip install -r requirements_ollama.txt
 
 ### 4. 環境変数の設定
 
-```bash
-# .env_ollama.example をコピー
-cp .env_ollama.example .env_ollama
+`backend/app/Ollama/.env` ファイルに以下を設定します:
 
-# .env_ollama を編集（必要に応じて）
-```
-
-`.env_ollama` の内容:
 ```bash
-OLLAMA_MODEL=qwen2.5:7b
+OLLAMA_MODEL=qwen3:8b
 OLLAMA_HOST=http://localhost:11434
 PORT=8000
 ```
+
+**注意:** `.env_ollama.example` はサンプルファイルです。実際の設定は `.env` ファイルに記述してください。
 
 ### 5. アプリケーションの起動
 
@@ -67,6 +63,7 @@ Ollama/
 ├── OllamaAdapter.py          # Ollama APIラッパー
 ├── main_ollama.py            # Ollama版メインアプリケーション
 ├── requirements_ollama.txt   # 必要なPythonパッケージ
+├── .env                      # 環境変数設定ファイル（要作成）
 ├── .env_ollama.example       # 環境変数のサンプル
 └── README_OLLAMA.md          # このファイル
 ```

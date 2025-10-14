@@ -31,13 +31,13 @@ if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
     fi
 fi
 
-# .env_ollamaファイルの存在チェック
-if [ ! -f "app/Ollama/.env_ollama" ]; then
+# .envファイルの存在チェック
+if [ ! -f "app/Ollama/.env" ]; then
     echo ""
-    echo "警告: .env_ollama ファイルが見つかりません"
-    echo "app/Ollama/.env_ollama.example をコピーして .env_ollama を作成してください"
+    echo "警告: .env ファイルが見つかりません"
+    echo "app/Ollama/.env ファイルを作成してください"
     echo ""
-    echo "  cp app/Ollama/.env_ollama.example app/Ollama/.env_ollama"
+    echo "例: app/Ollama/.env_ollama.example を参考に作成"
     echo ""
     read -p "続行しますか? (y/n) " -n 1 -r
     echo

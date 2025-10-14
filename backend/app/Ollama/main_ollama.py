@@ -4,7 +4,7 @@ Ollama版 Student Support AI
 使用方法:
 1. Ollamaをインストール: https://ollama.ai/
 2. モデルをダウンロード: ollama pull qwen2.5:7b
-3. .env_ollama ファイルを作成して設定
+3. backend/app/Ollama/.env ファイルを作成して設定
 4. 起動: uvicorn app.Ollama.main_ollama:app --reload --port 8000
 """
 
@@ -29,7 +29,8 @@ from ..db import init_db, execute, query_all, now_iso
 from .OllamaAdapter import OllamaAdapter
 
 # == 初期化 ==
-load_dotenv(dotenv_path=Path(__file__).parent / ".env_ollama")
+# .envファイルを参照（プロジェクトルートまたはOllamaディレクトリ）
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 ollama_adapter = OllamaAdapter(model_name=OLLAMA_MODEL, host=OLLAMA_HOST)

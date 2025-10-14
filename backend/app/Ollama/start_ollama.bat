@@ -29,13 +29,13 @@ if errorlevel 1 (
     pause
 )
 
-REM .env_ollamaファイルの存在チェック
-if not exist "app\Ollama\.env_ollama" (
+REM .envファイルの存在チェック
+if not exist "app\Ollama\.env" (
     echo.
-    echo 警告: .env_ollama ファイルが見つかりません
-    echo app\Ollama\.env_ollama.example をコピーして .env_ollama を作成してください
+    echo 警告: .env ファイルが見つかりません
+    echo app\Ollama\.env ファイルを作成してください
     echo.
-    echo   copy app\Ollama\.env_ollama.example app\Ollama\.env_ollama
+    echo 例: app\Ollama\.env_ollama.example を参考に作成
     echo.
     pause
 )
