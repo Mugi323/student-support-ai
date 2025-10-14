@@ -32,10 +32,10 @@ if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
 fi
 
 # .envファイルの存在チェック
-if [ ! -f "app/Ollama/.env" ]; then
+if [ ! -f ".env" ]; then
     echo ""
     echo "警告: .env ファイルが見つかりません"
-    echo "app/Ollama/.env ファイルを作成してください"
+    echo "backend/.env ファイルを作成してください"
     echo ""
     echo "例: app/Ollama/.env_ollama.example を参考に作成"
     echo ""

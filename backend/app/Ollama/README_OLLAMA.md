@@ -36,7 +36,7 @@ pip install -r requirements_ollama.txt
 
 ### 4. 環境変数の設定
 
-`backend/app/Ollama/.env` ファイルに以下を設定します:
+`backend/.env` ファイルに以下を設定します:
 
 ```bash
 OLLAMA_MODEL=qwen3:8b
@@ -44,7 +44,7 @@ OLLAMA_HOST=http://localhost:11434
 PORT=8000
 ```
 
-**注意:** `.env_ollama.example` はサンプルファイルです。実際の設定は `.env` ファイルに記述してください。
+**注意:** `.env_ollama.example` はサンプルファイルです。実際の設定は `backend/.env` ファイルに記述してください。
 
 ### 5. アプリケーションの起動
 
@@ -63,9 +63,11 @@ Ollama/
 ├── OllamaAdapter.py          # Ollama APIラッパー
 ├── main_ollama.py            # Ollama版メインアプリケーション
 ├── requirements_ollama.txt   # 必要なPythonパッケージ
-├── .env                      # 環境変数設定ファイル（要作成）
 ├── .env_ollama.example       # 環境変数のサンプル
 └── README_OLLAMA.md          # このファイル
+
+backend/
+└── .env                      # 環境変数設定ファイル（要作成）
 ```
 
 ## 推奨モデルと必要スペック
