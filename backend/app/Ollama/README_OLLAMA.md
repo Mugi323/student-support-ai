@@ -1,19 +1,12 @@
 # Student Support AI - Ollama版
 
-このディレクトリには、Ollamaを使用したローカルLLM版のStudent Support AIが含まれています。
-
-## 特徴
-
-- **完全無料**: OpenAI APIキーが不要
-- **プライバシー保護**: すべてローカルで処理
-- **オフライン動作**: インターネット接続不要（初回ダウンロード後）
 
 ## セットアップ手順
 
 ### 1. Ollamaのインストール
 
 1. [Ollama公式サイト](https://ollama.ai/)からダウンロードしてインストール
-2. インストール後、自動的にOllamaサービスが起動します
+2. インストール後、自動的にOllamaサービスが起動
 
 ### 2. モデルのダウンロード
 
@@ -21,11 +14,9 @@
 
 ```bash
 # 推奨モデル（日本語対応が良好）
-ollama pull qwen2.5:7b
+ollama pull qwen3:8b
 
-# または他の選択肢
-ollama pull qwen3:8b      # より高性能（メモリ多く必要）
-ollama pull llama3:8b     # 汎用性が高い
+
 ```
 
 利用可能なモデルを確認：
