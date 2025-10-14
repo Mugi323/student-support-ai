@@ -3,7 +3,18 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
   <!-- Chat -->
   <div class="lg:col-span-2 bg-white rounded-2xl shadow p-4">
-    <h2 class="text-lg font-semibold mb-3">AIチャット</h2>
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="text-lg font-semibold">AIチャット</h2>
+      
+      <!-- API切り替えボタン -->
+      <div class="flex items-center gap-2">
+        <label class="text-sm text-gray-600">AI:</label>
+        <select id="apiSelector" class="text-sm border rounded-lg px-3 py-1 bg-white hover:bg-gray-50 transition">
+          <option value="openai">ChatGPT (OpenAI)</option>
+          <option value="ollama">Ollama (ローカル)</option>
+        </select>
+      </div>
+    </div>
 
     <div id="status" class="text-xs text-gray-500 mb-2">未送信</div>
     <div id="chat" class="h-[50vh] overflow-y-auto space-y-3 border rounded p-3 bg-gray-50"></div>
@@ -76,6 +87,21 @@
 let currentUserId = null;
 const chatEl = document.getElementById('chat');
 const statusEl = document.getElementById('status');
+
+// APIセレクターの変更を監視
+document.addEventListener('DOMContentLoaded', () => {
+  const apiSelector = document.getElementById('apiSelector');
+  apiSelector.addEventListener('change', (e) => {
+    const api = e.target.value;
+    if(api === 'ollama'){
+      statusEl.textContent = 'Ollama (ローカル) を使用中';
+      statusEl.className = 'text-xs text-green-600 mb-2';
+    } else {
+      statusEl.textContent = 'ChatGPT (OpenAI) を使用中';
+      statusEl.className = 'text-xs text-blue-600 mb-2';
+    }
+  });
+});
 
 // ファイルをData URLに変換するヘルパー関数
 function fileToDataURL(file) {
@@ -166,9 +192,18 @@ async function sendMsg(){
 
   const aiBubble = line('', 'left');
 
-  // 画像がある場合はFormDataを使用
+  // 選択されたAPIを取得
+  const selectedApi = document.getElementById('apiSelector').value;
+
+  // 画像がある場合はFormDataを使用（OpenAIのみ）
   let res;
   if(imagesToSend.length > 0){
+    if(selectedApi === 'ollama'){
+      aiBubble.textContent = 'エラー: Ollamaは画像に対応していません。OpenAIを選択してください。';
+      statusEl.textContent = '送信失敗';
+      return;
+    }
+    
     const formData = new FormData();
     formData.append('text', text || '画像を送信しました');
     imagesToSend.forEach(img => {
@@ -180,8 +215,10 @@ async function sendMsg(){
       body: formData,
     });
   } else {
-    // テキストのみの場合は既存のエンドポイント
-    res = await fetch('/api/chat_stream', {
+    // テキストのみの場合、選択されたAPIのエンドポイントを使用
+    const endpoint = selectedApi === 'ollama' ? '/api/chat_stream_local' : '/api/chat_stream';
+    
+    res = await fetch(endpoint, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ text }),
