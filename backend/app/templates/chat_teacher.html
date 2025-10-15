@@ -17,6 +17,20 @@
 			<div id="status" class="text-xs text-gray-500">未接続</div>
 		</div>
 		<div id="chat" class="flex-1 overflow-y-auto space-y-3 border rounded p-3 bg-gray-50"></div>
+		
+		<!-- 匿名モード切り替え（生徒のみ表示） -->
+		<div id="anonymousToggle" class="mt-2 hidden">
+			<label class="flex items-center gap-2 text-sm cursor-pointer bg-yellow-50 border border-yellow-300 rounded p-2">
+				<input type="checkbox" id="anonymousMode" class="rounded" onchange="toggleAnonymousMode()">
+				<span class="flex items-center gap-1">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+						<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+					</svg>
+					匿名モードで送信（先生に名前が表示されません）
+				</span>
+			</label>
+		</div>
+		
 		<div class="mt-3 flex gap-2">
 			<textarea id="msg" class="flex-1 border rounded p-2 min-h-[60px]" placeholder="メッセージを入力" onkeydown="handleKeyDown(event)"></textarea>
 			<button class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="sendMsg()">送信</button>
@@ -26,15 +40,26 @@
 
 <script>
 let currentOtherId = null;
+let currentUserRole = null; // 自分の役割を保存
 const chatEl = document.getElementById('chat');
 const statusEl = document.getElementById('status');
 
-function line(text, side='left'){
+function line(text, side='left', isAnonymous=false, senderId=null){
 	const wrap = document.createElement('div');
 	wrap.className = `flex ${side==='right'?'justify-end':''}`;
 	const bubble = document.createElement('div');
 	bubble.className = `max-w-[80%] p-2 rounded-xl ${side==='right'?'bg-indigo-600 text-white':'bg-white border'} shadow whitespace-pre-wrap`;
-	bubble.textContent = text;
+	
+	// 匿名メッセージの場合は🔒アイコンを表示
+	if(isAnonymous && side === 'left'){
+		const anonymousLabel = document.createElement('div');
+		anonymousLabel.className = 'text-xs text-gray-500 mb-1 flex items-center gap-1';
+		anonymousLabel.innerHTML = '🔒 匿名メッセージ';
+		bubble.appendChild(anonymousLabel);
+	}
+	
+	const textNode = document.createTextNode(text);
+	bubble.appendChild(textNode);
 	wrap.appendChild(bubble);
 	chatEl.appendChild(wrap);
 	chatEl.scrollTop = chatEl.scrollHeight;
@@ -50,33 +75,72 @@ async function loadParticipants(){
 	const data = await r.json();
 	const box = document.getElementById('participants');
 	box.innerHTML = '';
-		data.forEach(p=>{
+	
+	data.forEach(p=>{
 		const btn = document.createElement('button');
-		btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50';
-		btn.textContent = `${p.name} (${p.role})`;
-		btn.onclick = ()=> selectOther(p.user_id, p.name);
+		
+		// 匿名生徒の場合は背景色を変える
+		if(p.is_anonymous){
+			btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 bg-yellow-50 border-yellow-300';
+			btn.innerHTML = `🔒 ${p.name} <span class="text-xs text-gray-500">(匿名)</span>`;
+		} else {
+			btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50';
+			btn.textContent = `${p.name} (${p.role})`;
+		}
+		
+		btn.onclick = ()=> selectOther(p.user_id, p.name, p.is_anonymous);
 		box.appendChild(btn);
 	});
 }
 
-async function selectOther(uid, name){
+async function selectOther(uid, name, isAnonymous){
 	currentOtherId = uid;
-	document.getElementById('chatTitle').textContent = `1対1チャット: ${name}`;
+	
+	// 匿名生徒の場合はチャットタイトルにも匿名表示
+	if(isAnonymous){
+		document.getElementById('chatTitle').textContent = `1対1チャット: 🔒 ${name}`;
+	} else {
+		document.getElementById('chatTitle').textContent = `1対1チャット: ${name}`;
+	}
+	
 	chatEl.innerHTML = '';
 	await loadMessages();
 	// 既読化
 	await fetch(`/api/direct/messages/${currentOtherId}/read`, {method:'POST'});
 	statusEl.textContent = '接続中';
+	
+	// 生徒の場合のみ匿名トグルを表示
+	const anonymousToggle = document.getElementById('anonymousToggle');
+	if(currentUserRole === 'student'){
+		anonymousToggle.classList.remove('hidden');
+	} else {
+		anonymousToggle.classList.add('hidden');
+	}
 }
 
 async function loadMessages(){
 	if(!currentOtherId) return;
-	const r = await fetch(`/api/direct/messages/${currentOtherId}`);
+	
+	// 匿名モードのチェック状態を取得
+	const anonymousModeCheckbox = document.getElementById('anonymousMode');
+	const isAnonymousMode = anonymousModeCheckbox ? anonymousModeCheckbox.checked : false;
+	
+	// 匿名モードの場合はクエリパラメータを追加
+	const url = isAnonymousMode 
+		? `/api/direct/messages/${currentOtherId}?anonymous=true`
+		: `/api/direct/messages/${currentOtherId}`;
+	
+	const r = await fetch(url);
 	const data = await r.json();
 	chatEl.innerHTML = '';
+	
+	// 匿名チャットかどうかを判定
+	const realOtherId = currentOtherId.replace(':anonymous', '');
+	
 	data.forEach(m=>{
-		const side = (m.sender_id === currentOtherId) ? 'left' : 'right';
-		line(m.text, side);
+		const side = (m.sender_id === realOtherId || m.sender_id === currentOtherId) ? 'left' : 'right';
+		const isAnonymous = m.is_anonymous || false;
+		line(m.text, side, isAnonymous, m.sender_id);
 	});
 }
 
@@ -84,12 +148,19 @@ async function sendMsg(){
 	const ta = document.getElementById('msg');
 	const text = ta.value.trim();
 	if(!text || !currentOtherId) return;
+	
+	// 匿名モードのチェック状態を取得
+	const anonymousModeCheckbox = document.getElementById('anonymousMode');
+	const isAnonymous = anonymousModeCheckbox ? anonymousModeCheckbox.checked : false;
+	
 	ta.value = '';
-	line(text, 'right');
+	line(text, 'right', isAnonymous);
+	
+	// 匿名フラグを含めて送信
 	const r = await fetch(`/api/direct/messages/${currentOtherId}`, {
 		method: 'POST',
 		headers: {'Content-Type':'application/json'},
-		body: JSON.stringify({text})
+		body: JSON.stringify({text, is_anonymous: isAnonymous})
 	});
 	if(!r.ok){
 		alert('送信に失敗しました');
@@ -103,6 +174,11 @@ function handleKeyDown(e){
 		e.preventDefault();
 		sendMsg();
 	}
+}
+
+// 匿名モード切り替え時にメッセージを再読み込み
+function toggleAnonymousMode(){
+	loadMessages();
 }
 
 async function refreshUnread(){
@@ -124,6 +200,20 @@ function getQuery(key){
 }
 
 async function boot(){
+	// 自分の役割を取得
+	try{
+		const r = await fetch('/api/direct/participants');
+		const participants = await r.json();
+		// 参加者から自分の役割を推測（teacherなら生徒リスト、studentなら教師リスト）
+		if(participants.length > 0){
+			// 最初の参加者の役割をチェック
+			const firstParticipantRole = participants[0].role;
+			currentUserRole = firstParticipantRole === 'teacher' ? 'student' : 'teacher';
+		}
+	}catch(_e){
+		currentUserRole = 'student'; // デフォルトは生徒
+	}
+	
 	await loadParticipants();
 	refreshUnread();
 	setInterval(refreshUnread, 10000);

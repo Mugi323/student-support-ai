@@ -77,6 +77,9 @@ def init_db() -> None:
     ensure_column("users", "role", "TEXT NOT NULL DEFAULT 'student'")
     ensure_column("users", "password_hash", "TEXT")
     ensure_column("users", "grade", "TEXT")
+    
+    # 匿名チャット用カラムを追加
+    ensure_column("direct_messages", "is_anonymous", "INTEGER NOT NULL DEFAULT 0")
 
     con.commit()
     con.close()
