@@ -27,11 +27,9 @@ ollama list
 ### 3. Python環境のセットアップ
 
 ```bash
-# backend/app/Ollama ディレクトリに移動
-cd backend/app/Ollama
 
 # 必要なパッケージをインストール
-pip install -r requirements_ollama.txt
+pip install -r requirements.txt
 ```
 
 ### 4. 環境変数の設定
@@ -50,11 +48,15 @@ PORT=8000
 
 ```bash
 # backendディレクトリから起動（重要！）
-cd ../../..  # backend ディレクトリに戻る
-uvicorn app.Ollama.main_ollama:app --reload --port 8000
+cd backend
+uvicorn app.main:app --reload --port 8000
+```
+# 5) Webページにアクセス
+```bash
+http://127.0.0.1:8000
 ```
 
-ブラウザで http://localhost:8000 にアクセス
+
 
 ## ファイル構成
 
@@ -87,24 +89,7 @@ backend/
 - **特徴**: 英語が得意、汎用性が高い
 - **速度**: 速い
 
-## トラブルシューティング
 
-### Ollamaに接続できない
-
-```bash
-# Ollamaサービスが起動しているか確認
-ollama serve
-```
-
-### モデルが見つからない
-
-```bash
-# インストール済みモデルを確認
-ollama list
-
-# モデルをダウンロード
-ollama pull qwen2.5:7b
-```
 
 ### JSONパースエラーが発生する
 
@@ -122,15 +107,7 @@ ollama pull qwen2.5:7b
 
 起動は必ず `backend` ディレクトリから行ってください：
 
-```bash
-# 正しい起動方法
-cd backend
-uvicorn app.Ollama.main_ollama:app --reload --port 8000
 
-# 間違った起動方法
-cd backend/app/Ollama
-uvicorn main_ollama:app --reload --port 8000  # エラーになる
-```
 
 ## OpenAI版との違い
 
