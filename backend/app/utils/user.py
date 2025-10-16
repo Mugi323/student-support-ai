@@ -118,3 +118,11 @@ def get_user_id_by_google_email(google_email: str) -> str | None:
     if not rows:
         return None
     return rows[0][0]
+
+def get_email_by_user_id(user_id: str) -> str | None:
+    """ユーザーIDに紐づくメールアドレスを取得"""
+    rows = query_all(
+        "SELECT email FROM google_accounts WHERE user_id = ?", 
+        (user_id,)
+    )
+    return rows[0][0] if rows else None
