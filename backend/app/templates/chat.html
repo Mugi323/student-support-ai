@@ -4,7 +4,11 @@
   <!-- Chat -->
   <div class="lg:col-span-2 bg-white rounded-2xl shadow p-4">
     <div class="flex justify-between items-center mb-3">
-      <h2 class="text-lg font-semibold">AIチャット</h2>
+      <div class="flex items-center gap-2">
+        <h2 class="text-lg font-semibold">AIチャット</h2>
+        <!-- 未読バッジ -->
+        <span id="chatUnreadBadge" class="hidden bg-red-500 text-white text-xs px-2 py-0.5 rounded-full"></span>
+      </div>
       
       <!-- API切り替えボタン -->
       <div class="flex items-center gap-2">
@@ -419,5 +423,33 @@ function handleKeyDown(event){
     sendMsg();
   }
 }
+
+// 未読件数をチェックして表示
+async function checkUnreadMessages(){
+  try {
+    const r = await fetch('/api/direct/unread_count', { credentials: 'same-origin' });
+    if(!r.ok) return;
+    const data = await r.json();
+    const count = data.count || 0;
+    
+    const badge = document.getElementById('chatUnreadBadge');
+    if(count > 0){
+      badge.textContent = `${count}件未読`;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  } catch(e) {
+    console.error('未読件数の取得に失敗:', e);
+  }
+}
+
+// ページ読み込み時とメッセージ送信後に未読チェック
+document.addEventListener('DOMContentLoaded', () => {
+  checkUnreadMessages();
+  // 30秒ごとに未読チェック
+  setInterval(checkUnreadMessages, 30000);
+});
+
 </script>
 {% endblock %}
