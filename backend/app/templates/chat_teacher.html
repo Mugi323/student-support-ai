@@ -73,19 +73,34 @@ async function loadParticipants(){
 		return;
 	}
 	const data = await r.json();
+	
+	// 未読件数を取得
+	const unreadR = await fetch('/api/direct/unread_by_sender', {credentials:'same-origin'});
+	const unreadData = unreadR.ok ? await unreadR.json() : {};
+	
 	const box = document.getElementById('participants');
 	box.innerHTML = '';
 	
 	data.forEach(p=>{
 		const btn = document.createElement('button');
 		
+		// 未読件数を取得（user_idをそのまま使用）
+		// 匿名チャットの場合は"user_id:anonymous"、通常チャットは"user_id"
+		const unreadCount = unreadData[p.user_id] || 0;
+		
 		// 匿名生徒の場合は背景色を変える
 		if(p.is_anonymous){
-			btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 bg-yellow-50 border-yellow-300';
-			btn.innerHTML = `🔒 ${p.name} <span class="text-xs text-gray-500">(匿名)</span>`;
+			btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 bg-yellow-50 border-yellow-300 relative';
+			btn.innerHTML = `
+				🔒 ${p.name} <span class="text-xs text-gray-500">(匿名)</span>
+				${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
+			`;
 		} else {
-			btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50';
-			btn.textContent = `${p.name} (${p.role})`;
+			btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 relative';
+			btn.innerHTML = `
+				${p.name} (${p.role})
+				${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
+			`;
 		}
 		
 		btn.onclick = ()=> selectOther(p.user_id, p.name, p.is_anonymous);
@@ -107,6 +122,11 @@ async function selectOther(uid, name, isAnonymous){
 	await loadMessages();
 	// 既読化
 	await fetch(`/api/direct/messages/${currentOtherId}/read`, {method:'POST'});
+	
+	// 既読化後、未読バッジと参加者リストを更新
+	refreshUnread();
+	loadParticipants();
+	
 	statusEl.textContent = '接続中';
 	
 	// 生徒の場合のみ匿名トグルを表示
@@ -216,7 +236,13 @@ async function boot(){
 	
 	await loadParticipants();
 	refreshUnread();
-	setInterval(refreshUnread, 10000);
+	
+	// 10秒ごとに未読バッジと参加者リストを更新
+	setInterval(() => {
+		refreshUnread();
+		loadParticipants(); // 参加者リストの未読バッジも更新
+	}, 10000);
+	
 	// クエリのuidがあれば自動選択
 	const pre = getQuery('uid');
 	if(pre){
@@ -226,7 +252,7 @@ async function boot(){
 			const arr = await r.json();
 			const hit = arr.find(x=>x.user_id===pre);
 			if(hit){
-				await selectOther(hit.user_id, hit.name);
+				await selectOther(hit.user_id, hit.name, hit.is_anonymous);
 			}
 		}catch(_e){/* ignore */}
 	}
