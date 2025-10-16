@@ -10,8 +10,8 @@
       <div class="flex items-center gap-2">
         <label class="text-sm text-gray-600">AI:</label>
         <select id="apiSelector" class="text-sm border rounded-lg px-3 py-1 bg-white hover:bg-gray-50 transition">
-          <option value="openai">ChatGPT (OpenAI)</option>
-          <option value="ollama">Ollama (ローカル)</option>
+          <option value="openai">GPT-4o-mini</option>
+          <option value="ollama">Qwen3 8B</option>
         </select>
       </div>
     </div>
@@ -94,10 +94,10 @@ document.addEventListener('DOMContentLoaded', () => {
   apiSelector.addEventListener('change', (e) => {
     const api = e.target.value;
     if(api === 'ollama'){
-      statusEl.textContent = 'Ollama (ローカル) を使用中';
+      statusEl.textContent = 'Qwen3 8Bを使用中';
       statusEl.className = 'text-xs text-green-600 mb-2';
     } else {
-      statusEl.textContent = 'ChatGPT (OpenAI) を使用中';
+      statusEl.textContent = 'GPT-4o-miniを使用中';
       statusEl.className = 'text-xs text-blue-600 mb-2';
     }
   });
