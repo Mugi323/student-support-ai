@@ -204,15 +204,27 @@ def send_direct_message(request: Request, other_id: str, body: dict):
 def mark_as_read(request: Request, other_id: str):
     """
     相手から自分宛の未読を既読化。
-    匿名チャットの場合は:anonymousを削除してから処理。
+    匿名チャットと通常チャットを分離して既読化。
     """
     uid = _require_login(request)
+    
+    # 匿名チャットかどうかを判定
+    is_anonymous_chat = ":anonymous" in other_id
     real_other_id = other_id.replace(":anonymous", "")
     
-    execute(
-        "UPDATE direct_messages SET is_read=1 WHERE sender_id=? AND recipient_id=? AND is_read=0",
-        (real_other_id, uid),
-    )
+    if is_anonymous_chat:
+        # 匿名チャット: is_anonymous=1 のメッセージのみ既読化
+        execute(
+            "UPDATE direct_messages SET is_read=1 WHERE sender_id=? AND recipient_id=? AND is_read=0 AND is_anonymous=1",
+            (real_other_id, uid),
+        )
+    else:
+        # 通常チャット: is_anonymous=0 または NULL のメッセージのみ既読化
+        execute(
+            "UPDATE direct_messages SET is_read=1 WHERE sender_id=? AND recipient_id=? AND is_read=0 AND (is_anonymous=0 OR is_anonymous IS NULL)",
+            (real_other_id, uid),
+        )
+    
     return JSONResponse({"ok": True})
 
 
@@ -227,3 +239,47 @@ def unread_count(request: Request):
         (uid,),
     )
     return JSONResponse({"count": rows[0][0] if rows else 0})
+
+
+@router.get("/unread_by_sender")
+def unread_by_sender(request: Request):
+    """
+    送信者ごとの未読件数を返す。
+    匿名チャットと通常チャットを分離してカウント。
+    返却: {sender_id: count, "sender_id:anonymous": count, ...}
+    """
+    uid = _require_login(request)
+    
+    # 通常チャット（is_anonymous = 0 または NULL）の未読件数
+    normal_rows = query_all(
+        """
+        SELECT sender_id, COUNT(*) as unread_count
+        FROM direct_messages
+        WHERE recipient_id=? AND is_read=0 AND (is_anonymous = 0 OR is_anonymous IS NULL)
+        GROUP BY sender_id
+        """,
+        (uid,),
+    )
+    
+    # 匿名チャット（is_anonymous = 1）の未読件数
+    anon_rows = query_all(
+        """
+        SELECT sender_id, COUNT(*) as unread_count
+        FROM direct_messages
+        WHERE recipient_id=? AND is_read=0 AND is_anonymous = 1
+        GROUP BY sender_id
+        """,
+        (uid,),
+    )
+    
+    result = {}
+    
+    # 通常チャットの未読件数を追加
+    for r in normal_rows:
+        result[r[0]] = r[1]
+    
+    # 匿名チャットの未読件数を追加（:anonymous 付き）
+    for r in anon_rows:
+        result[f"{r[0]}:anonymous"] = r[1]
+    
+    return JSONResponse(result)
