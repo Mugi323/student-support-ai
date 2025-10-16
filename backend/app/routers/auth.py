@@ -53,14 +53,12 @@ def login_action(
     user = get_user_by_name(name)
     if not user:
         uid = create_user(name=name, role=role)
-        # set password
         set_password_for_user(uid, password)
         user = get_user_by_name(name)
 
     # verify password
     uid = user[0]
     if not verify_user_password(uid, password):
-        # invalid credentials -> redirect back to login (simple behavior)
         return templates.TemplateResponse(
             "login.html", {"request": request, "error": "認証に失敗しました。"}
         )
@@ -74,10 +72,18 @@ def login_action(
 
     request.session["user_id"] = full[0]
     request.session["role"] = full[3]
-    # store display name in session for header
     request.session["name"] = full[1]
+    
+    # 🔥 教師の場合、メールアドレスが未登録ならsetup-profileへ
+    if role == "teacher":
+        from app.utils.user import get_email_by_user_id  # この関数を追加する必要があります
+        email = get_email_by_user_id(uid)
+        if not email:
+            request.session["needs_email"] = True  # メール登録が必要なフラグ
+            return RedirectResponse(url="/setup-profile", status_code=302)
 
     return RedirectResponse(url="/dashboard", status_code=302)
+
 
 @router.get("/login/google", include_in_schema=False)
 async def login_google(request: Request):
@@ -157,50 +163,56 @@ def logout_action(request: Request):
 @router.get("/setup-profile", include_in_schema=False)
 def setup_profile_page(request: Request):
     user_id = request.session.get("user_id")
-    # user_idがない、またはGoogle認証直後ではない場合はログインページへ
     if not user_id:
         return RedirectResponse(url="/login", status_code=302)
 
-    # 既存のユーザー情報を取得
     user = get_user_by_id(user_id)
     if not user:
         request.session.clear()
         return RedirectResponse(url="/login", status_code=302)
 
-    # Note: 本来はis_new_userフラグなどで制御すべきですが、今回は簡易的に既存情報を渡す
     initial_name = user[1] 
-    initial_role = user[3] # 仮登録されたrole
+    initial_role = user[3]
+    
+    # 🔥 通常ログインの教師かGoogleログインの新規ユーザーかを判定
+    needs_email = request.session.get("needs_email", False)
+    is_google_user = "google_email" in request.session
 
     return templates.TemplateResponse(
         "setup_profile.html", 
         {
             "request": request,
             "initial_name": initial_name,
-            "initial_role": initial_role
+            "initial_role": initial_role,
+            "needs_email": needs_email,  # メール入力が必要か
+            "is_google_user": is_google_user,  # Google経由か
         }
     )
 
 @router.post("/setup-profile", include_in_schema=False)
 def setup_profile_action(
     request: Request,
-    name: str = Form(...),
-    role: str = Form(...),
+    name: str = Form(None),
+    role: str = Form(None),
+    email: str = Form(None),  # 🔥 メールアドレスを追加
 ):
     user_id = request.session.get("user_id")
     if not user_id:
         return RedirectResponse(url="/login", status_code=302)
 
-    # ユーザー名と役割を更新
-    # ユーザー名 (name) の更新
-    from app.utils.user import update_user_name, set_user_role
+    # 🔥 Google経由の場合は名前と役割を更新
+    if "google_email" in request.session:
+        if name:
+            update_user_name(user_id, name)
+        if role:
+            set_user_role(user_id, role)
+            request.session["role"] = role
+        if name:
+            request.session["name"] = name
     
-    update_user_name(user_id, name)
-    
-    # 役割 (role) の更新
-    set_user_role(user_id, role)
-
-    # セッション内の情報を更新
-    request.session["name"] = name
-    request.session["role"] = role
+    # 🔥 通常ログインの教師の場合はメールアドレスを登録
+    elif email and request.session.get("needs_email"):
+        link_google_account(user_id, email)  # 既存の関数を再利用
+        request.session.pop("needs_email", None)  # フラグをクリア
     
     return RedirectResponse(url="/dashboard", status_code=302)

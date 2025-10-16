@@ -1,11 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow">
-  <h2 class="text-lg font-semibold mb-4">プロファイル設定</h2>
+  <h2 class="text-lg font-semibold mb-4">
+    {% if is_google_user %}
+      プロファイル設定
+    {% else %}
+      メールアドレス登録
+    {% endif %}
+  </h2>
   <p class="mb-4 text-sm text-gray-600">
-    Googleアカウントで新規登録しました。表示名と役割を選択してください。
+    {% if is_google_user %}
+      Googleアカウントで新規登録しました。表示名と役割を選択してください。
+    {% else %}
+      教員アカウントにはメールアドレスの登録が必要です。
+    {% endif %}
   </p>
+
   <form method="post" action="/setup-profile" class="space-y-3">
+    {% if is_google_user %}
     <div>
       <label class="block text-sm font-medium text-gray-700">表示名</label>
       <input 
@@ -24,8 +36,29 @@
         <option value="teacher" {% if initial_role == 'teacher' %}selected{% endif %}>教員</option>
       </select>
     </div>
+    {% elif needs_email %}
+    <!-- 通常ログインの教師: メールアドレスのみ -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700">メールアドレス</label>
+        <input 
+          name="email" 
+          type="email"
+          required 
+          class="w-full border rounded px-3 py-2 mt-1" 
+          placeholder="例: teacher@school.jp"
+        />
+        <p class="text-xs text-gray-500 mt-1">連絡用のメールアドレスを入力してください。</p>
+      </div>
+    {% endif %}
+    
     <div class="flex justify-end pt-4">
-      <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-150">設定を完了して開始</button>
+      <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-150">
+        {% if is_google_user %}
+          設定を完了して開始
+        {% else %}
+          登録して開始
+        {% endif %}
+      </button>
     </div>
   </form>
 </div>
