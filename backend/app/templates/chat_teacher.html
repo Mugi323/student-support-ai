@@ -44,6 +44,13 @@ let currentUserRole = null; // 自分の役割を保存
 const chatEl = document.getElementById('chat');
 const statusEl = document.getElementById('status');
 
+// 教員タイプの日本語表示
+const teacherTypeLabels = {
+	'teacher': '教師',
+	'school_nurse': '養護教諭',
+	'counselor': 'カウンセラー'
+};
+
 function line(text, side='left', isAnonymous=false, senderId=null){
 	const wrap = document.createElement('div');
 	wrap.className = `flex ${side==='right'?'justify-end':''}`;
@@ -81,41 +88,102 @@ async function loadParticipants(){
 	const box = document.getElementById('participants');
 	box.innerHTML = '';
 	
-	data.forEach(p=>{
-		const btn = document.createElement('button');
+	// 生徒の場合：教師タイプでグループ分け
+	if(currentUserRole === 'student'){
+		// データをタイプ別に分類
+		const groups = {
+			teacher: [],
+			school_nurse: [],
+			counselor: []
+		};
 		
-		// 未読件数を取得（user_idをそのまま使用）
-		// 匿名チャットの場合は"user_id:anonymous"、通常チャットは"user_id"
-		const unreadCount = unreadData[p.user_id] || 0;
+		data.forEach(p => {
+			const type = p.teacher_type || 'teacher';
+			if(groups[type]){
+				groups[type].push(p);
+			}
+		});
 		
-		// 匿名生徒の場合は背景色を変える
-		if(p.is_anonymous){
-			btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 bg-yellow-50 border-yellow-300 relative';
-			btn.innerHTML = `
-				🔒 ${p.name} <span class="text-xs text-gray-500">(匿名)</span>
-				${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
-			`;
-		} else {
-			btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 relative';
-			btn.innerHTML = `
-				${p.name} (${p.role})
-				${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
-			`;
-		}
+		// 各グループを表示
+		const groupTitles = {
+			teacher: '👨‍🏫 教師',
+			school_nurse: '🏥 養護教諭',
+			counselor: '💬 カウンセラー'
+		};
 		
-		btn.onclick = ()=> selectOther(p.user_id, p.name, p.is_anonymous);
-		box.appendChild(btn);
-	});
+		['teacher', 'school_nurse', 'counselor'].forEach(type => {
+			if(groups[type].length > 0){
+				// グループタイトル
+				const groupTitle = document.createElement('div');
+				groupTitle.className = 'text-sm font-semibold text-gray-700 mt-3 mb-1 px-2';
+				groupTitle.textContent = groupTitles[type];
+				box.appendChild(groupTitle);
+				
+				// グループ内の教師
+				groups[type].forEach(p => {
+					const btn = createParticipantButton(p, unreadData);
+					box.appendChild(btn);
+				});
+			}
+		});
+	} else {
+		// 教師の場合：生徒と匿名生徒を表示（グループ分けなし）
+		data.forEach(p => {
+			const btn = createParticipantButton(p, unreadData);
+			box.appendChild(btn);
+		});
+	}
 }
 
-async function selectOther(uid, name, isAnonymous){
+function createParticipantButton(p, unreadData){
+	const btn = document.createElement('button');
+	
+	// 未読件数を取得
+	const unreadCount = unreadData[p.user_id] || 0;
+	
+	// 匿名生徒の場合は背景色を変える
+	if(p.is_anonymous){
+		btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 bg-yellow-50 border-yellow-300 relative';
+		btn.innerHTML = `
+			🔒 ${p.name} <span class="text-xs text-gray-500">(匿名)</span>
+			${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
+		`;
+	} else {
+		btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 relative';
+		
+		// 生徒側でグループ分けしている場合は役割ラベルを表示しない
+		let displayLabel = '';
+		if(currentUserRole !== 'student'){
+			// 教師側：生徒の役割を表示
+			displayLabel = p.role === 'student' ? ' <span class="text-xs text-gray-600">(生徒)</span>' : '';
+		}
+		
+		btn.innerHTML = `
+			${p.name}${displayLabel}
+			${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
+		`;
+	}
+	
+	btn.onclick = ()=> selectOther(p.user_id, p.name, p.is_anonymous, p.teacher_type);
+	return btn;
+}
+
+async function selectOther(uid, name, isAnonymous, teacherType){
 	currentOtherId = uid;
+	
+	// チャットタイトルに役割も表示
+	let titleSuffix = '';
+	if(isAnonymous){
+		titleSuffix = '(匿名)';
+	} else if(teacherType){
+		titleSuffix = `(${teacherTypeLabels[teacherType] || teacherType})`;
+	}
 	
 	// 匿名生徒の場合はチャットタイトルにも匿名表示
 	if(isAnonymous){
-		document.getElementById('chatTitle').textContent = `1対1チャット: 🔒 ${name}`;
+		document.getElementById('chatTitle').textContent = `1対1チャット: 🔒 ${name} ${titleSuffix}`;
 	} else {
-		document.getElementById('chatTitle').textContent = `1対1チャット: ${name}`;
+		document.getElementById('chatTitle').textContent = `1対1チャット: ${name} ${titleSuffix}`;
 	}
 	
 	chatEl.innerHTML = '';
