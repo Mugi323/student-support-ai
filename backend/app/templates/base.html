@@ -31,5 +31,74 @@
   {% block content %}{% endblock %}
 </main>
 <footer class="text-center text-xs text-gray-500 py-6">© Student Support MVP</footer>
+
+<!-- ▼▼▼ 追加：AIメッセージの共通ポーラー（全ページで5分ごとに取得） ▼▼▼ -->
+<script>
+(() => {
+  if (window.__aiGlobalPollerInitialized) return;
+  window.__aiGlobalPollerInitialized = true;
+
+  const ENDPOINT = "/api/chat_from_ai";
+  const INTERVAL_MS = 5 * 60 * 1000; // 5分
+  const KEY = "ai_inbox";            // localStorage の保存キー
+
+  // 受信箱の読み書き
+  function loadInbox() {
+    try { return JSON.parse(localStorage.getItem(KEY) || "[]"); }
+    catch { return []; }
+  }
+  function saveInbox(arr) {
+    localStorage.setItem(KEY, JSON.stringify(arr));
+  }
+
+  async function fetchAndStore() {
+    try {
+      const r = await fetch(ENDPOINT, { method: "POST", credentials: "same-origin" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const data = await r.json();
+      const msg = {
+        text: data.message ?? "(空のメッセージ)",
+        ts: Date.now(),
+      };
+      const inbox = loadInbox();
+      inbox.unshift(msg);            // 新しい順に先頭へ
+      if (inbox.length > 200) inbox.length = 200; // 上限
+      saveInbox(inbox);
+
+      // chat_from_ai ページ等に通知（開いていれば即時リフレッシュ）
+      window.dispatchEvent(new CustomEvent("ai_inbox_updated"));
+    } catch (e) {
+      console.warn("[AI Inbox] fetch failed:", e);
+    }
+  }
+
+  // タブがアクティブなときだけ動かして省電力
+  let timer = null;
+  function start() {
+    if (timer) return;
+    // 起動直後に1回実行
+    fetchAndStore();
+    // 以後5分ごと
+    timer = setInterval(fetchAndStore, INTERVAL_MS);
+  }
+  function stop() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  if (!document.hidden) start();
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stop(); else start();
+  });
+
+  // 他ページから呼べるユーティリティ（chat_from_ai.html 用）
+  window.aiInboxFetchNow = fetchAndStore;
+  window.aiInbox = {
+    load: () => loadInbox(),
+    clear: () => { saveInbox([]); window.dispatchEvent(new CustomEvent("ai_inbox_updated")); },
+  };
+})();
+</script>
+<!-- ▲▲▲ 追加ここまで ▲▲▲ -->
+
 </body>
 </html>

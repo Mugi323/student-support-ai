@@ -7,7 +7,19 @@
     <div class="space-y-3">
       <a href="/chat" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90">AIチャットで相談する</a>
       <a href="/chat_teacher" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90">教員/養護教諭/カウンセラーに相談する</a>
-      <a href="/chat_from_ai" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90">AIからのメッセージ</a>
+
+      {# ▼ここだけ最小変更：バッジ付き #}
+      <div class="relative">
+        <a href="/chat_from_ai" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 relative">
+          AIからのメッセージ
+          <span id="aiBadge"
+                class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs font-semibold rounded-full px-2 py-0.5">
+            0
+          </span>
+        </a>
+      </div>
+      {# ▲ここだけ最小変更：バッジ付き #}
+
       <a href="/dashboard" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">AIリスク一覧（教員向け）</a>
       <a href="/messages" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">自分のログを見る</a>
       <a href="/admin" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">管理者ページ</a>
@@ -26,4 +38,35 @@
     </ul>
   </div>
 </div>
+
+{# ▼追加スクリプト：バッジ更新（既存UIは不変更） #}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const badge = document.getElementById("aiBadge");
+  if (!badge) return;
+
+  function updateBadge() {
+    try {
+      const inbox = JSON.parse(localStorage.getItem("ai_inbox") || "[]");
+      const count = inbox.length;
+      if (count > 0) {
+        badge.textContent = count > 99 ? "99+" : count;
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    } catch {
+      badge.classList.add("hidden");
+    }
+  }
+
+  updateBadge();
+  // base.html のポーラーや他タブで更新されたら反映
+  window.addEventListener("ai_inbox_updated", updateBadge);
+  window.addEventListener("storage", (e) => {
+    if (e.key === "ai_inbox") updateBadge();
+  });
+});
+</script>
+{# ▲追加スクリプト #}
 {% endblock %}

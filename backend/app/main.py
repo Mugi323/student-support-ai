@@ -16,6 +16,8 @@ from app.routers.messages import router as messages_router
 from app.routers import auth as auth_router
 from app.routers.direct_chat import router as direct_chat_router
 from app.routers.admin import router as admin_router
+from app.routers.chat_from_ai import router as chat_from_ai_router
+
 
 app = FastAPI(title=APP_TITLE)
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
@@ -40,3 +42,4 @@ app.include_router(messages_router)
 app.include_router(auth_router.router)
 app.include_router(direct_chat_router)
 app.include_router(admin_router)  # 修正
+app.include_router(chat_from_ai_router)
