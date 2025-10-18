@@ -1,22 +1,85 @@
-<button id="btn" class="bg-indigo-600 text-white px-4 py-2 rounded" onclick="chatFromAI()">AIからのチャットを受け取る</button>
-<p id="result" class="mt-4 text-lg text-gray-800"></p>
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto p-4">
+  <h1 class="text-xl font-semibold mb-4">AIからのメッセージ</h1>
+
+  <div class="bg-white rounded-2xl shadow p-6">
+    <div class="flex items-center justify-between mb-3">
+      <div class="text-sm text-gray-600">
+        <span>受信箱</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="text-sm underline text-indigo-600" onclick="refreshInbox()">再読み込み</button>
+        <button class="text-sm text-gray-500 hover:text-gray-700" onclick="clearInbox()">履歴をクリア</button>
+        <button class="text-sm text-indigo-600 underline" onclick="fetchNow()">今すぐ受信</button>
+      </div>
+    </div>
+
+    <!-- 最新 -->
+    <div class="border rounded-2xl p-4 bg-gray-50 mb-4">
+      <div class="text-xs text-gray-500 mb-1">最新メッセージ</div>
+      <div id="lastMessage" class="text-lg text-gray-800">（まだありません）</div>
+      <div id="lastTime" class="text-xs text-gray-500 mt-1"></div>
+    </div>
+
+    <!-- 履歴 -->
+    <div class="border rounded-2xl p-4">
+      <div class="text-sm font-medium mb-2">履歴</div>
+      <ul id="history" class="mt-1 space-y-2 text-sm"></ul>
+    </div>
+  </div>
+</div>
 
 <script>
-async function chatFromAI(){
-  const btn = document.getElementById("btn");
-  const result = document.getElementById("result");
-  btn.disabled = true;
-  result.textContent = "AIが考え中です…（10秒ほどお待ちください）";
-
-  try {
-    const r = await fetch("/api/chat_from_ai", { method: "POST" });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const data = await r.json();
-    result.textContent = data.message;
-  } catch (e) {
-    result.textContent = `エラーが発生しました: ${e}`;
-  } finally {
-    btn.disabled = false;
-  }
+function fmt(ts){
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const da = String(d.getDate()).padStart(2,"0");
+  const hh = String(d.getHours()).padStart(2,"0");
+  const mm = String(d.getMinutes()).padStart(2,"0");
+  const ss = String(d.getSeconds()).padStart(2,"0");
+  return `${y}/${m}/${da} ${hh}:${mm}:${ss}`;
 }
+
+function render(){
+  const inbox = (window.aiInbox?.load?.() || []);
+  const lastMsg = inbox[0];
+
+  const lastMessageEl = document.getElementById("lastMessage");
+  const lastTimeEl    = document.getElementById("lastTime");
+  const historyEl     = document.getElementById("history");
+
+  if(lastMsg){
+    lastMessageEl.textContent = lastMsg.text;
+    lastTimeEl.textContent = `受信: ${fmt(lastMsg.ts)}`;
+  }else{
+    lastMessageEl.textContent = "（まだありません）";
+    lastTimeEl.textContent = "";
+  }
+
+  historyEl.innerHTML = "";
+  inbox.forEach((m, idx) => {
+    const li = document.createElement("li");
+    li.className = "border rounded-xl p-2 bg-white";
+    li.textContent = `[${fmt(m.ts)}] ${m.text}`;
+    historyEl.appendChild(li);
+  });
+}
+
+function refreshInbox(){ render(); }
+function clearInbox(){ window.aiInbox?.clear?.(); }
+function fetchNow(){ window.aiInboxFetchNow?.(); }
+
+// 初期描画
+document.addEventListener("DOMContentLoaded", render);
+
+// base.html のポーラーが新着保存したら即時再描画
+window.addEventListener("ai_inbox_updated", render);
+// 別タブで変化したときにも反映
+window.addEventListener("storage", (e) => {
+  if (e.key === "ai_inbox") render();
+});
 </script>
+{% endblock %}
