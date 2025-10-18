@@ -17,7 +17,7 @@
     </div>
 
     <!-- 最新 -->
-    <div class="border rounded-2xl p-4 bg-gray-50 mb-4">
+    <div class="border rounded-2xl p-4 bg-gray-50 mb-4" id="latestBox">
       <div class="text-xs text-gray-500 mb-1">最新メッセージ</div>
       <div id="lastMessage" class="text-lg text-gray-800">（まだありません）</div>
       <div id="lastTime" class="text-xs text-gray-500 mt-1"></div>
@@ -43,6 +43,12 @@ function fmt(ts){
   return `${y}/${m}/${da} ${hh}:${mm}:${ss}`;
 }
 
+// ✅ チャットへ移動
+function startConversation(text){
+  sessionStorage.setItem('seed_msg', text || '');
+  window.location.href = '/chat';
+}
+
 function render(){
   const inbox = (window.aiInbox?.load?.() || []);
   const lastMsg = inbox[0];
@@ -50,20 +56,32 @@ function render(){
   const lastMessageEl = document.getElementById("lastMessage");
   const lastTimeEl    = document.getElementById("lastTime");
   const historyEl     = document.getElementById("history");
+  const latestBox     = document.getElementById("latestBox");
 
+  // --- 最新メッセージ ---
   if(lastMsg){
     lastMessageEl.textContent = lastMsg.text;
     lastTimeEl.textContent = `受信: ${fmt(lastMsg.ts)}`;
-  }else{
+
+    // クリックでチャットへ
+    latestBox.classList.add("cursor-pointer", "hover:bg-indigo-50");
+    latestBox.title = "このメッセージの続きからチャットを始める";
+    latestBox.onclick = () => startConversation(lastMsg.text);
+  } else {
     lastMessageEl.textContent = "（まだありません）";
     lastTimeEl.textContent = "";
+    latestBox.classList.remove("cursor-pointer");
+    latestBox.onclick = null;
   }
 
+  // --- 履歴 ---
   historyEl.innerHTML = "";
-  inbox.forEach((m, idx) => {
+  inbox.forEach((m) => {
     const li = document.createElement("li");
-    li.className = "border rounded-xl p-2 bg-white";
+    li.className = "border rounded-xl p-2 bg-white hover:bg-gray-50 cursor-pointer";
+    li.title = "このメッセージの続きからチャットを始める";
     li.textContent = `[${fmt(m.ts)}] ${m.text}`;
+    li.onclick = () => startConversation(m.text);
     historyEl.appendChild(li);
   });
 }
