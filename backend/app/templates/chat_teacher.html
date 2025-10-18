@@ -44,6 +44,13 @@ let currentUserRole = null; // 自分の役割を保存
 const chatEl = document.getElementById('chat');
 const statusEl = document.getElementById('status');
 
+// 教員タイプの日本語表示
+const teacherTypeLabels = {
+	'teacher': '教師',
+	'school_nurse': '養護教諭',
+	'counselor': 'カウンセラー'
+};
+
 function line(text, side='left', isAnonymous=false, senderId=null){
 	const wrap = document.createElement('div');
 	wrap.className = `flex ${side==='right'?'justify-end':''}`;
@@ -97,19 +104,34 @@ async function loadParticipants(){
 			`;
 		} else {
 			btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 relative';
+			// 教員の場合はteacher_typeを表示、生徒の場合はroleを表示
+			let roleLabel = '';
+			if(p.role === 'teacher' && p.teacher_type){
+				roleLabel = teacherTypeLabels[p.teacher_type] || p.teacher_type;
+			} else {
+				roleLabel = p.role === 'student' ? '生徒' : p.role;
+			}
 			btn.innerHTML = `
 				${p.name} (${p.role})
 				${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
 			`;
 		}
 		
-		btn.onclick = ()=> selectOther(p.user_id, p.name, p.is_anonymous);
+		btn.onclick = ()=> selectOther(p.user_id, p.name, p.is_anonymous, p.teacher_type);
 		box.appendChild(btn);
 	});
 }
 
-async function selectOther(uid, name, isAnonymous){
+async function selectOther(uid, name, isAnonymous, teacherType){
 	currentOtherId = uid;
+	
+	// チャットタイトルに役割も表示
+	let titleSuffix = '';
+	if(isAnonymous){
+		titleSuffix = '(匿名)';
+	} else if(teacherType){
+		titleSuffix = `(${teacherTypeLabels[teacherType] || teacherType})`;
+	}
 	
 	// 匿名生徒の場合はチャットタイトルにも匿名表示
 	if(isAnonymous){
