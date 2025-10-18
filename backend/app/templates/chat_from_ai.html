@@ -1,7 +1,22 @@
-<button class="bg-indigo-600 text-white px-4 py-2 rounded" onclick="chatFromAI()">AIからのチャットを受け取る</button>
+<button id="btn" class="bg-indigo-600 text-white px-4 py-2 rounded" onclick="chatFromAI()">AIからのチャットを受け取る</button>
+<p id="result" class="mt-4 text-lg text-gray-800"></p>
 
 <script>
 async function chatFromAI(){
-  const r = await fetch(`/api/chat_from_ai`);
+  const btn = document.getElementById("btn");
+  const result = document.getElementById("result");
+  btn.disabled = true;
+  result.textContent = "AIが考え中です…（10秒ほどお待ちください）";
+
+  try {
+    const r = await fetch("/api/chat_from_ai", { method: "POST" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    result.textContent = data.message;
+  } catch (e) {
+    result.textContent = `エラーが発生しました: ${e}`;
+  } finally {
+    btn.disabled = false;
+  }
 }
 </script>
