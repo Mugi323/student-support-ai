@@ -41,6 +41,11 @@
     .close-btn{background:transparent;border:none;color:var(--fg);font-size:1.5rem;cursor:pointer;padding:0;width:32px;height:32px;line-height:32px}
     .close-btn:hover{color:var(--acc)}
     
+    /* 検索バー */
+    .search-bar{margin-bottom:20px}
+    .search-input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:12px 16px;border-radius:10px;font-size:.95rem}
+    .search-input:focus{outline:none;border-color:var(--acc)}
+    
     /* チェックボックス付きテーブル */
     .select-table{margin:20px 0}
     .select-table input[type="checkbox"]{width:18px;height:18px;cursor:pointer}
@@ -49,6 +54,13 @@
     .modal-footer{margin-top:20px;display:flex;gap:10px;justify-content:flex-end}
     
     .loading{text-align:center;padding:20px;color:var(--muted)}
+    
+    /* 編集テーブル用スタイル */
+    .edit-table{margin:20px 0}
+    .edit-table tbody tr:hover{background:rgba(255,255,255,.02)}
+    .edit-table input[type="checkbox"]{width:18px;height:18px;cursor:pointer}
+    .edit-table select{background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:6px 10px;border-radius:8px;font-size:.9rem;cursor:pointer}
+    .edit-table select:focus{outline:none;border-color:var(--acc)}
   </style>
 </head>
 <body>
@@ -60,6 +72,7 @@
       </div>
       <div class="toolbar-buttons">
         <a href="/" class="btn ghost">ホームに戻る</a>
+        <button class="btn ghost" onclick="openEditModal()">編集</button>
         <button class="btn" onclick="openRequestModal()">リクエスト管理</button>
       </div>
     </div>
@@ -111,8 +124,38 @@
     </div>
   </div>
 
+  <!-- 編集モーダル -->
+  <div class="modal" id="editModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>教師の編集・削除</h3>
+        <button class="close-btn" onclick="closeEditModal()">&times;</button>
+      </div>
+      
+      <div class="search-bar">
+        <input 
+          type="text" 
+          class="search-input" 
+          id="searchInput" 
+          placeholder="名前またはメールアドレスで検索..."
+          oninput="filterTeachers()"
+        />
+      </div>
+      
+      <div id="editTeachersContainer" class="loading">読み込み中...</div>
+      
+      <div class="modal-footer">
+        <button class="btn ghost" onclick="closeEditModal()">キャンセル</button>
+        <button class="btn danger" onclick="deleteSelectedTeachers()" id="deleteButton" disabled>選択した教師を削除</button>
+        <button class="btn" onclick="updateSelectedTeachers()" id="updateButton" disabled>変更を保存</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let pendingTeachers = [];
+    let allTeachersForEdit = [];
+    let filteredTeachersForEdit = [];
     
     // 初期読み込み
     async function loadTeachers() {
@@ -158,6 +201,7 @@
       container.innerHTML = tableHTML;
     }
     
+    // リクエスト管理モーダル
     async function openRequestModal() {
       document.getElementById('requestModal').classList.add('active');
       await loadPendingTeachers();
@@ -273,6 +317,218 @@
       } catch (error) {
         console.error('教師追加エラー:', error);
         alert('追加に失敗しました');
+      }
+    }
+    
+    // 編集モーダル
+    async function openEditModal() {
+      document.getElementById('editModal').classList.add('active');
+      document.getElementById('searchInput').value = '';
+      await loadAllTeachersForEdit();
+    }
+    
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+    }
+    
+    async function loadAllTeachersForEdit() {
+      const container = document.getElementById('editTeachersContainer');
+      container.innerHTML = '<div class="loading">読み込み中...</div>';
+      
+      try {
+        const res = await fetch('/api/admin/teachers');
+        const data = await res.json();
+        
+        if (data.success) {
+          // 全ての教師を1つの配列にまとめる
+          allTeachersForEdit = [
+            ...(data.teachers.teacher || []),
+            ...(data.teachers.school_nurse || []),
+            ...(data.teachers.counselor || [])
+          ];
+          
+          filteredTeachersForEdit = [...allTeachersForEdit];
+          renderEditTeachers();
+        }
+      } catch (error) {
+        console.error('教師リスト読み込みエラー:', error);
+        container.innerHTML = '<div class="empty-msg">読み込みに失敗しました</div>';
+      }
+    }
+    
+    function filterTeachers() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+      
+      if (!searchTerm) {
+        filteredTeachersForEdit = [...allTeachersForEdit];
+      } else {
+        filteredTeachersForEdit = allTeachersForEdit.filter(t => {
+          const name = (t.name || '').toLowerCase();
+          const email = (t.email || '').toLowerCase();
+          return name.includes(searchTerm) || email.includes(searchTerm);
+        });
+      }
+      
+      renderEditTeachers();
+    }
+    
+    function renderEditTeachers() {
+      const container = document.getElementById('editTeachersContainer');
+      
+      if (filteredTeachersForEdit.length === 0) {
+        container.innerHTML = '<div class="empty-msg">該当する教師が見つかりません</div>';
+        document.getElementById('deleteButton').disabled = true;
+        document.getElementById('updateButton').disabled = true;
+        return;
+      }
+      
+      const tableHTML = `
+        <table class="edit-table">
+          <thead>
+            <tr>
+              <th style="width:8%">削除</th>
+              <th style="width:25%">名前</th>
+              <th style="width:35%">メール</th>
+              <th style="width:32%">役割</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredTeachersForEdit.map((t, idx) => `
+              <tr>
+                <td><input type="checkbox" class="delete-checkbox" data-user-id="${escapeHtml(t.user_id)}" onchange="updateEditButtons()"></td>
+                <td><span class="cell">${escapeHtml(t.name || '(名前なし)')}</span></td>
+                <td><span class="cell">${escapeHtml(t.email || '(メールなし)')}</span></td>
+                <td>
+                  <select class="role-select" data-user-id="${escapeHtml(t.user_id)}" data-original="${t.teacher_type}" onchange="updateEditButtons()">
+                    <option value="teacher" ${t.teacher_type === 'teacher' ? 'selected' : ''}>教員</option>
+                    <option value="school_nurse" ${t.teacher_type === 'school_nurse' ? 'selected' : ''}>養護教諭</option>
+                    <option value="counselor" ${t.teacher_type === 'counselor' ? 'selected' : ''}>カウンセラー</option>
+                  </select>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      container.innerHTML = tableHTML;
+      updateEditButtons();
+    }
+    
+    function updateEditButtons() {
+      const deleteCheckboxes = document.querySelectorAll('.delete-checkbox:checked');
+      const roleSelects = document.querySelectorAll('.role-select');
+      
+      // 削除ボタンの有効/無効
+      document.getElementById('deleteButton').disabled = deleteCheckboxes.length === 0;
+      
+      // 変更ボタンの有効/無効（役割が変更されているか確認）
+      let hasChanges = false;
+      roleSelects.forEach(select => {
+        if (select.value !== select.dataset.original) {
+          hasChanges = true;
+        }
+      });
+      
+      document.getElementById('updateButton').disabled = !hasChanges;
+    }
+    
+    async function deleteSelectedTeachers() {
+      const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
+      const userIds = Array.from(checkboxes).map(cb => cb.dataset.userId);
+      
+      if (userIds.length === 0) {
+        return;
+      }
+      
+      if (!confirm(`${userIds.length}名の教師を削除してもよろしいですか？`)) {
+        return;
+      }
+      
+      try {
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const userId of userIds) {
+          const res = await fetch(`/api/admin/teachers/${encodeURIComponent(userId)}`, {
+            method: 'DELETE'
+          });
+          
+          const data = await res.json();
+          
+          if (data.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        }
+        
+        if (failCount > 0) {
+          alert(`${successCount}名削除、${failCount}名失敗しました`);
+        } else {
+          alert(`${successCount}名の教師を削除しました`);
+        }
+        
+        await loadAllTeachersForEdit();
+        await loadTeachers();
+      } catch (error) {
+        console.error('教師削除エラー:', error);
+        alert('削除に失敗しました');
+      }
+    }
+    
+    async function updateSelectedTeachers() {
+      const roleSelects = document.querySelectorAll('.role-select');
+      const updates = [];
+      
+      roleSelects.forEach(select => {
+        if (select.value !== select.dataset.original) {
+          updates.push({
+            user_id: select.dataset.userId,
+            teacher_type: select.value
+          });
+        }
+      });
+      
+      if (updates.length === 0) {
+        return;
+      }
+      
+      if (!confirm(`${updates.length}件の役割を変更してもよろしいですか？`)) {
+        return;
+      }
+      
+      try {
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const update of updates) {
+          const res = await fetch(`/api/admin/teachers/${encodeURIComponent(update.user_id)}/type`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({teacher_type: update.teacher_type})
+          });
+          
+          const data = await res.json();
+          
+          if (data.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        }
+        
+        if (failCount > 0) {
+          alert(`${successCount}件更新、${failCount}件失敗しました`);
+        } else {
+          alert(`${successCount}件の役割を更新しました`);
+        }
+        
+        await loadAllTeachersForEdit();
+        await loadTeachers();
+      } catch (error) {
+        console.error('役割更新エラー:', error);
+        alert('更新に失敗しました');
       }
     }
     
