@@ -424,6 +424,37 @@ function handleKeyDown(event){
   }
 }
 
+// === chat_from_ai からのシードメッセージ対応（/chat に来たら自動送信） ===
+// 受信箱からのシード（AI最初の発話）
+let seedAiMsg = null;
+
+function seedFromInboxIfAny(){
+  const seed = sessionStorage.getItem('seed_msg');
+  if (!seed) return;
+
+  // 左側（AI側）にまず表示
+  seedAiMsg = seed;
+  line(seedAiMsg, 'left');
+
+  // 受信箱(localStorage)から一致するものを1件削除 -> バッジ更新
+  try {
+    const inbox = JSON.parse(localStorage.getItem('ai_inbox') || '[]');
+    const idx = inbox.findIndex(m => m && m.text === seed);
+    if (idx >= 0) {
+      inbox.splice(idx, 1);
+      localStorage.setItem('ai_inbox', JSON.stringify(inbox));
+      window.dispatchEvent(new CustomEvent('ai_inbox_updated'));
+    }
+  } catch(_) {}
+
+  // テキストエリアに「返信を書く」雰囲気を出す（任意）
+  const ta = document.getElementById('msg');
+  if (ta && !ta.value) ta.placeholder = 'このメッセージへの返信を書いてください';
+
+  // 使い終わったらクリア
+  sessionStorage.removeItem('seed_msg');
+}
+
 // 未読件数をチェックして表示
 async function checkUnreadMessages(){
   try {
@@ -446,6 +477,7 @@ async function checkUnreadMessages(){
 
 // ページ読み込み時とメッセージ送信後に未読チェック
 document.addEventListener('DOMContentLoaded', () => {
+  seedFromInboxIfAny();    
   checkUnreadMessages();
   // 30秒ごとに未読チェック
   setInterval(checkUnreadMessages, 30000);
