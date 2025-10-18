@@ -93,9 +93,14 @@ def list_participants(request: Request):
     else:
         # 生徒の場合: すべての教員（通常エントリのみ）
         rows = query_all(
-            "SELECT user_id, name, role FROM users WHERE role='teacher' ORDER BY created_at DESC"
+            """
+            SELECT t.user_id, t.name, u.role, t.teacher_type
+            FROM teachers t
+            INNER JOIN users u ON t.user_id = u.user_id
+            ORDER BY t.teacher_type, t.name
+            """
         )
-        out = [{"user_id": r[0], "name": r[1] or r[0], "role": r[2], "is_anonymous": False} for r in rows]
+        out = [{"user_id": r[0], "name": r[1] or r[0], "role": r[2], "is_anonymous": False, "teacher_type": r[3]} for r in rows]
     
     return JSONResponse(out)
 
@@ -187,6 +192,18 @@ def send_direct_message(request: Request, other_id: str, body: dict):
     other_role = other_rows[0][0]
 
     # 生徒-教員間のみ許可
+    # ただし、相手が教員の場合は、teachersテーブルに登録されているかチェック
+    if other_role == "teacher":
+        teacher_check = query_all(
+            "SELECT user_id FROM teachers WHERE user_id=?",
+            (real_other_id,)
+        )
+        if not teacher_check:
+            raise HTTPException(
+                status_code=403,
+                detail="recipient is not a registered teacher"
+            )
+            
     allowed = {"student", "teacher"}
     if role not in allowed or other_role not in allowed or role == other_role:
         raise HTTPException(status_code=403, detail="forbidden pair")
