@@ -19,7 +19,14 @@ from app.routers.admin import router as admin_router
 from app.routers.chat_from_ai import router as chat_from_ai_router
 
 
+from fastapi.staticfiles import StaticFiles
+
+
 app = FastAPI(title=APP_TITLE)
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 init_db()
 init_teacher_db()  # 追加
