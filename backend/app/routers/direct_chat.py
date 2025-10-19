@@ -2,7 +2,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import JSONResponse
 from app.db import execute, query_all, now_iso
-
+from app.utils.user import get_user_by_id
 router = APIRouter(prefix="/api/direct")
 
 # ユーティリティ
@@ -300,3 +300,37 @@ def unread_by_sender(request: Request):
         result[f"{r[0]}:anonymous"] = r[1]
     
     return JSONResponse(result)
+
+# 追加: ユーザー情報取得エンドポイント
+@router.get("/user/{user_id}")
+def get_user_info(request: Request, user_id: str):
+    """
+    指定されたuser_idのユーザー情報を取得
+    ダッシュボードからチャットに遷移する際に使用
+    """
+    _require_login(request)  # ログインチェック
+    
+    user_data = get_user_by_id(user_id)
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user_id_val, name, grade, role, created_at = user_data
+    
+    # 教員の場合、teacher_typeも取得
+    teacher_type = None
+    if role == "teacher":
+        teacher_rows = query_all(
+            "SELECT teacher_type FROM teachers WHERE user_id=?",
+            (user_id,)
+        )
+        if teacher_rows:
+            teacher_type = teacher_rows[0][0]
+    
+    return JSONResponse({
+        "user_id": user_id_val,
+        "name": name or user_id_val,
+        "grade": grade,
+        "role": role,
+        "created_at": created_at,
+        "teacher_type": teacher_type
+    })
