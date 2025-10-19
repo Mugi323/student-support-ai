@@ -633,33 +633,3 @@ body {
         font-size: 0.9rem;
     }
 }
-
-/* ===== Tailwindユーティリティ → カラーパレット上書き（base.html専用ブリッジ） ===== */
-
-/* ページ背景と標準テキスト色 */
-body.bg-gray-50 { background-color: var(--color-background) !important; }
-.text-gray-900  { color: var(--color-text-dark) !important; }
-
-/* ヘッダーのバー色（bg-indigo-600 をメインカラーへ） */
-header.bg-indigo-600 { background-color: var(--color-main) !important; }
-
-/* ヘッダー内の文字色（既存は text-white だが、パレットに合わせて濃い文字色へ） */
-header.bg-indigo-600, 
-header.bg-indigo-600 a, 
-header.bg-indigo-600 .text-white {
-  color: var(--color-text-dark) !important;
-}
-
-/* ログアウトボタンの文字色（text-indigo-600 をアクセントへ） */
-.text-indigo-600 { color: var(--color-accent) !important; }
-
-/* フッターの薄い文字色 */
-.text-gray-500 { color: var(--color-text-mid) !important; }
-
-/* ボタンの白はそのまま（保険） */
-.bg-white { background-color: var(--color-white) !important; }
-
-/* メインコンテンツの読みやすさ向上（任意・やわらかい背景のグラデ） */
-main.max-w-5xl.mx-auto.px-4.py-6 {
-  background: linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end));
-}
