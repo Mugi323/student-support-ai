@@ -321,8 +321,22 @@ async function boot(){
 			const hit = arr.find(x=>x.user_id===pre);
 			if(hit){
 				await selectOther(hit.user_id, hit.name, hit.is_anonymous);
+			}else {
+				// 参加者リストにない場合は、usersテーブルから名前を取得
+				const userR = await fetch(`/api/direct/user/${pre}`);
+				if(userR.ok){
+					const userData = await userR.json();
+					await selectOther(pre, userData.name || pre, false, null);
+				} else {
+					// ユーザー情報が取得できない場合はuser_idをそのまま使用
+					await selectOther(pre, pre, false, null);
+					println('ユーザー情報が取得できませんでした:', pre);
+				}
 			}
-		}catch(_e){/* ignore */}
+		}catch(_e){
+			console.error('ユーザー選択エラー:', e);
+			await selectOther(pre, pre, false, null);
+		}
 	}
 	// 10秒ごとにメッセージ一覧を再取得（簡易ポーリング）
 	setInterval(()=>{ if(currentOtherId) loadMessages(); }, 10000);
