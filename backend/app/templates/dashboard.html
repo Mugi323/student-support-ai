@@ -1,5 +1,64 @@
 {% extends "base.html" %}
 {% block content %}
+<!-- 高リスク生徒一覧 -->
+<div class="bg-red-50 border-2 border-red-300 p-5 rounded-2xl shadow mb-6">
+  <div class="flex items-center gap-2 mb-4">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <h2 class="text-lg font-semibold text-red-800">高リスク生徒一覧（要緊急対応）</h2>
+    <span class="bg-red-600 text-white text-xs px-2 py-1 rounded-full">{{ high_risk_students|length }}名</span>
+  </div>
+
+  {% if high_risk_students %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm bg-white rounded-lg overflow-hidden">
+      <thead class="bg-red-100">
+        <tr class="text-left border-b border-red-200">
+          <th class="py-2 px-3">生徒名</th>
+          <th class="py-2 px-3">高リスク項目</th>
+          <th class="py-2 px-3">AI要約</th>
+          <th class="py-2 px-3">総合リスク</th>
+          <th class="py-2 px-3">時刻</th>
+          <th class="py-2 px-3">対応</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for student in high_risk_students %}
+        <tr class="border-b border-red-100 hover:bg-red-50 transition">
+          <td class="py-2 px-3 font-medium">{{ student.display_name }}</td>
+          <td class="py-2 px-3">
+            <span class="inline-block bg-red-200 text-red-800 px-2 py-1 rounded text-xs font-medium">
+              {{ student.high_items }}
+            </span>
+          </td>
+          <td class="py-2 px-3 max-w-xs truncate">{{ student.summary }}</td>
+          <td class="py-2 px-3">
+            <span class="font-semibold text-red-700">{{ '%.1f'|format(student.overall) }}</span>
+          </td>
+          <td class="py-2 px-3 text-xs text-gray-600">{{ student.created_at }}</td>
+          <td class="py-2 px-3">
+            <a class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition inline-block" 
+               href="/chat_teacher?uid={{ student.user_id }}">
+              すぐに相談
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-8 text-gray-500">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <p>現在、緊急対応が必要な生徒はいません</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- 要対応ランキング -->
 <div class="bg-white p-5 rounded-2xl shadow">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg font-semibold">要対応ランキング（AIリスク）</h2>
