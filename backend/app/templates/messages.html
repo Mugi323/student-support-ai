@@ -10,51 +10,144 @@
   </div>
 
   <div class="flex justify-between items-center mb-3">
-    <div class="text-sm text-gray-500">ログを読み込んでください（ログインが必要です）。</div>
+    <div id="statusMessage" class="text-sm text-gray-500">
+      {% if session_user %}
+        ログを読み込み中...
+      {% else %}
+        ログを読み込んでください（ログインが必要です）。
+      {% endif %}
+    </div>
     <div>
-      <button onclick="loadLogs()" class="px-3 py-1 bg-gray-100 rounded">更新</button>
+      <button onclick="loadLogs()" class="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200">更新</button>
     </div>
   </div>
-  <div id="logsList" class="space-y-3 text-sm">
+
+  <!-- スクロール可能なコンテナ -->
+  <div id="logsContainer" class="border rounded-lg overflow-hidden">
+    <div id="logsList" class="space-y-3 text-sm max-h-[28rem] overflow-y-auto p-4 bg-gray-50">
+      <!-- ログがここに表示される -->
+    </div>
+    
+    <!-- 展開ボタン（初期状態では非表示） -->
+    <div id="expandSection" class="hidden border-t bg-white">
+      <button 
+        id="expandBtn" 
+        onclick="toggleExpand()" 
+        class="w-full py-2 text-sm text-gray-600 hover:bg-gray-50 transition flex items-center justify-center gap-2"
+      >
+        <span id="expandText">さらに表示</span>
+        <svg id="expandIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+    </div>
   </div>
 </div>
 
 <script>
+let allLogs = [];
+let displayCount = 3;
+let isExpanded = false;
+
 async function loadLogs(){
-  const res = await fetch('/api/messages/me', { credentials: 'same-origin' });
-  if(res.status === 401){
-    alert('ログインが必要です。ログインページに移動します');
-    window.location.href = '/login';
-    return;
+  const statusMsg = document.getElementById('statusMessage');
+  
+  try {
+    statusMsg.textContent = 'ログを読み込み中...';
+    
+    const res = await fetch('/api/messages/me', { credentials: 'same-origin' });
+    if(res.status === 401){
+      alert('ログインが必要です。ログインページに移動します');
+      window.location.href = '/login';
+      return;
+    }
+    if(!res.ok){
+      statusMsg.textContent = 'ログ取得に失敗しました';
+      alert('ログ取得に失敗しました: ' + res.status);
+      return;
+    }
+    const data = await res.json();
+    console.log('取得したデータ:', data);
+    
+    allLogs = data;
+    
+    if(!data || data.length === 0){
+      document.getElementById('logsList').innerHTML = '<p class="text-gray-500">ログはありません</p>';
+      statusMsg.textContent = 'ログが見つかりませんでした';
+      document.getElementById('expandSection').classList.add('hidden');
+      return;
+    }
+    
+    statusMsg.textContent = `${data.length}件のログが見つかりました`;
+    
+    // 展開ボタンの表示・非表示
+    if(data.length > 3){
+      document.getElementById('expandSection').classList.remove('hidden');
+    } else {
+      document.getElementById('expandSection').classList.add('hidden');
+    }
+    
+    // 初期表示は3件
+    renderLogs(3);
+    
+  } catch(error) {
+    console.error('ログ取得エラー:', error);
+    statusMsg.textContent = 'エラーが発生しました';
+    alert('ログ取得中にエラーが発生しました: ' + error.message);
   }
-  if(!res.ok){
-    alert('ログ取得に失敗しました');
-    return;
-  }
-  const data = await res.json();
+}
+
+function renderLogs(count) {
   const list = document.getElementById('logsList');
   list.innerHTML = '';
-  if(!data.length){
-    list.innerHTML = '<p class="text-gray-500">ログはありません</p>';
-    return;
-  }
-  data.forEach(m=>{
+  
+  const logsToShow = allLogs.slice(0, count);
+  
+  logsToShow.forEach(m => {
     const div = document.createElement('div');
-    div.className = 'border rounded p-3 bg-gray-50';
+    div.className = 'border rounded p-3 bg-white hover:shadow-sm transition';
+    
     const pSum = document.createElement('p');
-    pSum.className = 'font-medium';
+    pSum.className = 'font-medium text-gray-800';
     pSum.textContent = m.ai_summary || '(要約なし)';
+    
     const pText = document.createElement('p');
-    pText.className = 'mt-1';
-    pText.textContent = m.text;
+    pText.className = 'mt-2 text-gray-700';
+    pText.textContent = m.text || '';
+    
     const pInfo = document.createElement('p');
-    pInfo.className = 'text-xs text-gray-600 mt-1';
-    pInfo.textContent = `AI総合: ${Number(m.ai_risk_overall || 0).toFixed(2)} / ${m.created_at}`;
+    pInfo.className = 'text-xs text-gray-500 mt-2';
+    pInfo.textContent = `AI総合: ${Number(m.ai_risk_overall || 0).toFixed(2)} / ${m.created_at || ''}`;
+    
     div.appendChild(pSum);
     div.appendChild(pText);
     div.appendChild(pInfo);
     list.appendChild(div);
   });
+  
+  // 残りの件数を表示
+  const remaining = allLogs.length - count;
+  if(remaining > 0) {
+    document.getElementById('expandText').textContent = `さらに${remaining}件表示`;
+  } else {
+    document.getElementById('expandText').textContent = '折りたたむ';
+  }
+}
+
+function toggleExpand() {
+  const expandIcon = document.getElementById('expandIcon');
+  
+  if(isExpanded) {
+    // 折りたたむ
+    renderLogs(3);
+    expandIcon.style.transform = 'rotate(0deg)';
+    isExpanded = false;
+  } else {
+    // 全て表示
+    renderLogs(allLogs.length);
+    expandIcon.style.transform = 'rotate(180deg)';
+    isExpanded = true;
+  }
 }
 
 // auto-load on page open

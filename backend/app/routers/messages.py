@@ -11,9 +11,55 @@ __all__ = ["router"]
 # ここが必須。無いと app.main から import できない
 router = APIRouter(prefix="/api")
 
+@router.get("/messages/me")
+def api_get_my_messages(request: Request):
+    """ログインユーザー自身のメッセージを取得"""
+    try:
+        uid = request.session.get("user_id")
+    except Exception:
+        uid = None
+
+    if not uid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
+        )
+    
+    rows = query_all(
+        """
+        SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at
+        FROM messages
+        WHERE user_id=?
+        ORDER BY created_at DESC
+        LIMIT 100
+        """,
+        (uid,),
+    )
+    
+    out = []
+    for mid, user_id_val, text, ai_summary, ai_overall, ai_detail, created_at in rows:
+        detail_obj = {}
+        try:
+            detail_obj = json.loads(ai_detail) if ai_detail else {}
+        except Exception:
+            detail_obj = {}
+        out.append(
+            {
+                "id": mid,
+                "user_id": user_id_val,
+                "text": text,
+                "ai_summary": ai_summary or "",
+                "ai_risk_overall": ai_overall or 0.0,
+                "ai_risk_detail": detail_obj,
+                "created_at": created_at,
+            }
+        )
+    
+    return JSONResponse(out)
+
 
 @router.get("/messages/{user_id}")
 def api_get_user_messages(request: Request, user_id: str):
+    """特定ユーザーのメッセージを取得（本人または教師のみアクセス可能）"""
     # allow access only if the requester is the same user or a teacher
     session_uid = None
     session_role = None
@@ -63,22 +109,8 @@ def api_get_user_messages(request: Request, user_id: str):
     return JSONResponse(out)
 
 
-@router.get("/messages/me")
-def api_get_my_messages(request: Request):
-    try:
-        uid = request.session.get("user_id")
-    except Exception:
-        uid = None
-
-    if not uid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
-        )
-
-    return api_get_user_messages(request, uid)
-
-
 @router.post("/messages/erase_anonymous")
 def api_erase_anonymous():
+    """匿名メッセージを削除"""
     execute("DELETE FROM messages WHERE is_anonymous=1", ())
     return PlainTextResponse("anonymous messages deleted.")
