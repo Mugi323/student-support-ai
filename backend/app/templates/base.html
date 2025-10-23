@@ -10,7 +10,10 @@
 <body class="bg-gray-50 text-gray-900">
 <header class="bg-indigo-600 text-white">
   <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-  <a id="brand" href="/" class="font-semibold">ココサポ</a>
+  <a id="brand" href="/" class="font-semibold flex items-center gap-2">
+    <img src="{{ url_for('static', path='logo_3.png') }}" alt="ココサポ" class="w-20 h-15"/>
+    <span id="brandText">ココサポ</span>
+  </a>
     <nav class="text-sm flex items-center gap-4 relative">
       <a href="/" class="hover:underline">ホーム</a>
       {% if request.session.user_id %}
@@ -29,7 +32,7 @@
           {# --- Dropdown menu --- #}
           <div id="userDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white text-gray-800 rounded-md shadow-lg ring-1 ring-black/5 z-50">
             <div class="px-4 py-3 border-b border-gray-100">
-              <p class="text-xs text-gray-500">ログイン中</p>
+              <!-- <p class="text-xs text-gray-500">ログイン中</p> -->
               <p class="text-sm font-medium truncate">{{ request.session.name or request.session.user_id }}</p>
               <p class="text-xs text-gray-500">役割: {{ request.session.role }}</p>
             </div>
