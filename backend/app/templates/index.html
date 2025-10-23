@@ -5,12 +5,12 @@
     <h2 class="text-xl font-semibold mb-2">ようこそ</h2>
     <p class="text-sm text-gray-600 mb-4">メニューから利用したい機能を選んでください。</p>
     <div class="space-y-3">
-      <a href="/chat" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90">AIチャットで相談する</a>
-      <a href="/chat_teacher" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90">教員/養護教諭/カウンセラーに相談する</a>
+  <a id="btnAiChat" href="/chat" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90">AIチャットで相談する</a>
+  <a id="btnTeacherChat" href="/chat_teacher" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90">教員/養護教諭/カウンセラーに相談する</a>
 
       {# ▼ここだけ最小変更：バッジ付き #}
       <div class="relative">
-        <a href="/chat_from_ai" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 relative">
+        <a id="btnAiMessage" href="/chat_from_ai" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 relative">
           AIからのメッセージ
           <span id="aiBadge"
                 class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs font-semibold rounded-full px-2 py-0.5">
@@ -20,9 +20,7 @@
       </div>
       {# ▲ここだけ最小変更：バッジ付き #}
 
-      <a href="/dashboard" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">AIリスク一覧（教員向け）</a>
       <a href="/messages" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">自分のログを見る</a>
-      <a href="/admin" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">管理者ページ</a>
     </div>
   </div>
 
@@ -37,6 +35,17 @@
       <li>緊急時は学校・保護者に連絡してください</li>
     </ul>
   </div>
+
+  {# 教員向けメニュー（別枠表示） #}
+  {% if request.session.role == 'teacher' %}
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h3 class="text-lg font-semibold mb-2">教員向け</h3>
+    <div class="space-y-3">
+      <a href="/dashboard" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">AIリスク一覧</a>
+      <a href="/admin" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">管理者ページ</a>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 {# ▼追加スクリプト：バッジ更新（既存UIは不変更） #}
