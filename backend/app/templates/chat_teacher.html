@@ -17,7 +17,7 @@
 			<div id="status" class="text-xs text-gray-500">未接続</div>
 		</div>
 		<div id="chat" class="flex-1 overflow-y-auto space-y-3 border rounded p-3 bg-gray-50"></div>
-		
+
 		<!-- 匿名モード切り替え（生徒のみ表示） -->
 		<div id="anonymousToggle" class="mt-2 hidden">
 			<label class="flex items-center gap-2 text-sm cursor-pointer bg-yellow-50 border border-yellow-300 rounded p-2">
@@ -30,10 +30,10 @@
 				</span>
 			</label>
 		</div>
-		
+
 		<div class="mt-3 flex gap-2">
 			<textarea id="msg" class="flex-1 border rounded p-2 min-h-[60px]" placeholder="メッセージを入力" onkeydown="handleKeyDown(event)"></textarea>
-			<button class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="sendMsg()">送信</button>
+			<button id="sendBtnDirect" class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="sendMsg()">送信</button>
 		</div>
 	</div>
 </div>
@@ -56,7 +56,7 @@ function line(text, side='left', isAnonymous=false, senderId=null){
 	wrap.className = `flex ${side==='right'?'justify-end':''}`;
 	const bubble = document.createElement('div');
 	bubble.className = `max-w-[80%] p-2 rounded-xl ${side==='right'?'bg-indigo-600 text-white':'bg-white border'} shadow whitespace-pre-wrap`;
-	
+
 	// 匿名メッセージの場合は🔒アイコンを表示
 	if(isAnonymous && side === 'left'){
 		const anonymousLabel = document.createElement('div');
@@ -64,7 +64,7 @@ function line(text, side='left', isAnonymous=false, senderId=null){
 		anonymousLabel.innerHTML = '🔒 匿名メッセージ';
 		bubble.appendChild(anonymousLabel);
 	}
-	
+
 	const textNode = document.createTextNode(text);
 	bubble.appendChild(textNode);
 	wrap.appendChild(bubble);
@@ -80,14 +80,14 @@ async function loadParticipants(){
 		return;
 	}
 	const data = await r.json();
-	
+
 	// 未読件数を取得
 	const unreadR = await fetch('/api/direct/unread_by_sender', {credentials:'same-origin'});
 	const unreadData = unreadR.ok ? await unreadR.json() : {};
-	
+
 	const box = document.getElementById('participants');
 	box.innerHTML = '';
-	
+
 	// 生徒の場合：教師タイプでグループ分け
 	if(currentUserRole === 'student'){
 		// データをタイプ別に分類
@@ -96,21 +96,21 @@ async function loadParticipants(){
 			school_nurse: [],
 			counselor: []
 		};
-		
+
 		data.forEach(p => {
 			const type = p.teacher_type || 'teacher';
 			if(groups[type]){
 				groups[type].push(p);
 			}
 		});
-		
+
 		// 各グループを表示
 		const groupTitles = {
 			teacher: '👨‍🏫 教師',
 			school_nurse: '🏥 養護教諭',
 			counselor: '💬 カウンセラー'
 		};
-		
+
 		['teacher', 'school_nurse', 'counselor'].forEach(type => {
 			if(groups[type].length > 0){
 				// グループタイトル
@@ -118,7 +118,7 @@ async function loadParticipants(){
 				groupTitle.className = 'text-sm font-semibold text-gray-700 mt-3 mb-1 px-2';
 				groupTitle.textContent = groupTitles[type];
 				box.appendChild(groupTitle);
-				
+
 				// グループ内の教師
 				groups[type].forEach(p => {
 					const btn = createParticipantButton(p, unreadData);
@@ -137,10 +137,10 @@ async function loadParticipants(){
 
 function createParticipantButton(p, unreadData){
 	const btn = document.createElement('button');
-	
+
 	// 未読件数を取得
 	const unreadCount = unreadData[p.user_id] || 0;
-	
+
 	// 匿名生徒の場合は背景色を変える
 	if(p.is_anonymous){
 		btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 bg-yellow-50 border-yellow-300 relative';
@@ -150,27 +150,27 @@ function createParticipantButton(p, unreadData){
 		`;
 	} else {
 		btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 relative';
-		
+
 		// 生徒側でグループ分けしている場合は役割ラベルを表示しない
 		let displayLabel = '';
 		if(currentUserRole !== 'student'){
 			// 教師側：生徒の役割を表示
 			displayLabel = p.role === 'student' ? ' <span class="text-xs text-gray-600">(生徒)</span>' : '';
 		}
-		
+
 		btn.innerHTML = `
 			${p.name}${displayLabel}
 			${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
 		`;
 	}
-	
+
 	btn.onclick = ()=> selectOther(p.user_id, p.name, p.is_anonymous, p.teacher_type);
 	return btn;
 }
 
 async function selectOther(uid, name, isAnonymous, teacherType){
 	currentOtherId = uid;
-	
+
 	// チャットタイトルに役割も表示
 	let titleSuffix = '';
 	if(isAnonymous){
@@ -178,25 +178,25 @@ async function selectOther(uid, name, isAnonymous, teacherType){
 	} else if(teacherType){
 		titleSuffix = `(${teacherTypeLabels[teacherType] || teacherType})`;
 	}
-	
+
 	// 匿名生徒の場合はチャットタイトルにも匿名表示
 	if(isAnonymous){
 		document.getElementById('chatTitle').textContent = `1対1チャット: 🔒 ${name} ${titleSuffix}`;
 	} else {
 		document.getElementById('chatTitle').textContent = `1対1チャット: ${name} ${titleSuffix}`;
 	}
-	
+
 	chatEl.innerHTML = '';
 	await loadMessages();
 	// 既読化
 	await fetch(`/api/direct/messages/${currentOtherId}/read`, {method:'POST'});
-	
+
 	// 既読化後、未読バッジと参加者リストを更新
 	refreshUnread();
 	loadParticipants();
-	
+
 	statusEl.textContent = '接続中';
-	
+
 	// 生徒の場合のみ匿名トグルを表示
 	const anonymousToggle = document.getElementById('anonymousToggle');
 	if(currentUserRole === 'student'){
@@ -208,23 +208,23 @@ async function selectOther(uid, name, isAnonymous, teacherType){
 
 async function loadMessages(){
 	if(!currentOtherId) return;
-	
+
 	// 匿名モードのチェック状態を取得
 	const anonymousModeCheckbox = document.getElementById('anonymousMode');
 	const isAnonymousMode = anonymousModeCheckbox ? anonymousModeCheckbox.checked : false;
-	
+
 	// 匿名モードの場合はクエリパラメータを追加
-	const url = isAnonymousMode 
+	const url = isAnonymousMode
 		? `/api/direct/messages/${currentOtherId}?anonymous=true`
 		: `/api/direct/messages/${currentOtherId}`;
-	
+
 	const r = await fetch(url);
 	const data = await r.json();
 	chatEl.innerHTML = '';
-	
+
 	// 匿名チャットかどうかを判定
 	const realOtherId = currentOtherId.replace(':anonymous', '');
-	
+
 	data.forEach(m=>{
 		const side = (m.sender_id === realOtherId || m.sender_id === currentOtherId) ? 'left' : 'right';
 		const isAnonymous = m.is_anonymous || false;
@@ -236,14 +236,14 @@ async function sendMsg(){
 	const ta = document.getElementById('msg');
 	const text = ta.value.trim();
 	if(!text || !currentOtherId) return;
-	
+
 	// 匿名モードのチェック状態を取得
 	const anonymousModeCheckbox = document.getElementById('anonymousMode');
 	const isAnonymous = anonymousModeCheckbox ? anonymousModeCheckbox.checked : false;
-	
+
 	ta.value = '';
 	line(text, 'right', isAnonymous);
-	
+
 	// 匿名フラグを含めて送信
 	const r = await fetch(`/api/direct/messages/${currentOtherId}`, {
 		method: 'POST',
@@ -301,16 +301,16 @@ async function boot(){
 	}catch(_e){
 		currentUserRole = 'student'; // デフォルトは生徒
 	}
-	
+
 	await loadParticipants();
 	refreshUnread();
-	
+
 	// 10秒ごとに未読バッジと参加者リストを更新
 	setInterval(() => {
 		refreshUnread();
 		loadParticipants(); // 参加者リストの未読バッジも更新
 	}, 10000);
-	
+
 	// クエリのuidがあれば自動選択
 	const pre = getQuery('uid');
 	if(pre){

@@ -10,15 +10,16 @@
      * テキストカラー（中）: #666
      * 白: white
     */
-    --color-main: #CADCAE;
+    --color-main: #AED4BD;
     --color-sub1: #E1E9C9;
     --color-accent: #EDA35A;
     --color-background: #FEE8D9;
-    
+
     --color-text-dark: #333;
     --color-text-mid: #666;
     --color-white: white;
-    
+    --color-btn: #DEEADE;
+
     /* ホバーや影などに使用するアクセントカラーの透明版 */
     --color-accent-transparent: rgba(237, 163, 90, 0.1); /* #EDA35Aの0.1透明度 */
     /* メインカラーより少し暗い色（スクロールバーホバー用） */
@@ -249,7 +250,7 @@ body {
 }
 
 .home-page.active {
-    display: flex; 
+    display: flex;
 }
 
 .welcome-section {
@@ -376,7 +377,7 @@ body {
     flex-direction: column;
     gap: 1rem;
     /* グラデーションは、背景色からチャットグラデーション終点に。これは動的設定が難しいので、そのままにします。*/
-    background: linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end)); 
+    background: linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end));
 }
 
 /* カスタムスクロールバー */
@@ -385,7 +386,7 @@ body {
 }
 
 .chat-messages::-webkit-scrollbar-track {
-    background: var(--color-scrollbar-track); 
+    background: var(--color-scrollbar-track);
     border-radius: 10px;
 }
 
@@ -397,6 +398,67 @@ body {
 .chat-messages::-webkit-scrollbar-thumb:hover {
     background: var(--color-main-darker);
 }
+
+/* ==================== index.html 個別の上書き ==================== */
+/* 「AIからのメッセージ」ボタンの色をカスタム（既存 Tailwind を最小上書き） */
+#btnAiMessage {
+    background-color: var(--color-btn) !important; /* 例: ご希望のカラーコード */
+    border-color: var(--color-btn) !important;
+    color: #333 !important; /* 背景が明るいので文字は濃色でコントラスト確保 */
+}
+
+#btnAiMessage:hover {
+    filter: brightness(0.95);
+}
+
+/* 1) 「AIチャットで相談する」ボタン */
+#btnAiChat {
+    background-color: var(--color-btn) !important; /* 変更したい色に置き換えてください */
+    border-color: var(--color-btn) !important;
+    color: #333 !important;
+}
+#btnAiChat:hover { filter: brightness(0.95); }
+
+/* 2) 「教員/養護教諭/カウンセラーに相談する」ボタン */
+#btnTeacherChat {
+    background-color: var(--color-btn) !important; /* 変更したい色に置き換えてください */
+    border-color: var(--color-btn) !important;
+    color: #333 !important;
+}
+#btnTeacherChat:hover { filter: brightness(0.95); }
+
+/* ==================== 送信ボタンの色（ページ個別） ==================== */
+/* /chat の送信ボタン */
+#sendBtn {
+    background-color: var(--color-btn) !important; /* 変更したい色に置き換え */
+    border-color: var(--color-btn) !important;
+    color: #333 !important; /* 明るい背景向けのテキスト色 */
+}
+#sendBtn:hover { filter: brightness(0.95); }
+
+/* /chat_teacher の送信ボタン */
+#sendBtnDirect {
+    background-color: var(--color-btn) !important; /* 変更したい色に置き換え */
+    border-color: var(--color-btn) !important;
+    color: #333 !important;
+}
+#sendBtnDirect:hover { filter: brightness(0.95); }
+
+/* ==================== login.html のログインボタン ==================== */
+#btnLoginSubmit {
+    background-color: var(--color-btn) !important;
+    border-color: var(--color-btn) !important;
+    color: #333 !important;
+}
+#btnLoginSubmit:hover { filter: brightness(0.95); }
+
+/* ==================== setup_profile.html の送信ボタン ==================== */
+#btnSetupSubmit {
+    background-color: var(--color-btn) !important;
+    border-color: var(--color-btn) !important;
+    color: #333 !important;
+}
+#btnSetupSubmit:hover { filter: brightness(0.95); }
 
 .message {
     display: flex;
@@ -548,7 +610,7 @@ body {
     width: 200%;
     height: 200%;
     /* グラデーションの色の指定もカスタムプロパティに。透明度はここで設定します */
-    background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 20%, transparent), transparent); 
+    background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 20%, transparent), transparent);
     opacity: 0;
     transition: opacity 0.3s;
 }
@@ -589,23 +651,23 @@ body {
         grid-template-columns: 1fr;
         gap: 1.5rem;
     }
-    
+
     .welcome-text {
         font-size: 2rem;
     }
-    
+
     .message-content {
         max-width: 85%;
     }
-    
+
     .nav-content {
         width: 250px;
     }
-    
+
     .app-title {
         font-size: 1.3rem;
     }
-    
+
     .recommend-grid {
         grid-template-columns: 1fr;
     }
@@ -615,19 +677,19 @@ body {
     .welcome-text {
         font-size: 1.5rem;
     }
-    
+
     .feature-card {
         padding: 1.5rem;
     }
-    
+
     .card-icon {
         font-size: 2.5rem;
     }
-    
+
     .chat-input {
         font-size: 0.9rem;
     }
-    
+
     .send-btn {
         padding: 0.8rem 1rem;
         font-size: 0.9rem;
@@ -637,17 +699,55 @@ body {
 /* ===== Tailwindユーティリティ → カラーパレット上書き（base.html専用ブリッジ） ===== */
 
 /* ページ背景と標準テキスト色 */
-body.bg-gray-50 { background-color: var(--color-background) !important; }
+/* 背景を全ページのbodyにグラデーションで適用 */
+body.bg-gray-50 {
+    background: linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end)) !important;
+}
 .text-gray-900  { color: var(--color-text-dark) !important; }
 
 /* ヘッダーのバー色（bg-indigo-600 をメインカラーへ） */
 header.bg-indigo-600 { background-color: var(--color-main) !important; }
 
 /* ヘッダー内の文字色（既存は text-white だが、パレットに合わせて濃い文字色へ） */
-header.bg-indigo-600, 
-header.bg-indigo-600 a, 
+header.bg-indigo-600,
+header.bg-indigo-600 a,
 header.bg-indigo-600 .text-white {
   color: var(--color-text-dark) !important;
+}
+
+/* ヘッダーのログインボタンは独自色を優先（黒固定ルールより強く上書き） */
+#btnLogin {
+    color: var(--color-accent) !important; /* Tailwindの text-indigo-600 を当プロジェクトのアクセントに橋渡し */
+}
+/* ログインボタンのホバー演出 */
+#btnLogin {
+    transition: transform 0.1s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+#btnLogin:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+}
+
+/* ログアウトボタンのホバー演出（ログインと同様に統一） */
+#btnLogout {
+    transition: transform 0.1s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+#btnLogout:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+}
+
+/* ユーザー名の視認性改善（ヘッダー右側のチップ） */
+#headerUser {
+    background: rgba(255,255,255,0.6);
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
 }
 
 /* ログアウトボタンの文字色（text-indigo-600 をアクセントへ） */
@@ -659,7 +759,87 @@ header.bg-indigo-600 .text-white {
 /* ボタンの白はそのまま（保険） */
 .bg-white { background-color: var(--color-white) !important; }
 
-/* メインコンテンツの読みやすさ向上（任意・やわらかい背景のグラデ） */
+/* メイン領域の背景は透明にして、bodyのグラデーションを見せる */
 main.max-w-5xl.mx-auto.px-4.py-6 {
-  background: linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end));
+    background: transparent;
+}
+
+/* ===== Brand styling (CareBridge) ===== */
+#brand {
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    background: linear-gradient(90deg, var(--color-accent), var(--color-main));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent !important; /* ヘッダーの強制色より優先 */
+    text-decoration: none;
+    display: inline-block;
+    transition: transform 0.12s ease, filter 0.2s ease;
+}
+#brand:hover {
+    transform: translateY(-1px);
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.12));
+}
+#brand::after {
+    content: "";
+    display: block;
+    height: 2px;
+    width: 0;
+    margin-top: 2px;
+    background: var(--color-accent);
+    transition: width 0.2s ease;
+    opacity: 0.8;
+}
+#brand:hover::after {
+    width: 100%;
+}
+
+/* ==================== UI polish: Glass card & CTA ==================== */
+.glass-card {
+    background: rgba(255, 255, 255, 0.72) !important; /* 半透明の白 */
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+}
+
+.section-title {
+    position: relative;
+    padding-left: 0.5rem;
+}
+.section-title::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.2em;
+    bottom: 0.2em;
+    width: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 30%, transparent));
+}
+
+.cta-btn {
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+    transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+.cta-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.16);
+}
+
+/* 枠線タイプのメニューリンクも少しだけ浮かせる */
+.link-elevate {
+    transition: transform 0.1s ease, box-shadow 0.15s ease, background-color 0.2s ease;
+}
+.link-elevate:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+}
+.link-elevate:active {
+    transform: translateY(0);
 }

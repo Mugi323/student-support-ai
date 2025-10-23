@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-  <div class="bg-white rounded-2xl shadow p-6">
-    <h2 class="text-xl font-semibold mb-2">ようこそ</h2>
+    <div class="bg-white rounded-2xl shadow p-6 glass-card">
+      <h2 class="text-xl font-semibold mb-2 section-title">ようこそ</h2>
     <p class="text-sm text-gray-600 mb-4">メニューから利用したい機能を選んでください。</p>
     <div class="space-y-3">
-      <a href="/chat" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90">AIチャットで相談する</a>
-      <a href="/chat_teacher" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90">教員/養護教諭/カウンセラーに相談する</a>
+  <a id="btnAiChat" href="/chat" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 cta-btn">AIチャットで相談する</a>
+  <a id="btnTeacherChat" href="/chat_teacher" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 cta-btn">教員/養護教諭/カウンセラーに相談する</a>
 
       {# ▼ここだけ最小変更：バッジ付き #}
       <div class="relative">
-        <a href="/chat_from_ai" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 relative">
+          <a id="btnAiMessage" href="/chat_from_ai" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 relative cta-btn">
           AIからのメッセージ
           <span id="aiBadge"
                 class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs font-semibold rounded-full px-2 py-0.5">
@@ -20,14 +20,12 @@
       </div>
       {# ▲ここだけ最小変更：バッジ付き #}
 
-      <a href="/dashboard" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">AIリスク一覧（教員向け）</a>
-      <a href="/messages" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">自分のログを見る</a>
-      <a href="/admin" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50">管理者ページ</a>
+  <a href="/messages" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50 link-elevate">自分のログを見る</a>
     </div>
   </div>
 
-  <div class="bg-white rounded-2xl shadow p-6">
-    <h3 class="text-lg font-semibold mb-2">ヘルプ</h3>
+  <div class="bg-white rounded-2xl shadow p-6 glass-card">
+      <h3 class="text-lg font-semibold mb-2 section-title">ヘルプ</h3>
     <p class="text-sm text-gray-600">本ツールは学校の相談支援を補助する目的で設計されたAIチャットです。利用にあたっては学校のルールに従ってください。</p>
     <hr class="my-4">
     <h4 class="font-medium">よくある質問</h4>
@@ -37,6 +35,17 @@
       <li>緊急時は学校・保護者に連絡してください</li>
     </ul>
   </div>
+
+  {# 教員向けメニュー（別枠表示） #}
+  {% if request.session.role == 'teacher' %}
+    <div class="bg-white rounded-2xl shadow p-6 glass-card">
+      <h3 class="text-lg font-semibold mb-2 section-title">教員向け</h3>
+      <div class="space-y-3">
+        <a href="/dashboard" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50 link-elevate">AIリスク一覧</a>
+        <a href="/admin" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50 link-elevate">管理者ページ</a>
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 {# ▼追加スクリプト：バッジ更新（既存UIは不変更） #}
