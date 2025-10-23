@@ -766,32 +766,35 @@ main.max-w-5xl.mx-auto.px-4.py-6 {
 
 /* ===== Brand styling (CareBridge) ===== */
 #brand {
+    text-decoration: none;
+    display: inline-flex; /* anchor内のロゴとテキストを横並びに */
+    align-items: center;
+    gap: 0.5rem;
+    transition: transform 0.12s ease, filter 0.2s ease;
+}
+/* ロゴ画像が縮まってテキストに重ならないように */
+#brand img { flex-shrink: 0; display: block; }
+
+/* テキスト部分だけグラデーションを適用 */
+#brandText {
     font-weight: 800;
     letter-spacing: 0.3px;
     background: linear-gradient(90deg, var(--color-accent), var(--color-main));
     -webkit-background-clip: text;
     background-clip: text;
-    color: transparent !important; /* ヘッダーの強制色より優先 */
-    text-decoration: none;
-    display: inline-block;
-    transition: transform 0.12s ease, filter 0.2s ease;
+    -webkit-text-fill-color: transparent; /* Safari系の互換補助 */
+    color: transparent !important;
 }
 #brand:hover {
-    transform: translateY(-1px);
-    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.12));
+    transform: none;
+    filter: none;
 }
 #brand::after {
     content: "";
-    display: block;
-    height: 2px;
-    width: 0;
-    margin-top: 2px;
-    background: var(--color-accent);
-    transition: width 0.2s ease;
-    opacity: 0.8;
+    display: none; /* ロゴ下のホバー下線を無効化 */
 }
 #brand:hover::after {
-    width: 100%;
+    width: 0; /* 無効化（安全策） */
 }
 
 /* ==================== UI polish: Glass card & CTA ==================== */
