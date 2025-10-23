@@ -3,27 +3,23 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>{{ title or "Student Support MVP" }}</title>
+  <title>{{ title or "CareBridge" }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
 </head>
 <body class="bg-gray-50 text-gray-900">
 <header class="bg-indigo-600 text-white">
   <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-    <a href="/" class="font-semibold">学生相談</a>
+  <a id="brand" href="/" class="font-semibold">CareBridge</a>
     <nav class="space-x-4 text-sm flex items-center">
       <a href="/" class="hover:underline">ホーム</a>
-      <a href="/chat_teacher" class="hover:underline">1対1チャット</a>
-      {% if request.session.role == 'teacher' %}
-        <a href="/dashboard" class="hover:underline mr-4">教員ダッシュボード</a>
-      {% endif %}
       {% if request.session.user_id %}
-        <span class="text-sm mr-3">{{ request.session.name or request.session.user_id }} ({{ request.session.role }})</span>
+        <span id="headerUser" class="text-sm mr-3">{{ request.session.name or request.session.user_id }} ({{ request.session.role }})</span>
         <form method="post" action="/logout" class="inline">
-          <button class="bg-white text-indigo-600 px-2 py-1 rounded text-sm">ログアウト</button>
+          <button id="btnLogout" class="bg-white text-indigo-600 px-2 py-1 rounded text-sm">ログアウト</button>
         </form>
       {% else %}
-        <a href="/login" class="underline">ログイン</a>
+        <a id="btnLogin" href="/login" class="bg-white text-indigo-600 px-2 py-1 rounded text-sm inline-block">ログイン</a>
       {% endif %}
     </nav>
   </div>
