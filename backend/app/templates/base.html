@@ -3,21 +3,51 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>{{ title or "CareBridge" }}</title>
+  <title>{{ title or "ココサポ" }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
 </head>
 <body class="bg-gray-50 text-gray-900">
 <header class="bg-indigo-600 text-white">
   <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-  <a id="brand" href="/" class="font-semibold">CareBridge</a>
-    <nav class="space-x-4 text-sm flex items-center">
+  <a id="brand" href="/" class="font-semibold">ココサポ</a>
+    <nav class="text-sm flex items-center gap-4 relative">
       <a href="/" class="hover:underline">ホーム</a>
       {% if request.session.user_id %}
-        <span id="headerUser" class="text-sm mr-3">{{ request.session.name or request.session.user_id }} ({{ request.session.role }})</span>
-        <form method="post" action="/logout" class="inline">
-          <button id="btnLogout" class="bg-white text-indigo-600 px-2 py-1 rounded text-sm">ログアウト</button>
-        </form>
+        {# --- Avatar button (Google picture if available) --- #}
+        {% set has_picture = request.session.google_picture and request.session.google_picture|length > 0 %}
+        <div class="relative" id="userMenuRoot">
+          <button id="btnAvatar" type="button" class="flex items-center justify-center w-9 h-9 rounded-full ring-2 ring-white/70 focus:outline-none focus:ring-4 focus:ring-yellow-300 transition" aria-haspopup="true" aria-expanded="false">
+            {% if has_picture %}
+              <img src="{{ request.session.google_picture }}" alt="{{ request.session.name or 'user' }}" referrerpolicy="no-referrer" class="w-9 h-9 rounded-full object-cover" />
+            {% else %}
+              <span class="w-9 h-9 rounded-full bg-white/90 text-indigo-700 font-semibold grid place-items-center select-none">
+                {{ (request.session.name or 'U')[:1] | upper }}
+              </span>
+            {% endif %}
+          </button>
+          {# --- Dropdown menu --- #}
+          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white text-gray-800 rounded-md shadow-lg ring-1 ring-black/5 z-50">
+            <div class="px-4 py-3 border-b border-gray-100">
+              <p class="text-xs text-gray-500">ログイン中</p>
+              <p class="text-sm font-medium truncate">{{ request.session.name or request.session.user_id }}</p>
+              <p class="text-xs text-gray-500">役割: {{ request.session.role }}</p>
+            </div>
+            <div class="py-1">
+              <a href="/chat" class="block px-4 py-2 hover:bg-gray-50">チャット</a>
+              <a href="/messages" class="block px-4 py-2 hover:bg-gray-50">メッセージ履歴</a>
+              {% if request.session.role == 'teacher' %}
+                <a href="/dashboard" class="block px-4 py-2 hover:bg-gray-50">ダッシュボード</a>
+              {% endif %}
+              <a href="/chat_from_ai" class="block px-4 py-2 hover:bg-gray-50">AIメッセージ</a>
+            </div>
+            <div class="border-t border-gray-100">
+              <form method="post" action="/logout">
+                <button id="btnLogout" class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">ログアウト</button>
+              </form>
+            </div>
+          </div>
+        </div>
       {% else %}
         <a id="btnLogin" href="/login" class="bg-white text-indigo-600 px-2 py-1 rounded text-sm inline-block">ログイン</a>
       {% endif %}
@@ -96,6 +126,44 @@
 })();
 </script>
 <!-- ▲▲▲ 追加ここまで ▲▲▲ -->
+
+<!-- ▼▼▼ ユーザーアバターのドロップダウン制御 ▼▼▼ -->
+<script>
+  (function () {
+    const root = document.getElementById('userMenuRoot');
+    if (!root) return; // 未ログイン時
+    const btn = document.getElementById('btnAvatar');
+    const menu = document.getElementById('userDropdown');
+
+    function closeMenu() {
+      if (!menu.classList.contains('hidden')) {
+        menu.classList.add('hidden');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    }
+    function openMenu() {
+      if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    }
+    function toggleMenu() {
+      if (menu.classList.contains('hidden')) openMenu(); else closeMenu();
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu();
+    });
+    document.addEventListener('click', (e) => {
+      if (!root.contains(e.target)) closeMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMenu();
+    });
+  })();
+</script>
+<!-- ▲▲▲ ドロップダウン制御ここまで ▲▲▲ -->
 
 </body>
 </html>
