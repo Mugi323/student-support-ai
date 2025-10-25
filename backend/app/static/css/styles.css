@@ -852,3 +852,52 @@ main.max-w-5xl.mx-auto.px-4.py-6 {
 .link-elevate:active {
     transform: translateY(0);
 }
+
+/* ==================== レスポンシブ余白圧縮（追加の上書き） ==================== */
+/* 小さな画面ほど余白が自然に小さくなるように、clamp() で fluid spacing を適用 */
+
+/* ホーム画面周り */
+.home-page {
+    padding: clamp(0.75rem, 3vw, 2rem);
+}
+.welcome-text {
+    margin-bottom: clamp(1rem, 4vw, 2rem);
+}
+.feature-grid {
+    gap: clamp(0.75rem, 2.5vw, 2rem);
+}
+.feature-card {
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+/* レコメンド画面周り */
+.recommend-page {
+    padding: clamp(0.75rem, 3vw, 2rem);
+}
+.recommend-grid {
+    gap: clamp(0.75rem, 2.5vw, 2rem);
+}
+.recommend-card {
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+/* チャット画面の上下余白や要素間隔も少し圧縮 */
+.chat-messages {
+    padding: clamp(0.5rem, 2vw, 1rem);
+    gap: clamp(0.5rem, 2vw, 1rem);
+}
+.chat-input-area {
+    padding: clamp(0.5rem, 2vw, 1rem);
+    gap: clamp(0.35rem, 1.5vw, 0.75rem);
+}
+
+/* 画面の縦方向が低い端末（例: 小型ノートPCや横持ちスマホ）向けにさらに圧縮 */
+@media (max-height: 700px) {
+    .app-header { padding: 0.5rem; }
+    .home-page { padding: 0.75rem; }
+    .recommend-page { padding: 0.75rem; }
+    .welcome-text { margin-bottom: 1rem; }
+    .feature-card, .recommend-card { padding: 1rem; }
+    .chat-messages { padding: 0.5rem; gap: 0.5rem; }
+    .chat-input-area { padding: 0.5rem; gap: 0.5rem; }
+}
