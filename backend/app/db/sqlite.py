@@ -77,9 +77,53 @@ def init_db() -> None:
     ensure_column("users", "role", "TEXT NOT NULL DEFAULT 'student'")
     ensure_column("users", "password_hash", "TEXT")
     ensure_column("users", "grade", "TEXT")
-    
+
     # 匿名チャット用カラムを追加
     ensure_column("direct_messages", "is_anonymous", "INTEGER NOT NULL DEFAULT 0")
+
+    # ユーザーごとのチャット要約（最新N件のメモ）
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS user_memories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            summary TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    # インデックス（ユーザー単位の取得/削除最適化）
+    try:
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_user_memories_user_created ON user_memories(user_id, created_at DESC)"
+        )
+    except Exception:
+        pass
+
+    con.commit()
+
+    # RSSニュースキャッシュ（簡易）
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS news_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            topic TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            url TEXT NOT NULL UNIQUE,
+            image_url TEXT,
+            source TEXT,
+            published_at TEXT,
+            fetched_at TEXT NOT NULL
+        )
+        """
+    )
+    try:
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_news_topic_time ON news_cache(topic, published_at DESC, fetched_at DESC)"
+        )
+    except Exception:
+        pass
 
     con.commit()
     con.close()

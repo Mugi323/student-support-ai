@@ -11,6 +11,7 @@ from app.core.config import OPENAI_MODEL
 from app.db import execute, now_iso
 from app.Ollama.OllamaAdapter import OllamaAdapter
 from app.services.openai_client import client
+from app.db.memory import get_memories, add_memory
 from app.services.risk import analyze_risk_sync
 from app.utils.sse import sse_event
 
@@ -40,13 +41,24 @@ def api_chat_stream(request: Request, payload: ChatIn):
 
     async def generator():
         # ---- 第1段: 応答テキストをストリーム出力 ----
+        # 直近のユーザーメモ（1文要約）を取得して、コンテキストとして渡す
+        recent_memos = []
+        try:
+            recent_memos = get_memories(uid, limit=10) or []
+        except Exception:
+            recent_memos = []
+
+        memos_text = "\n".join(f"- {m}" for m in recent_memos)
+
         sys = (
             "以下の方針で回答してください。\n"
             "・日本語で300文字以内の返答を出力してください。\n"
             "・会話相手は小学生もしくは中学生です。目線を合わせて話してください。\n"
             "・日常会話の場合は、相手が話しやすいように会話を発展させてください。\n"
             "・相手が悩みを抱えていると判断したときのみ、具体的な解決策を提示してください。\n"
-            "・提案を行う際は、その理由も伝えてください。"
+            "・提案を行う際は、その理由も伝えてください。\n\n"
+            "【参考メモ】以下はこのユーザーの最近の話題・関心の要約です。会話の文脈として自然に活用してください。\n"
+            f"{memos_text}"
         )
         user = f"{payload.text}"
 
@@ -74,7 +86,7 @@ def api_chat_stream(request: Request, payload: ChatIn):
             )
             reply_text = ""
 
-        # ---- 第2段: 構造化リスク分析 → DB保存 → 最終イベント ----
+        # ---- 第2段: 構造化リスク分析 → DB保存 → メモ生成・保存 → 最終イベント ----
         try:
             result = analyze_risk_sync(payload.text)
             ai_summary = result["summary"]
@@ -104,12 +116,40 @@ def api_chat_stream(request: Request, payload: ChatIn):
                 ),
             )
 
+            # 1文要約（ユーザー発話＋AI返答）を生成してメモ化（最新10件を保持）
+            try:
+                summary_sys = (
+                    "次のユーザー発話とAI返答を、日本語で1文(60〜120文字程度)に要約してください。"
+                    "継続的な関心や悩み、進捗があれば簡潔に含めてください。改行や箇条書きは禁止です。"
+                )
+                summary_resp = client.responses.create(
+                    model=OPENAI_MODEL,
+                    input=[
+                        {"role": "system", "content": summary_sys},
+                        {
+                            "role": "user",
+                            "content": f"ユーザー: {payload.text}\nAI: {reply_text}",
+                        },
+                    ],
+                )
+                one_liner = (
+                    getattr(summary_resp, "output_text", "").strip() or ai_summary
+                )
+            except Exception:
+                one_liner = ai_summary  # フォールバック
+
+            try:
+                add_memory(uid, one_liner, keep=10)
+            except Exception:
+                pass
+
             yield sse_event(
                 {
                     "type": "final",
                     "result": {
                         "user_id": uid,
                         "reply": reply_text,
+                        "memory_summary": one_liner,
                         "ai_summary": ai_summary,
                         "ai_risk_overall": ai_overall,
                         "ai_risk_detail": {
@@ -171,13 +211,23 @@ async def api_chat_stream_with_images(
                 }
             )
 
+        # 直近のユーザーメモ（1文要約）を取得して、コンテキストとして渡す
+        recent_memos = []
+        try:
+            recent_memos = get_memories(uid, limit=10) or []
+        except Exception:
+            recent_memos = []
+        memos_text = "\n".join(f"- {m}" for m in recent_memos)
+
         sys = (
             "以下の方針で回答してください。\n"
             "・日本語で300文字以内の返答を出力してください。\n"
             "・会話相手は小学生もしくは中学生です。目線を合わせて話してください。\n"
             "・日常会話の場合は、相手が話しやすいように会話を発展させてください。\n"
             "・相手が悩みを抱えていると判断したときのみ、具体的な解決策を提示してください。\n"
-            "・提案を行う際は、その理由も伝えてください。"
+            "・提案を行う際は、その理由も伝えてください。\n\n"
+            "【参考メモ】以下はこのユーザーの最近の話題・関心の要約です。会話の文脈として自然に活用してください。\n"
+            f"{memos_text}"
         )
         # メッセージコンテンツを構築
         user_content = [
@@ -215,7 +265,7 @@ async def api_chat_stream_with_images(
             )
             reply_text = ""
 
-        # ---- 第2段: リスク分析 → DB保存 ----
+        # ---- 第2段: リスク分析 → DB保存 → メモ生成・保存 ----
         try:
             # テキストと画像の枚数情報を記録
             full_text = text
@@ -249,12 +299,40 @@ async def api_chat_stream_with_images(
                 ),
             )
 
+            # 1文要約（ユーザー発話＋AI返答）を生成してメモ化（最新10件を保持）
+            try:
+                summary_sys = (
+                    "次のユーザー発話とAI返答を、日本語で1文(60〜120文字程度)に要約してください。"
+                    "継続的な関心や悩み、進捗があれば簡潔に含めてください。改行や箇条書きは禁止です。"
+                )
+                summary_resp = client.responses.create(
+                    model=OPENAI_MODEL,
+                    input=[
+                        {"role": "system", "content": summary_sys},
+                        {
+                            "role": "user",
+                            "content": f"ユーザー: {full_text}\nAI: {reply_text}",
+                        },
+                    ],
+                )
+                one_liner = (
+                    getattr(summary_resp, "output_text", "").strip() or ai_summary
+                )
+            except Exception:
+                one_liner = ai_summary
+
+            try:
+                add_memory(uid, one_liner, keep=10)
+            except Exception:
+                pass
+
             yield sse_event(
                 {
                     "type": "final",
                     "result": {
                         "user_id": uid,
                         "reply": reply_text,
+                        "memory_summary": one_liner,
                         "ai_summary": ai_summary,
                         "ai_risk_overall": ai_overall,
                         "ai_risk_detail": {
@@ -314,12 +392,24 @@ async def chat_stream_local(request: Request, data: ChatIn):
 
     async def generator():
         # プロンプトを作成
+        # 直近のユーザーメモ（1文要約）を取得して、コンテキストとして渡す
+        recent_memos = []
+        try:
+            recent_memos = get_memories(uid, limit=10) or []
+        except Exception:
+            recent_memos = []
+        memos_text = "\n".join(f"- {m}" for m in recent_memos)
+
         prompt = f"""あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を出力してください。小学生にも伝わるように話してください。
 
 相談文:
 {text}
 
-まずは短く共感してください。その後、具体的な解決策を助言してください。"""
+まずは短く共感してください。その後、具体的な解決策を助言してください。
+
+【参考メモ】以下はこのユーザーの最近の話題・関心の要約です。会話の文脈として自然に活用してください。
+{memos_text}
+"""
 
         try:
             # Ollamaでストリーミング応答を生成
@@ -366,12 +456,40 @@ async def chat_stream_local(request: Request, data: ChatIn):
                 ),
             )
 
+            # 1文要約（ユーザー発話＋AI返答）を生成してメモ化（最新10件を保持）
+            try:
+                summary_sys = (
+                    "次のユーザー発話とAI返答を、日本語で1文(60〜120文字程度)に要約してください。"
+                    "継続的な関心や悩み、進捗があれば簡潔に含めてください。改行や箇条書きは禁止です。"
+                )
+                summary_resp = client.responses.create(
+                    model=OPENAI_MODEL,
+                    input=[
+                        {"role": "system", "content": summary_sys},
+                        {
+                            "role": "user",
+                            "content": f"ユーザー: {text}\nAI: {reply_text}",
+                        },
+                    ],
+                )
+                one_liner = (
+                    getattr(summary_resp, "output_text", "").strip() or ai_summary
+                )
+            except Exception:
+                one_liner = ai_summary
+
+            try:
+                add_memory(uid, one_liner, keep=10)
+            except Exception:
+                pass
+
             yield sse_event(
                 {
                     "type": "final",
                     "result": {
                         "user_id": uid,
                         "reply": reply_text,
+                        "memory_summary": one_liner,
                         "ai_summary": ai_summary,
                         "ai_risk_overall": ai_overall,
                         "ai_risk_detail": {
