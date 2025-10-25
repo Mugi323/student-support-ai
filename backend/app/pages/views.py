@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.core.config import TEMPLATE_DIR
 from app.db import query_all
+from app.services.recommendations import get_recommendations
 
 router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
@@ -12,7 +13,15 @@ templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
 @router.get("/", include_in_schema=False)
 def index_page(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # セッションからユーザーを取得できる場合は、会話の要約に基づくレコメンドを生成
+    try:
+        uid = request.session.get("user_id") if hasattr(request, "session") else None
+    except Exception:
+        uid = None
+    recs = get_recommendations(uid, limit=6)
+    return templates.TemplateResponse(
+        "index.html", {"request": request, "recommendations": recs}
+    )
 
 
 @router.get("/chat", include_in_schema=False)
@@ -67,7 +76,7 @@ def dashboard(request: Request, q: Optional[str] = None):
     role = request.session.get("role") if hasattr(request, "session") else None
     if role != "teacher":
         return RedirectResponse(url="/", status_code=302)
-    
+
     # 要対応ランキング
     rows = query_all("""
         SELECT user_id, AVG(COALESCE(ai_risk_overall, 0)) as avg_ai, MAX(created_at) as last_at, COUNT(*) as cnt
@@ -106,7 +115,7 @@ def dashboard(request: Request, q: Optional[str] = None):
             for x in items
             if ql in x["user_id"].lower() or ql in (x["last_summary"] or "").lower()
         ]
-    
+
     # 高リスク生徒一覧（いずれかの項目が8以上）
     high_risk_students = []
     all_messages = query_all("""
@@ -115,26 +124,33 @@ def dashboard(request: Request, q: Optional[str] = None):
         WHERE ai_risk_detail IS NOT NULL
         ORDER BY created_at DESC
     """)
-    
+
     # ユーザーごとの最新の高リスクメッセージを収集
     user_high_risk = {}
     for user_id, detail_json, summary, created_at, overall in all_messages:
         if user_id in user_high_risk:
             continue  # 既に最新メッセージを取得済み
-        
+
         try:
             import json
+
             detail = json.loads(detail_json) if detail_json else {}
             scores = detail.get("scores", {})
-            
+
             # いずれかの項目が8以上かチェック
             health = scores.get("health", 0)
             family = scores.get("family", 0)
             friends = scores.get("friends", 0)
             learning = scores.get("learning", 0)
             bullying = scores.get("bullying", 0)
-            
-            if health >= 8 or family >= 8 or friends >= 8 or learning >= 8 or bullying >= 8:
+
+            if (
+                health >= 8
+                or family >= 8
+                or friends >= 8
+                or learning >= 8
+                or bullying >= 8
+            ):
                 # 高リスク項目を収集
                 high_items = []
                 if health >= 8:
@@ -147,11 +163,13 @@ def dashboard(request: Request, q: Optional[str] = None):
                     high_items.append(f"学習: {learning}")
                 if bullying >= 8:
                     high_items.append(f"いじめ: {bullying}")
-                
+
                 # 表示名を取得
-                user_rows = query_all("SELECT name FROM users WHERE user_id=?", (user_id,))
+                user_rows = query_all(
+                    "SELECT name FROM users WHERE user_id=?", (user_id,)
+                )
                 display_name = user_rows[0][0] if user_rows else user_id
-                
+
                 user_high_risk[user_id] = {
                     "user_id": user_id,
                     "display_name": display_name,
@@ -160,16 +178,17 @@ def dashboard(request: Request, q: Optional[str] = None):
                     "created_at": created_at,
                     "overall": overall or 0,
                 }
-        except:
+        except Exception:
             pass
-    
+
     high_risk_students = list(user_high_risk.values())
-    
+
     return templates.TemplateResponse(
-        "dashboard.html", {
-            "request": request, 
-            "items": items, 
+        "dashboard.html",
+        {
+            "request": request,
+            "items": items,
             "high_risk_students": high_risk_students,
-            "q": q or ""
-        }
+            "q": q or "",
+        },
     )
