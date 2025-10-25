@@ -13,7 +13,8 @@
     --color-main: #AED4BD;
     --color-sub1: #E1E9C9;
     --color-accent: #EDA35A;
-    --color-background: #FEE8D9;
+    /* 背景色を白に設定 */
+    --color-background: #fffff0;
 
     --color-text-dark: #333;
     --color-text-mid: #666;
@@ -27,7 +28,8 @@
     /* アクセントカラーより少し暗い色（ボタンホバー用） */
     --color-accent-darker: #d89248; /* EDA35Aより暗い色 */
     /* チャット背景のグラデーション終点（背景色より少し暗い色） */
-    --color-chat-gradient-end: #FDDFC8; /* FEE8D9より暗い色 */
+    /* グラデーション終点も白にして実質フラットな白背景に */
+    --color-chat-gradient-end: #ffffff;
     /* スクロールバーのトラックの透明度 */
     --color-scrollbar-track: rgba(202, 220, 174, 0.2); /* CADCAEの0.2透明度 */
 }
@@ -810,6 +812,10 @@ main.max-w-5xl.mx-auto.px-4.py-6 {
     transform: translateY(-2px);
     box-shadow: 0 16px 32px rgba(0,0,0,0.12);
 }
+
+/* ホバーさせたくないカード用（ようこそ/ヘルプなど） */
+.glass-card.no-hover { transition: none; }
+.glass-card.no-hover:hover { transform: none; box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
 
 .section-title {
     position: relative;
