@@ -17,6 +17,14 @@
     <span class="sr-only">ココサポ</span>
   </a>
     <nav class="text-sm flex items-center gap-4 relative">
+      <!-- ヘルプ（ホームの左） -->
+      <button id="btnHelp" type="button" class="flex items-center hover:opacity-80" aria-label="ヘルプ" title="ヘルプ">
+        <!-- Heroicons: question-mark-circle -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+          <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-.008 13.5a1.125 1.125 0 1 1 0 2.25 1.125 1.125 0 0 1 0-2.25ZM12 6.75a3 3 0 0 0-3 3 .75.75 0 1 0 1.5 0c0-.828.672-1.5 1.5-1.5s1.5.672 1.5 1.5c0 .382-.14.73-.391 1.014-.25.28-.567.468-.869.646-.286.168-.564.33-.79.56-.331.34-.45.747-.45 1.28V14.25a.75.75 0 0 0 1.5 0v-.51c0-.127.008-.172.01-.182.008-.03.03-.099.113-.184.093-.095.253-.19.485-.325.35-.205.812-.476 1.2-.911.425-.477.692-1.11.692-1.888a3 3 0 0 0-3-3Z" clip-rule="evenodd" />
+        </svg>
+        <span class="sr-only">ヘルプ</span>
+      </button>
       <a href="/" class="flex items-center hover:opacity-80" aria-label="ホーム" title="ホーム">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
           <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l7.25 7.25c.48.48.14 1.31-.53 1.31h-.47v6.1A2 2 0 0 1 16.78 20.5h-3.53a.5.5 0 0 1-.5-.5v-4.5a1.75 1.75 0 0 0-3.5 0V20a.5.5 0 0 1-.5.5H5.22A2 2 0 0 1 3.97 18.5v-6.1H3.5c-.67 0-1.01-.83-.53-1.31l7.25-7.25Z"/>
@@ -68,6 +76,39 @@
   {% block content %}{% endblock %}
 </main>
 <footer class="text-center text-xs text-gray-500 py-6">© Student Support MVP</footer>
+
+<!-- ▼▼▼ ヘルプモーダル ▼▼▼ -->
+<div id="helpModal" class="hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <!-- overlay -->
+  <div id="helpOverlay" class="absolute inset-0 bg-black/40"></div>
+  <!-- panel -->
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden">
+      <div class="px-6 py-4 border-b">
+        <div class="flex items-center justify-between">
+          <h2 id="helpTitle" class="text-lg font-semibold">ヘルプ</h2>
+          <button id="btnHelpClose" type="button" class="p-1 rounded hover:bg-gray-100" aria-label="閉じる">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="px-6 py-5 space-y-3 text-sm text-gray-700">
+        <p>本ツールは学校の相談支援を補助する目的で設計されたAIチャットです。利用にあたっては学校のルールに従ってください。</p>
+        <hr class="my-2">
+        <h3 class="font-medium">よくある質問</h3>
+        <ul class="list-disc pl-5 space-y-1">
+          <li>チャットは匿名で利用できます（要ログイン）</li>
+          <li>教員はダッシュボードで生徒のリスクを確認できます</li>
+          <li>緊急時は学校・保護者に連絡してください</li>
+        </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+<!-- ▲▲▲ ヘルプモーダルここまで ▲▲▲ -->
 
 <!-- ▼▼▼ 追加：AIメッセージの共通ポーラー（全ページで5分ごとに取得） ▼▼▼ -->
 <script>
@@ -174,6 +215,32 @@
   })();
 </script>
 <!-- ▲▲▲ ドロップダウン制御ここまで ▲▲▲ -->
+
+<!-- ▼▼▼ ヘルプモーダル制御 ▼▼▼ -->
+<script>
+  (function () {
+    const btnOpen = document.getElementById('btnHelp');
+    const modal = document.getElementById('helpModal');
+    const btnClose = document.getElementById('btnHelpClose');
+    const overlay = document.getElementById('helpOverlay');
+    if (!btnOpen || !modal) return;
+
+    function openModal() {
+      modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+    function closeModal() {
+      modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    btnOpen.addEventListener('click', openModal);
+    btnClose && btnClose.addEventListener('click', closeModal);
+    overlay && overlay.addEventListener('click', closeModal);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+  })();
+</script>
+<!-- ▲▲▲ ヘルプモーダル制御ここまで ▲▲▲ -->
 
 </body>
 </html>
