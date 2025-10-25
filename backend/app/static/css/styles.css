@@ -429,6 +429,14 @@ body {
 }
 #btnTeacherChat:hover { filter: brightness(0.95); }
 
+/* 3) 「自分のログを見る」ボタン */
+#btnMessages {
+    background-color: var(--color-btn) !important; /* #btnAiChat と同じ色に統一 */
+    border-color: var(--color-btn) !important;
+    color: #333 !important; /* テキストも同じ基調に */
+}
+#btnMessages:hover { filter: brightness(0.95); }
+
 /* ==================== 送信ボタンの色（ページ個別） ==================== */
 /* /chat の送信ボタン */
 #sendBtn {

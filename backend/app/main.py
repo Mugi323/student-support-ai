@@ -17,6 +17,7 @@ from app.routers import auth as auth_router
 from app.routers.direct_chat import router as direct_chat_router
 from app.routers.admin import router as admin_router
 from app.routers.chat_from_ai import router as chat_from_ai_router
+from app.routers.recommendations_api import router as recommendations_router
 
 
 from fastapi.staticfiles import StaticFiles
@@ -50,3 +51,4 @@ app.include_router(auth_router.router)
 app.include_router(direct_chat_router)
 app.include_router(admin_router)  # 修正
 app.include_router(chat_from_ai_router)
+app.include_router(recommendations_router)

@@ -17,6 +17,7 @@
           <option value="openai">GPT-5-nano</option>
           <option value="ollama">Qwen3 8B</option>
         </select>
+        <button id="btnShowMemories" class="text-sm border rounded-lg px-3 py-1 bg-white hover:bg-gray-50 transition" onclick="openMemoriesModal()">最近の要約</button>
       </div>
     </div>
 
@@ -85,6 +86,22 @@
     </div>
   </div>
 </div>
+
+<!-- 最近の要約モーダル -->
+<div id="memoriesModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black bg-opacity-40" onclick="closeMemoriesModal()"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-4">
+      <div class="flex justify-between items-center mb-2">
+        <h3 class="text-lg font-semibold">最近の要約</h3>
+        <button class="text-gray-500 hover:text-gray-700 text-xl leading-none" onclick="closeMemoriesModal()">×</button>
+      </div>
+      <div id="memoriesList" class="space-y-2 text-sm text-gray-800">
+        <div class="text-gray-500">読み込み中…</div>
+      </div>
+    </div>
+  </div>
+  </div>
 
 <script>
 // 以下は index.html のチャットスクリプトをそのまま流用します
@@ -543,6 +560,51 @@ document.addEventListener('DOMContentLoaded', () => {
   // 30秒ごとに未読チェック
   setInterval(checkUnreadMessages, 30000);
 });
+
+// 最近の要約モーダル制御
+function openMemoriesModal(){
+  const modal = document.getElementById('memoriesModal');
+  modal.classList.remove('hidden');
+  loadMemories();
+}
+
+function closeMemoriesModal(){
+  const modal = document.getElementById('memoriesModal');
+  modal.classList.add('hidden');
+}
+
+async function loadMemories(){
+  const list = document.getElementById('memoriesList');
+  list.innerHTML = '<div class="text-gray-500">読み込み中…</div>';
+  try{
+    const r = await fetch('/api/memories/me', { credentials: 'same-origin' });
+    if(r.status === 401){
+      alert('ログインが必要です。ログインページに移動します');
+      window.location.href = '/login';
+      return;
+    }
+    if(!r.ok){
+      list.innerHTML = '<div class="text-red-600">取得に失敗しました</div>';
+      return;
+    }
+    const data = await r.json();
+    if(!data || data.length === 0){
+      list.innerHTML = '<div class="text-gray-500">要約はまだありません</div>';
+      return;
+    }
+    list.innerHTML = '';
+    data.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'border rounded p-2 bg-gray-50';
+      const date = item.created_at || '';
+      const sum = item.summary || '';
+      row.textContent = `[${date}] ${sum}`;
+      list.appendChild(row);
+    });
+  }catch(e){
+    list.innerHTML = '<div class="text-red-600">エラーが発生しました</div>';
+  }
+}
 
 </script>
 {% endblock %}
