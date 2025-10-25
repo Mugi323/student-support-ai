@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="bg-white rounded-2xl shadow p-6 glass-card">
+  <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover">
       <h2 class="text-xl font-semibold mb-2 section-title">ようこそ</h2>
     <p class="text-sm text-gray-600 mb-4">メニューから利用したい機能を選んでください。</p>
     <div class="space-y-3">
@@ -24,7 +24,7 @@
     </div>
   </div>
 
-  <div class="bg-white rounded-2xl shadow p-6 glass-card">
+  <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover">
       <h3 class="text-lg font-semibold mb-2 section-title">ヘルプ</h3>
     <p class="text-sm text-gray-600">本ツールは学校の相談支援を補助する目的で設計されたAIチャットです。利用にあたっては学校のルールに従ってください。</p>
     <hr class="my-4">
@@ -38,7 +38,7 @@
 
   {# 教員向けメニュー（別枠表示） #}
   {% if request.session.role == 'teacher' %}
-    <div class="bg-white rounded-2xl shadow p-6 glass-card">
+    <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover">
       <h3 class="text-lg font-semibold mb-2 section-title">教員向け</h3>
       <div class="space-y-3">
         <a href="/dashboard" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50 link-elevate">AIリスク一覧</a>
