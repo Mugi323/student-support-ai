@@ -101,6 +101,31 @@ def init_db() -> None:
         pass
 
     con.commit()
+
+    # RSSニュースキャッシュ（簡易）
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS news_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            topic TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            url TEXT NOT NULL UNIQUE,
+            image_url TEXT,
+            source TEXT,
+            published_at TEXT,
+            fetched_at TEXT NOT NULL
+        )
+        """
+    )
+    try:
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_news_topic_time ON news_cache(topic, published_at DESC, fetched_at DESC)"
+        )
+    except Exception:
+        pass
+
+    con.commit()
     con.close()
 
 
