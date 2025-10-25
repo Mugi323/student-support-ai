@@ -13,7 +13,8 @@
     --color-main: #AED4BD;
     --color-sub1: #E1E9C9;
     --color-accent: #EDA35A;
-    --color-background: #FEE8D9;
+    /* 背景色を白に設定 */
+    --color-background: #fffff0;
 
     --color-text-dark: #333;
     --color-text-mid: #666;
@@ -27,7 +28,8 @@
     /* アクセントカラーより少し暗い色（ボタンホバー用） */
     --color-accent-darker: #d89248; /* EDA35Aより暗い色 */
     /* チャット背景のグラデーション終点（背景色より少し暗い色） */
-    --color-chat-gradient-end: #FDDFC8; /* FEE8D9より暗い色 */
+    /* グラデーション終点も白にして実質フラットな白背景に */
+    --color-chat-gradient-end: #ffffff;
     /* スクロールバーのトラックの透明度 */
     --color-scrollbar-track: rgba(202, 220, 174, 0.2); /* CADCAEの0.2透明度 */
 }
@@ -811,6 +813,10 @@ main.max-w-5xl.mx-auto.px-4.py-6 {
     box-shadow: 0 16px 32px rgba(0,0,0,0.12);
 }
 
+/* ホバーさせたくないカード用（ようこそ/ヘルプなど） */
+.glass-card.no-hover { transition: none; }
+.glass-card.no-hover:hover { transform: none; box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
+
 .section-title {
     position: relative;
     padding-left: 0.5rem;
@@ -845,4 +851,53 @@ main.max-w-5xl.mx-auto.px-4.py-6 {
 }
 .link-elevate:active {
     transform: translateY(0);
+}
+
+/* ==================== レスポンシブ余白圧縮（追加の上書き） ==================== */
+/* 小さな画面ほど余白が自然に小さくなるように、clamp() で fluid spacing を適用 */
+
+/* ホーム画面周り */
+.home-page {
+    padding: clamp(0.75rem, 3vw, 2rem);
+}
+.welcome-text {
+    margin-bottom: clamp(1rem, 4vw, 2rem);
+}
+.feature-grid {
+    gap: clamp(0.75rem, 2.5vw, 2rem);
+}
+.feature-card {
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+/* レコメンド画面周り */
+.recommend-page {
+    padding: clamp(0.75rem, 3vw, 2rem);
+}
+.recommend-grid {
+    gap: clamp(0.75rem, 2.5vw, 2rem);
+}
+.recommend-card {
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+/* チャット画面の上下余白や要素間隔も少し圧縮 */
+.chat-messages {
+    padding: clamp(0.5rem, 2vw, 1rem);
+    gap: clamp(0.5rem, 2vw, 1rem);
+}
+.chat-input-area {
+    padding: clamp(0.5rem, 2vw, 1rem);
+    gap: clamp(0.35rem, 1.5vw, 0.75rem);
+}
+
+/* 画面の縦方向が低い端末（例: 小型ノートPCや横持ちスマホ）向けにさらに圧縮 */
+@media (max-height: 700px) {
+    .app-header { padding: 0.5rem; }
+    .home-page { padding: 0.75rem; }
+    .recommend-page { padding: 0.75rem; }
+    .welcome-text { margin-bottom: 1rem; }
+    .feature-card, .recommend-card { padding: 1rem; }
+    .chat-messages { padding: 0.5rem; gap: 0.5rem; }
+    .chat-input-area { padding: 0.5rem; gap: 0.5rem; }
 }
