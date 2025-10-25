@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 import base64
 import os
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Request, File, UploadFile, Form
 from fastapi.responses import StreamingResponse
@@ -40,8 +40,15 @@ def api_chat_stream(request: Request, payload: ChatIn):
 
     async def generator():
         # ---- 第1段: 応答テキストをストリーム出力 ----
-        sys = "あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を出力してください。小学生にも伝わるように話してください。"
-        user = f"相談文:\n{payload.text}\n\nまずは短く共感してください。その後、具体的な解決策を助言してください。"
+        sys = (
+            "以下の方針で回答してください。\n"
+            "・日本語で150文字以内の返答を出力してください。\n"
+            "・会話相手は小学生もしくは中学生です。目線を合わせて話してください。\n"
+            "・日常会話の場合は、相手が話しやすいように会話を発展させてください。\n"
+            "・相手が悩みを抱えていると判断したときのみ、具体的な解決策を提示してください。\n"
+            "・提案を行う際は、その理由も伝えてください。"
+        )
+        user = f"{payload.text}"
 
         try:
             with client.responses.stream(
@@ -164,14 +171,19 @@ async def api_chat_stream_with_images(
                 }
             )
 
-        # ---- 第1段: 応答テキストをストリーム出力（画像対応） ----
-        sys = "あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を出力してください。小学生にも伝わるように話してください。画像がある場合は、その内容も考慮して回答してください。"
-
+        sys = (
+            "以下の方針で回答してください。\n"
+            "・日本語で150文字以内の返答を出力してください。\n"
+            "・会話相手は小学生もしくは中学生です。目線を合わせて話してください。\n"
+            "・日常会話の場合は、相手が話しやすいように会話を発展させてください。\n"
+            "・相手が悩みを抱えていると判断したときのみ、具体的な解決策を提示してください。\n"
+            "・提案を行う際は、その理由も伝えてください。"
+        )
         # メッセージコンテンツを構築
         user_content = [
             {
                 "type": "text",
-                "text": f"相談文:\n{text}\n\nまずは短く共感してください。その後、具体的な解決策を助言してください。",
+                "text": f"{text}",
             }
         ]
         user_content.extend(image_contents)
@@ -272,7 +284,7 @@ async def api_chat_stream_with_images(
 @router.post("/chat_stream_local")
 async def chat_stream_local(request: Request, data: ChatIn):
     """Ollamaを使用したローカルチャットストリーミング"""
-    
+
     # セッションからユーザーIDを取得
     session_uid = None
     try:
@@ -282,9 +294,9 @@ async def chat_stream_local(request: Request, data: ChatIn):
 
     if not session_uid:
         from fastapi import HTTPException, status
+
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Login required"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
         )
 
     uid = session_uid
@@ -293,7 +305,7 @@ async def chat_stream_local(request: Request, data: ChatIn):
     # Ollamaの設定を取得
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
     OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-    
+
     # OllamaAdapterを初期化
     ollama_adapter = OllamaAdapter(model_name=OLLAMA_MODEL, host=OLLAMA_HOST)
 
@@ -317,10 +329,12 @@ async def chat_stream_local(request: Request, data: ChatIn):
                 yield sse_event({"type": "delta", "text": chunk})
 
         except Exception as e:
-            yield sse_event({
-                "type": "error",
-                "message": f"Ollama Streaming failed: {type(e).__name__}: {str(e)}"
-            })
+            yield sse_event(
+                {
+                    "type": "error",
+                    "message": f"Ollama Streaming failed: {type(e).__name__}: {str(e)}",
+                }
+            )
             reply_text = ""
 
         # リスク分析
@@ -336,7 +350,13 @@ async def chat_stream_local(request: Request, data: ChatIn):
                 "INSERT INTO messages (user_id, is_anonymous, text, risk_score, sentiment, tags, created_at, ai_summary, ai_risk_detail, ai_risk_overall) "
                 "VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (
-                    uid, 0, text, 0.0, 0.0, '["general"]', now_iso(),
+                    uid,
+                    0,
+                    text,
+                    0.0,
+                    0.0,
+                    '["general"]',
+                    now_iso(),
                     ai_summary,
                     json.dumps(
                         {"scores": ai_scores, "reason": ai_reason, "tags": ai_tags},
@@ -346,25 +366,29 @@ async def chat_stream_local(request: Request, data: ChatIn):
                 ),
             )
 
-            yield sse_event({
-                "type": "final",
-                "result": {
-                    "user_id": uid,
-                    "reply": reply_text,
-                    "ai_summary": ai_summary,
-                    "ai_risk_overall": ai_overall,
-                    "ai_risk_detail": {
-                        "scores": ai_scores,
-                        "reason": ai_reason,
-                        "tags": ai_tags,
+            yield sse_event(
+                {
+                    "type": "final",
+                    "result": {
+                        "user_id": uid,
+                        "reply": reply_text,
+                        "ai_summary": ai_summary,
+                        "ai_risk_overall": ai_overall,
+                        "ai_risk_detail": {
+                            "scores": ai_scores,
+                            "reason": ai_reason,
+                            "tags": ai_tags,
+                        },
                     },
-                },
-            })
+                }
+            )
         except Exception as e:
-            yield sse_event({
-                "type": "error",
-                "message": f"AI解析に失敗しました: {type(e).__name__}: {str(e)}"
-            })
+            yield sse_event(
+                {
+                    "type": "error",
+                    "message": f"AI解析に失敗しました: {type(e).__name__}: {str(e)}",
+                }
+            )
 
     headers = {
         "Cache-Control": "no-cache",
