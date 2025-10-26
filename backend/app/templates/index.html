@@ -25,7 +25,7 @@
   </div>
 
   <!-- あなたへのおすすめ（右側） -->
-  <div class="bg-white rounded-2xl shadow p-6 glass-card flex flex-col max-h-[70vh]">
+  <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover flex flex-col max-h-[70vh]">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-lg font-semibold section-title">あなたへのおすすめ</h3>
       <button id="btnRefreshNews" type="button" class="text-sm border px-3 py-1 rounded hover:bg-gray-50 inline-flex items-center gap-1" title="おすすめを更新">
@@ -69,7 +69,7 @@
     {% endif %}
   </div>
 
-  
+
 
   {# 教員向けメニュー（別枠表示） #}
   {% if request.session.role == 'teacher' %}
@@ -110,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("storage", (e) => {
     if (e.key === "ai_inbox") updateBadge();
   });
-  
+
   // 教員の場合、ボタンのテキストを変更
   {% if request.session.role == 'teacher' %}
   const btnTeacherChat = document.getElementById("btnTeacherChat");
@@ -122,15 +122,49 @@ document.addEventListener("DOMContentLoaded", () => {
   // ニュース更新ボタン
   const btnRefresh = document.getElementById('btnRefreshNews');
   const listEl = document.getElementById('recommendList');
+
+  function loadSeenUrls(){
+    try{
+      return JSON.parse(localStorage.getItem('seen_reco_urls')||'[]');
+    }catch{ return []; }
+  }
+  function saveSeenUrls(urls){
+    try{
+      const max = 200;
+      const unique = Array.from(new Set(urls.filter(u => u && u !== '#')));
+      localStorage.setItem('seen_reco_urls', JSON.stringify(unique.slice(-max)));
+    }catch{}
+  }
+
+  // 初期描画済みのおすすめから既出URLをシード
+  try{
+    const now = loadSeenUrls();
+    const anchors = document.querySelectorAll('#recommendList a[href]');
+    const hrefs = Array.from(anchors).map(a => a.getAttribute('href')).filter(h => h && h !== '#');
+    if (hrefs.length){ saveSeenUrls(now.concat(hrefs)); }
+  }catch{}
   async function refreshRecommendations(){
     if (!btnRefresh || !listEl) return;
     btnRefresh.disabled = true;
     btnRefresh.classList.add('opacity-60');
     try {
-  const r = await fetch('/api/recommendations?limit=10&fresh=1&shuffle=1', { credentials: 'same-origin' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const data = await r.json();
-      const items = Array.isArray(data.items) ? data.items : [];
+  const seen = loadSeenUrls();
+  const excludeParam = seen.slice(-50).map(encodeURIComponent).join(',');
+  let url = '/api/recommendations?limit=10&fresh=1&shuffle=1{{ "&audience=kids" if kids_mode else "" }}';
+  if (excludeParam) url += '&exclude=' + excludeParam;
+  let r = await fetch(url, { credentials: 'same-origin' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  let data = await r.json();
+  let items = Array.isArray(data.items) ? data.items : [];
+  // フォールバック: 全部既出で0件だった場合は履歴をクリアして1回だけ再試行
+  if (items.length === 0 && seen.length > 0){
+    localStorage.removeItem('seen_reco_urls');
+    r = await fetch('/api/recommendations?limit=10&fresh=1&shuffle=1{{ "&audience=kids" if kids_mode else "" }}', { credentials: 'same-origin' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    data = await r.json();
+    items = Array.isArray(data.items) ? data.items : [];
+  }
+
       // 再描画
       listEl.innerHTML = '';
       const typeLabel = (t) => t === 'news' ? 'ニュース' : (t === 'event' ? 'イベント' : '豆知識');
@@ -181,6 +215,12 @@ document.addEventListener("DOMContentLoaded", () => {
         li.appendChild(row);
         listEl.appendChild(li);
       }
+      // 既出URLに追記
+      try{
+        const nowSeen = loadSeenUrls();
+        const add = items.map(it => it && it.url).filter(u => u && u !== '#');
+        saveSeenUrls(nowSeen.concat(add));
+      }catch{}
     } catch(e){
       console.warn('[recommendations] refresh failed:', e);
     } finally {
