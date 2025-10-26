@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import List, Dict, Optional
 
+from app.core.config import KIDS_MODE
+
 from app.db.memory import get_memories
 from app.services.news_rss import get_news_for_topics
 
@@ -175,6 +177,8 @@ async def get_recommendations_async(
     *,
     force_refresh: bool = False,
     shuffle: bool = False,
+    audience: Optional[str] = None,
+    exclude_urls: Optional[List[str]] = None,
 ) -> List[Dict[str, str]]:
     """会話の要約（user_memories）から関心カテゴリを推定し、
     ローカルカタログからニュース/イベント/豆知識を返す。
@@ -192,12 +196,16 @@ async def get_recommendations_async(
     # まずはRSSニュースを取得
     news_items: List[Dict[str, str]] = []
     try:
+        # audience が未指定で KIDS_MODE が有効なら kids を既定に
+        effective_audience = audience or ("kids" if KIDS_MODE else None)
         news_items = await get_news_for_topics(
             topics,
             limit_per_topic=3,
             ttl_minutes=30,
             force_refresh=force_refresh,
             shuffle=shuffle,
+            audience=effective_audience,
+            exclude_urls=exclude_urls,
         )
     except Exception:
         news_items = []
@@ -205,11 +213,15 @@ async def get_recommendations_async(
     # 次に固定カタログ（tips/events）で補完
     seen = set((it.get("type"), it.get("title")) for it in news_items)
     mixed: List[Dict[str, str]] = list(news_items)
+    ex_set = set(u for u in (exclude_urls or []) if u and u != "#")
 
     for tp in topics + (["general"] if "general" not in topics else []):
         for it in catalog.get(tp, []):
             key = (it.get("type"), it.get("title"))
             if key in seen:
+                continue
+            url = it.get("url")
+            if url and url != "#" and url in ex_set:
                 continue
             seen.add(key)
             mixed.append(it)
@@ -220,6 +232,9 @@ async def get_recommendations_async(
         key = (it.get("type"), it.get("title"))
         if key in seen:
             continue
+        url = it.get("url")
+        if url and url != "#" and url in ex_set:
+            continue
         seen.add(key)
         mixed.append(it)
         if len(mixed) >= limit:
@@ -227,7 +242,13 @@ async def get_recommendations_async(
     return mixed[:limit]
 
 
-def get_recommendations(user_id: Optional[str], limit: int = 6) -> List[Dict[str, str]]:
+def get_recommendations(
+    user_id: Optional[str],
+    limit: int = 6,
+    *,
+    audience: Optional[str] = None,
+    exclude_urls: Optional[List[str]] = None,
+) -> List[Dict[str, str]]:
     """同期APIから利用するための薄いラッパー。
     ページレンダリングでは同期関数しか使えない箇所があるため、ここでイベントループを扱う。
     FastAPI の同期エンドポイントから呼ばれる想定。
@@ -238,11 +259,23 @@ def get_recommendations(user_id: Optional[str], limit: int = 6) -> List[Dict[str
         loop = asyncio.get_event_loop()
         if loop.is_running():
             # ランニング中（例: Uvicorn のメインループ上）では新規に実行
-            return loop.run_until_complete(get_recommendations_async(user_id, limit))  # type: ignore
+            return loop.run_until_complete(
+                get_recommendations_async(
+                    user_id, limit, audience=audience, exclude_urls=exclude_urls
+                )
+            )  # type: ignore
         else:
-            return loop.run_until_complete(get_recommendations_async(user_id, limit))  # type: ignore
+            return loop.run_until_complete(
+                get_recommendations_async(
+                    user_id, limit, audience=audience, exclude_urls=exclude_urls
+                )
+            )  # type: ignore
     except RuntimeError:
         # イベントループ未作成時
         import asyncio
 
-        return asyncio.run(get_recommendations_async(user_id, limit))
+    return asyncio.run(
+        get_recommendations_async(
+            user_id, limit, audience=audience, exclude_urls=exclude_urls
+        )
+    )

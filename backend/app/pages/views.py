@@ -3,7 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from app.core.config import TEMPLATE_DIR
+from app.core.config import TEMPLATE_DIR, KIDS_MODE
 from app.db import query_all
 from app.services.recommendations import get_recommendations
 
@@ -18,9 +18,12 @@ def index_page(request: Request):
         uid = request.session.get("user_id") if hasattr(request, "session") else None
     except Exception:
         uid = None
-    recs = get_recommendations(uid, limit=6)
+    recs = get_recommendations(
+        uid, limit=6, audience=("kids" if KIDS_MODE else None), exclude_urls=None
+    )
     return templates.TemplateResponse(
-        "index.html", {"request": request, "recommendations": recs}
+        "index.html",
+        {"request": request, "recommendations": recs, "kids_mode": KIDS_MODE},
     )
 
 
