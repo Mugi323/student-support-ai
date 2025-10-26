@@ -1,10 +1,14 @@
 from __future__ import annotations
 from typing import List, Dict, Optional
+import random
 
 from app.core.config import KIDS_MODE
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
-from app.db.memory import get_memories
+# from app.db.memory import get_memories  # personalization disabled
 from app.services.news_rss import get_news_for_topics
+from app.services.web_search import get_articles_for_topics
+from app.services.social_mastodon import get_social_for_topics
 
 
 # 簡易キーワード → カテゴリのマップ（日本語の素朴な一致）
@@ -16,19 +20,6 @@ KEYWORD_TO_TOPIC = {
     "定期テスト": "study",
     "受験": "study",
     "英語": "english",
-    "TOEIC": "english",
-    "英検": "english",
-    "留学": "study",
-    # 進路/就活
-    "就活": "career",
-    "就職": "career",
-    "インターン": "career",
-    "インターンシップ": "career",
-    "履歴書": "career",
-    # 生活/お金
-    "奨学金": "money",
-    "バイト": "money",
-    "アルバイト": "money",
     # 健康/メンタル
     "健康": "health",
     "体調": "health",
@@ -41,7 +32,83 @@ KEYWORD_TO_TOPIC = {
     "友人": "friends",
     "いじめ": "friends",
     "部活": "club",
+    "恋愛": "friends",
+    # 子ども向けの関心ワード（多彩さ重視）
+    "宇宙": "space",
+    "月": "space",
+    "星": "space",
+    "恐竜": "dinosaurs",
+    "動物": "animals",
+    "パンダ": "animals",
+    "犬": "animals",
+    "猫": "animals",
+    "生き物": "animals",
+    "昆虫": "animals",
+    "科学": "science",
+    "実験": "science",
+    "発見": "science",
+    "ロボット": "robot",
+    "AI": "robot",
+    "ゲーム": "games",
+    "eスポーツ": "games",
+    "スポーツ": "sports",
+    "サッカー": "soccer",
+    "野球": "baseball",
+    "オリンピック": "sports",
+    "アニメ": "anime",
+    "マンガ": "manga",
+    "キャラクター": "anime",
+    "自然": "nature",
+    "植物": "nature",
+    "海": "ocean",
+    "深海": "ocean",
 }
+
+
+def _normalize_url(raw: Optional[str]) -> str:
+    """URLを重複排除しやすい形に正規化する。
+    - スキームはそのまま（http/https差異は残す）だが、ホストは小文字化
+    - クエリはトラッキング系を除去（utm_*, fbclid, gclid など）
+    - フラグメントは削除
+    - 末尾の無意味なスラッシュは統一（ただしルートは残す）
+    """
+    if not raw:
+        return ""
+    try:
+        u = urlparse(raw)
+        host = (u.netloc or "").lower()
+        # クエリフィルタ
+        q = []
+        for k, v in parse_qsl(u.query, keep_blank_values=True):
+            kl = k.lower()
+            if kl.startswith("utm_"):
+                continue
+            if kl in {
+                "fbclid",
+                "gclid",
+                "gclsrc",
+                "ref",
+                "ref_src",
+                "ref_url",
+                "feature",
+                "si",
+                "spm",
+                "_hsmi",
+                "_hsenc",
+            }:
+                continue
+            q.append((k, v))
+        query = urlencode(q, doseq=True)
+        path = u.path or "/"
+        # 末尾スラッシュ統一（ルートはそのまま）
+        if path != "/":
+            path = path.rstrip("/")
+            if not path:
+                path = "/"
+        normalized = urlunparse((u.scheme or "https", host, path, "", query, ""))
+        return normalized
+    except Exception:
+        return raw.strip()
 
 
 def _curated_catalog() -> Dict[str, List[Dict[str, str]]]:
@@ -160,6 +227,24 @@ def _curated_catalog() -> Dict[str, List[Dict[str, str]]]:
     }
 
 
+def _all_topics() -> List[str]:
+    """利用可能なトピック一覧（general含む）"""
+    from_topics = set(KEYWORD_TO_TOPIC.values())
+    from_catalog = set(_curated_catalog().keys())
+    all_set = from_topics.union(from_catalog)
+    return sorted(all_set)
+
+
+def _pick_diverse_topics(k: int = 4) -> List[str]:
+    """ユーザー嗜好を使わず、多彩なトピックからランダムに選ぶ。
+    general は補完用に回し、まずは general 以外から選択。
+    """
+    all_tps = [t for t in _all_topics() if t != "general"]
+    random.shuffle(all_tps)
+    sel = all_tps[:k]
+    return sel or ["general"]
+
+
 def _infer_topics_from_texts(texts: List[str]) -> List[str]:
     counts: Dict[str, int] = {}
     for t in texts or []:
@@ -184,14 +269,11 @@ async def get_recommendations_async(
     ローカルカタログからニュース/イベント/豆知識を返す。
     未ログインやメモなしの場合は general を返す。
     """
-    catalog = _curated_catalog()
+    # 固定カタログは使用しない（疑似コンテンツ非表示）
 
-    topics: List[str]
-    if user_id:
-        memos = get_memories(user_id, limit=10)
-        topics = _infer_topics_from_texts(memos)
-    else:
-        topics = ["general"]
+    # パーソナライズを無効化し、多彩なカテゴリから選択
+    topic_count = 4 if limit >= 8 else (3 if limit >= 6 else 2)
+    topics: List[str] = _pick_diverse_topics(k=topic_count)
 
     # まずはRSSニュースを取得
     news_items: List[Dict[str, str]] = []
@@ -210,35 +292,61 @@ async def get_recommendations_async(
     except Exception:
         news_items = []
 
-    # 次に固定カタログ（tips/events）で補完
-    seen = set((it.get("type"), it.get("title")) for it in news_items)
-    mixed: List[Dict[str, str]] = list(news_items)
-    ex_set = set(u for u in (exclude_urls or []) if u and u != "#")
+    # 一般Web記事（Bing Web Search; 任意設定）
+    article_items: List[Dict[str, str]] = []
+    try:
+        article_items = await get_articles_for_topics(
+            topics, limit_per_topic=2, audience=audience, exclude_urls=exclude_urls
+        )
+    except Exception:
+        article_items = []
 
-    for tp in topics + (["general"] if "general" not in topics else []):
-        for it in catalog.get(tp, []):
-            key = (it.get("type"), it.get("title"))
-            if key in seen:
+    # SNS（Mastodon; 任意設定）
+    social_items: List[Dict[str, str]] = []
+    try:
+        # ニュースと同程度を目指して/トピックあたりの取得数を増やす
+        social_items = await get_social_for_topics(
+            topics, limit_per_topic=3, audience=audience, exclude_urls=exclude_urls
+        )
+    except Exception:
+        social_items = []
+
+    # URLベースで重複排除（無い場合は type+title を小文字化して使用）
+    def key_of(it: Dict[str, str]):
+        u = _normalize_url(it.get("url"))
+        if u:
+            return ("url", u)
+        t = (it.get("type") or "").strip().lower()
+        title = (it.get("title") or "").strip().lower()
+        return (t, title)
+
+    seen = set()
+    mixed: List[Dict[str, str]] = []
+
+    # ニュース・SNS・記事をラウンドロビンで均等に採用
+    sources = [list(news_items), list(social_items), list(article_items)]
+    idxs = [0, 0, 0]
+    total_sources = len(sources)
+    cursor = 0
+    while len(mixed) < limit and any(
+        idxs[i] < len(sources[i]) for i in range(total_sources)
+    ):
+        for i in range(total_sources):
+            j = (cursor + i) % total_sources
+            if idxs[j] >= len(sources[j]):
                 continue
-            url = it.get("url")
-            if url and url != "#" and url in ex_set:
+            it = sources[j][idxs[j]]
+            idxs[j] += 1
+            k = key_of(it)
+            if k in seen:
                 continue
-            seen.add(key)
+            seen.add(k)
             mixed.append(it)
             if len(mixed) >= limit:
-                return mixed[:limit]
-    # general で埋める
-    for it in catalog.get("general", []):
-        key = (it.get("type"), it.get("title"))
-        if key in seen:
-            continue
-        url = it.get("url")
-        if url and url != "#" and url in ex_set:
-            continue
-        seen.add(key)
-        mixed.append(it)
-        if len(mixed) >= limit:
-            break
+                break
+        cursor = (cursor + 1) % total_sources
+    # exclude は現状、外部ソース側の取得で適用済み（ニュースRSS側）
+    # 疑似コンテンツ（固定のイベント/豆知識）は表示しない
     return mixed[:limit]
 
 
