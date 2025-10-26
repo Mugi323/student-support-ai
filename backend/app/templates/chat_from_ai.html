@@ -1,32 +1,68 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+  /* このページでは本体をスクロールさせず、履歴のみスクロール */
+  body { overflow-y: hidden; }
+  /* 押下時の視覚フィードバック用 */
+  .btn-busy { opacity: .6; cursor: wait; pointer-events: none; }
+</style>
+
 <div class="max-w-5xl mx-auto p-4">
   <h1 class="text-xl font-semibold mb-4">AIからのメッセージ</h1>
 
-  <div class="bg-white rounded-2xl shadow p-6">
-    <div class="flex items-center justify-between mb-3">
+  <!-- フッターが常に見えるように高さを制限（ページ本体は非スクロール） -->
+  <div
+    class="bg-white rounded-2xl shadow p-6 border flex flex-col gap-4 mb-6 min-h-0"
+    style="max-height: calc(100svh - 220px);"
+  >
+    <div class="flex items-center justify-between">
       <div class="text-sm text-gray-600">
         <span>受信箱</span>
       </div>
       <div class="flex items-center gap-3">
-        <button class="text-sm underline text-indigo-600" onclick="refreshInbox()">再読み込み</button>
-        <button class="text-sm text-gray-500 hover:text-gray-700" onclick="clearInbox()">履歴をクリア</button>
-        <button class="text-sm text-indigo-600 underline" onclick="fetchNow()">今すぐ受信</button>
+        <button id="btnRefresh" class="text-sm underline text-indigo-600 inline-flex items-center gap-1"
+                onclick="refreshInbox(this)">
+          <svg class="hidden animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+            <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4"/>
+          </svg>
+          <span class="label">再読み込み</span>
+        </button>
+
+        <button id="btnClear" class="text-sm text-gray-500 hover:text-gray-700"
+                onclick="clearInbox()">履歴をクリア</button>
+
+        <button id="btnFetch" class="text-sm text-indigo-600 underline inline-flex items-center gap-1"
+                onclick="fetchNow(this)">
+          <svg class="hidden animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"/>
+            <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="4"/>
+          </svg>
+          <span class="label">今すぐ受信</span>
+        </button>
       </div>
     </div>
 
     <!-- 最新 -->
-    <div class="border rounded-2xl p-4 bg-gray-50 mb-4" id="latestBox">
+    <div class="border rounded-2xl p-4 bg-gray-50" id="latestBox">
       <div class="text-xs text-gray-500 mb-1">最新メッセージ</div>
       <div id="lastMessage" class="text-lg text-gray-800">（まだありません）</div>
       <div id="lastTime" class="text-xs text-gray-500 mt-1"></div>
     </div>
 
-    <!-- 履歴 -->
-    <div class="border rounded-2xl p-4">
-      <div class="text-sm font-medium mb-2">履歴</div>
-      <ul id="history" class="mt-1 space-y-2 text-sm"></ul>
+    <!-- 履歴：このボックスだけスクロール -->
+    <div class="border rounded-2xl bg-white flex-1 min-h-0 flex flex-col">
+      <div class="p-4 border-b">
+        <div class="text-sm font-medium">履歴</div>
+      </div>
+
+      <!-- スクロール対象（flex-1 + min-h-0 が重要） -->
+      <div id="historyScroller"
+           class="px-4 pb-4 overflow-y-auto flex-1 min-h-0"
+           style="scrollbar-gutter: stable both-edges;">
+        <ul id="history" class="mt-2 space-y-2 text-sm"></ul>
+      </div>
     </div>
   </div>
 </div>
@@ -43,7 +79,6 @@ function fmt(ts){
   return `${y}/${m}/${da} ${hh}:${mm}:${ss}`;
 }
 
-// ✅ チャットへ移動
 function startConversation(text){
   sessionStorage.setItem('seed_msg', text || '');
   window.location.href = '/chat';
@@ -52,32 +87,28 @@ function startConversation(text){
 function render(){
   const inbox = (window.aiInbox?.load?.() || []);
   const lastMsg = inbox[0];
-
   const lastMessageEl = document.getElementById("lastMessage");
   const lastTimeEl    = document.getElementById("lastTime");
   const historyEl     = document.getElementById("history");
   const latestBox     = document.getElementById("latestBox");
 
-  // --- 最新メッセージ ---
   if(lastMsg){
     lastMessageEl.textContent = lastMsg.text;
     lastTimeEl.textContent = `受信: ${fmt(lastMsg.ts)}`;
-
-    // クリックでチャットへ
-    latestBox.classList.add("cursor-pointer", "hover:bg-indigo-50");
+    latestBox.classList.add("cursor-pointer","hover:bg-indigo-50");
     latestBox.title = "このメッセージの続きからチャットを始める";
     latestBox.onclick = () => startConversation(lastMsg.text);
-  } else {
+  }else{
     lastMessageEl.textContent = "（まだありません）";
     lastTimeEl.textContent = "";
-    latestBox.classList.remove("cursor-pointer");
+    latestBox.classList.remove("cursor-pointer","hover:bg-indigo-50");
     latestBox.onclick = null;
   }
 
-  // --- 履歴 ---
   historyEl.innerHTML = "";
   inbox.forEach((m) => {
     const li = document.createElement("li");
+    // ← ホバー色はユーティリティで明示（ビルド差分に影響されない）
     li.className = "border rounded-xl p-2 bg-white hover:bg-gray-50 cursor-pointer";
     li.title = "このメッセージの続きからチャットを始める";
     li.textContent = `[${fmt(m.ts)}] ${m.text}`;
@@ -86,18 +117,55 @@ function render(){
   });
 }
 
-function refreshInbox(){ render(); }
-function clearInbox(){ window.aiInbox?.clear?.(); }
-function fetchNow(){ window.aiInboxFetchNow?.(); }
+/* ===== 押下時の視覚フィードバック ===== */
+function setBusy(btn, on, runningText){
+  if(!btn) return;
+  const label = btn.querySelector('.label');
+  const spin  = btn.querySelector('svg');
+  if(on){
+    btn.dataset._label = label ? label.textContent : '';
+    if(label) label.textContent = runningText || btn.dataset._label || '';
+    if(spin)  spin.classList.remove('hidden');
+    btn.classList.add('btn-busy');
+    btn.disabled = true;
+  }else{
+    if(label && btn.dataset._label != null) label.textContent = btn.dataset._label;
+    if(spin)  spin.classList.add('hidden');
+    btn.classList.remove('btn-busy');
+    btn.disabled = false;
+  }
+}
+function withButtonLoading(btn, text, fn){
+  try{
+    setBusy(btn, true, text);
+    const p = fn();
+    return Promise.resolve(p).finally(()=> setBusy(btn, false));
+  }catch(e){
+    setBusy(btn, false);
+    throw e;
+  }
+}
 
-// 初期描画
+/* ===== ボタンのハンドラ ===== */
+function refreshInbox(btn){
+  return withButtonLoading(btn, "更新中…", () => {
+    render();                 // 即時再描画
+  });
+}
+function clearInbox(){
+  window.aiInbox?.clear?.();
+}
+function fetchNow(btn){
+  return withButtonLoading(btn, "受信中…", async () => {
+    const p = window.aiInboxFetchNow?.();
+    await Promise.resolve(p); // Promise/非Promise両対応
+    // 完了時は base.html 側の ai_inbox_updated により自動で render()
+  });
+}
+
+/* ===== 初期化と更新イベント ===== */
 document.addEventListener("DOMContentLoaded", render);
-
-// base.html のポーラーが新着保存したら即時再描画
 window.addEventListener("ai_inbox_updated", render);
-// 別タブで変化したときにも反映
-window.addEventListener("storage", (e) => {
-  if (e.key === "ai_inbox") render();
-});
+window.addEventListener("storage", (e)=>{ if(e.key==="ai_inbox") render(); });
 </script>
 {% endblock %}

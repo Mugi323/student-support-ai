@@ -110,15 +110,15 @@
 </div>
 <!-- ▲▲▲ ヘルプモーダルここまで ▲▲▲ -->
 
-<!-- ▼▼▼ 追加：AIメッセージの共通ポーラー（全ページで5分ごとに取得） ▼▼▼ -->
+<!-- ▼▼▼ 変更：AIメッセージのスケジューラ（毎日15:00に1回） ▼▼▼ -->
 <script>
 (() => {
   if (window.__aiGlobalPollerInitialized) return;
   window.__aiGlobalPollerInitialized = true;
 
   const ENDPOINT = "/api/chat_from_ai";
-  const INTERVAL_MS = 5 * 60 * 1000; // 5分
-  const KEY = "ai_inbox";            // localStorage の保存キー
+  const KEY = "ai_inbox";                       // localStorage 保存キー
+  const LAST_SENT_KEY = "ai_inbox_last_sent";   // 直近送信日（toDateString）
 
   // 受信箱の読み書き
   function loadInbox() {
@@ -127,6 +127,12 @@
   }
   function saveInbox(arr) {
     localStorage.setItem(KEY, JSON.stringify(arr));
+  }
+  function markSentToday(d = new Date()) {
+    localStorage.setItem(LAST_SENT_KEY, d.toDateString());
+  }
+  function hasSentToday(d = new Date()) {
+    return localStorage.getItem(LAST_SENT_KEY) === d.toDateString();
   }
 
   async function fetchAndStore() {
@@ -139,44 +145,66 @@
         ts: Date.now(),
       };
       const inbox = loadInbox();
-      inbox.unshift(msg);            // 新しい順に先頭へ
-      if (inbox.length > 200) inbox.length = 200; // 上限
+      inbox.unshift(msg);
+      if (inbox.length > 200) inbox.length = 200;
       saveInbox(inbox);
-
-      // chat_from_ai ページ等に通知（開いていれば即時リフレッシュ）
+      markSentToday();
+      // 開いているページに通知
       window.dispatchEvent(new CustomEvent("ai_inbox_updated"));
     } catch (e) {
       console.warn("[AI Inbox] fetch failed:", e);
     }
   }
 
-  // タブがアクティブなときだけ動かして省電力
-  let timer = null;
-  function start() {
-    if (timer) return;
-    // 起動直後に1回実行
-    fetchAndStore();
-    // 以後5分ごと
-    timer = setInterval(fetchAndStore, INTERVAL_MS);
-  }
-  function stop() {
-    if (timer) { clearInterval(timer); timer = null; }
+  // 次の 15:00（ローカル時刻）までの delay を計算
+  function msUntilNext1500(now = new Date()) {
+    const target = new Date(now);
+    target.setHours(15, 0, 0, 0);  // 15:00:00.000
+    if (now >= target) {
+      target.setDate(target.getDate() + 1);     // すでに過ぎていれば翌日
+    }
+    return target.getTime() - now.getTime();
   }
 
-  if (!document.hidden) start();
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) stop(); else start();
+  let timer = null;
+  async function scheduleNext() {
+    if (timer) { clearTimeout(timer); timer = null; }
+    const delay = msUntilNext1500();
+    timer = setTimeout(async () => {
+      // タブが表示中なら実行。非表示なら、再表示時に補償実行（下の visibilitychange で対応）
+      if (document.visibilityState === "visible" && !hasSentToday()) {
+        await fetchAndStore();
+      }
+      // 次回（翌日）を予約
+      scheduleNext();
+    }, delay);
+  }
+
+  // 初期化：即時送信はしない。毎日15:00を待つ
+  scheduleNext();
+
+  // タブ復帰時の補償：今日の15:00を過ぎていて、未送信なら即送信
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "visible") {
+      const now = new Date();
+      const past1500 = now.getHours() > 15 || (now.getHours() === 15 && now.getMinutes() >= 0);
+      if (past1500 && !hasSentToday()) {
+        await fetchAndStore();
+      }
+      // タイマーの再計算（端末時刻変更等にも強くする）
+      scheduleNext();
+    }
   });
 
   // 他ページから呼べるユーティリティ（chat_from_ai.html 用）
   window.aiInboxFetchNow = fetchAndStore;
   window.aiInbox = {
     load: () => loadInbox(),
-    clear: () => { saveInbox([]); window.dispatchEvent(new CustomEvent("ai_inbox_updated")); },
+    clear: () => { localStorage.removeItem(LAST_SENT_KEY); saveInbox([]); window.dispatchEvent(new CustomEvent("ai_inbox_updated")); },
   };
 })();
 </script>
-<!-- ▲▲▲ 追加ここまで ▲▲▲ -->
+<!-- ▲▲▲ 変更ここまで ▲▲▲ -->
 
 <!-- ▼▼▼ ユーザーアバターのドロップダウン制御 ▼▼▼ -->
 <script>
