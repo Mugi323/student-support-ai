@@ -10,6 +10,7 @@ import httpx
 import feedparser
 
 from app.db.sqlite import execute, query_all, now_iso
+from app.core.config import KIDS_MODE, KIDS_NEWS_FEEDS, KIDS_INTEREST_KEYWORDS
 
 # NHK以外のデフォルトRSS（環境変数が未設定の場合のフォールバック）
 # 利用規約に従って見出し・概要・リンクを表示する前提。必要に応じて差し替え可能。
@@ -19,9 +20,11 @@ DEFAULT_FEEDS: List[str] = [
 ]
 
 
-# 除外ドメイン（デフォルトでNHK系を除外）。カンマ区切りで上書き可: EXCLUDE_NEWS_DOMAINS
+# 除外ドメイン（カンマ区切り）: EXCLUDE_NEWS_DOMAINS
+# 既定では NHK を除外しますが、KIDS_MODE のときは除外既定を外します（子ども向けRSSを利用するため）。
 def _excluded_domains() -> List[str]:
-    raw = os.getenv("EXCLUDE_NEWS_DOMAINS", "nhk.or.jp,nhk.jp,www3.nhk.or.jp").strip()
+    default_excludes = "" if KIDS_MODE else "nhk.or.jp,nhk.jp,www3.nhk.or.jp"
+    raw = os.getenv("EXCLUDE_NEWS_DOMAINS", default_excludes).strip()
     if not raw:
         return []
     return [d.strip().lower() for d in raw.split(",") if d.strip()]
@@ -58,7 +61,12 @@ def _parse_feed_env(var_name: str) -> List[str]:
     return [u.strip() for u in raw.split(",") if u.strip()]
 
 
-def _get_topic_feeds(topic: str) -> List[str]:
+def _get_topic_feeds(topic: str, audience: Optional[str] = None) -> List[str]:
+    # 子ども向けが明示されている、または全体設定がKIDS_MODEなら、子ども向けRSSを優先
+    if audience == "kids" or KIDS_MODE:
+        feeds = [u.strip() for u in KIDS_NEWS_FEEDS.split(",") if u.strip()]
+        if feeds:
+            return feeds
     topic_key = f"NEWS_RSS_FEEDS_{topic.upper()}"
     topic_feeds = _parse_feed_env(topic_key)
     if topic_feeds:
@@ -200,8 +208,10 @@ async def _fetch_og_image(client: httpx.AsyncClient, page_url: str) -> Optional[
     return None
 
 
-async def refresh_feeds_for_topic(topic: str) -> List[Dict[str, str]]:
-    feeds = _get_topic_feeds(topic)
+async def refresh_feeds_for_topic(
+    topic: str, audience: Optional[str] = None
+) -> List[Dict[str, str]]:
+    feeds = _get_topic_feeds(topic, audience=audience)
     if not feeds:
         return []
     items: List[Dict[str, str]] = []
@@ -297,51 +307,145 @@ def get_cached_news(
     return items
 
 
+def _is_kid_safe_text(text: Optional[str]) -> bool:
+    if not text:
+        return True
+    t = str(text)
+    # 単純なNGワード除外（必要に応じて調整）
+    block = [
+        "殺人",
+        "自殺",
+        "自死",
+        "暴行",
+        "傷害",
+        "性的",
+        "性犯罪",
+        "強姦",
+        "レイプ",
+        "売春",
+        "麻薬",
+        "ドラッグ",
+        "覚醒剤",
+        "大麻",
+        "タバコ",
+        "喫煙",
+        "酒",
+        "アルコール",
+        "賭博",
+        "ギャンブル",
+        "テロ",
+        "爆弾",
+        "銃",
+        "拳銃",
+        "AV",
+        "ポルノ",
+        "わいせつ",
+    ]
+    return not any(kw in t for kw in block)
+
+
+def _kid_interest_keywords() -> List[str]:
+    try:
+        raw = (KIDS_INTEREST_KEYWORDS or "").strip()
+        if not raw:
+            return []
+        return [s.strip() for s in raw.split(",") if s.strip()]
+    except Exception:
+        return []
+
+
+def _kid_interest_score(title: Optional[str], desc: Optional[str]) -> int:
+    text = (title or "") + "\n" + (desc or "")
+    score = 0
+    for kw in _kid_interest_keywords():
+        if kw and kw in text:
+            score += 1
+    return score
+
+
 async def get_news_for_topics(
     topics: Iterable[str],
     limit_per_topic: int = 3,
     ttl_minutes: int = 30,
     force_refresh: bool = False,
     shuffle: bool = False,
+    audience: Optional[str] = None,
+    exclude_urls: Optional[Iterable[str]] = None,
 ) -> List[Dict[str, str]]:
     # まずキャッシュを読み、それでも少ない場合のみリフレッシュ
     collected: List[Dict[str, str]] = []
     seen_urls = set()
-    valid_topics = [t for t in topics if _get_topic_feeds(t)]
+    excluded = set(u for u in (exclude_urls or []) if u and u != "#")
+    valid_topics = [t for t in topics if _get_topic_feeds(t, audience=audience)]
+    # 除外がある場合は、上位で除外されても埋められるよう多めに取得する
+    fetch_limit = limit_per_topic + (10 if excluded else 0)
     # 強制リフレッシュ指定時は先に最新化
     if force_refresh:
         for tp in valid_topics:
-            await refresh_feeds_for_topic(tp)
+            await refresh_feeds_for_topic(tp, audience=audience)
 
     for tp in valid_topics:
-        cached = get_cached_news(tp, limit=limit_per_topic, ttl_minutes=ttl_minutes)
+        cached = get_cached_news(tp, limit=fetch_limit, ttl_minutes=ttl_minutes)
         for c in cached:
             if c["url"] in seen_urls:
                 continue
             seen_urls.add(c["url"])
+            # 子ども向けのときはNGワードを除外
+            if audience == "kids" or KIDS_MODE:
+                if not (
+                    _is_kid_safe_text(c.get("title"))
+                    and _is_kid_safe_text(c.get("description"))
+                ):
+                    continue
+            if c.get("url") and c["url"] in excluded:
+                continue
             collected.append(c)
 
     # 十分な件数がなければ、最新を取得して再読込
     if len(collected) < limit_per_topic * len(valid_topics):
         for tp in valid_topics:
-            await refresh_feeds_for_topic(tp)
+            await refresh_feeds_for_topic(tp, audience=audience)
         collected = []
         seen_urls = set()
         for tp in valid_topics:
-            cached = get_cached_news(tp, limit=limit_per_topic, ttl_minutes=ttl_minutes)
+            cached = get_cached_news(tp, limit=fetch_limit, ttl_minutes=ttl_minutes)
             for c in cached:
                 if c["url"] in seen_urls:
                     continue
                 seen_urls.add(c["url"])
+                if audience == "kids" or KIDS_MODE:
+                    if not (
+                        _is_kid_safe_text(c.get("title"))
+                        and _is_kid_safe_text(c.get("description"))
+                    ):
+                        continue
+                if c.get("url") and c["url"] in excluded:
+                    continue
                 collected.append(c)
 
+    # 子ども向けは興味キーワードにマッチするものを優先
+    if audience == "kids" or KIDS_MODE:
+        liked = [
+            c
+            for c in collected
+            if _kid_interest_score(c.get("title"), c.get("description")) > 0
+        ]
+        others = [c for c in collected if c not in liked]
+        if shuffle:
+            random.shuffle(liked)
+            random.shuffle(others)
+        collected = liked + others
+    else:
+        if shuffle:
+            random.shuffle(collected)
+
     # 正規化して返却（type=news にして、既存UIと合わせる）
-    if shuffle:
-        random.shuffle(collected)
     normalized: List[Dict[str, str]] = []
     for it in collected:
         # 念のためここでも除外
         if _is_excluded(it.get("url")) or _is_excluded(it.get("source")):
+            continue
+        if it.get("url") and it["url"] in excluded:
             continue
         normalized.append(
             {
