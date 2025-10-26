@@ -19,7 +19,7 @@ def index_page(request: Request):
     except Exception:
         uid = None
     recs = get_recommendations(
-        uid, limit=6, audience=("kids" if KIDS_MODE else None), exclude_urls=None
+        uid, limit=10, audience=("kids" if KIDS_MODE else None), exclude_urls=None
     )
     return templates.TemplateResponse(
         "index.html",

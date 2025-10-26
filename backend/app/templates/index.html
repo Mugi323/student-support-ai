@@ -56,9 +56,6 @@
             <div class="flex items-start gap-3">
               {% set t = item.type %}
               <div class="shrink-0 flex flex-col items-center">
-                <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border">
-                  {% if t == 'news' %}ニュース{% elif t == 'event' %}イベント{% else %}豆知識{% endif %}
-                </span>
                 {% if item.image_url %}
                   <a href="{{ item.url }}" target="_blank" rel="noopener">
                     <img src="{{ item.image_url }}" alt="" class="mt-2 w-24 h-16 object-cover rounded border" onerror="this.style.display='none'" />
@@ -113,13 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "ai_inbox") updateBadge();
   });
 
-  // 教員の場合、ボタンのテキストを変更
-  {% if request.session.role == 'teacher' %}
-  const btnTeacherChat = document.getElementById("btnTeacherChat");
-  if (btnTeacherChat) {
-    btnTeacherChat.textContent = "生徒と話す";
-  }
-  {% endif %}
+  // 教員向けの文言変更はテンプレート側で対応（JSでは未処理）
 
   // ニュース更新ボタン
   const btnRefresh = document.getElementById('btnRefreshNews');
@@ -152,25 +143,29 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
   const seen = loadSeenUrls();
   const excludeParam = seen.slice(-50).map(encodeURIComponent).join(',');
-  let url = '/api/recommendations?limit=10&fresh=1&shuffle=1{{ "&audience=kids" if kids_mode else "" }}';
+  let url = '/api/recommendations?limit=30&fresh=1&shuffle=1{{ "&audience=kids" if kids_mode else "" }}';
   if (excludeParam) url += '&exclude=' + excludeParam;
   let r = await fetch(url, { credentials: 'same-origin' });
   if (!r.ok) throw new Error('HTTP ' + r.status);
   let data = await r.json();
   let items = Array.isArray(data.items) ? data.items : [];
   // フォールバック: 全部既出で0件だった場合は履歴をクリアして1回だけ再試行
-  if (items.length === 0 && seen.length > 0){
+  if (items.length < 10 && seen.length > 0){
     localStorage.removeItem('seen_reco_urls');
-    r = await fetch('/api/recommendations?limit=10&fresh=1&shuffle=1{{ "&audience=kids" if kids_mode else "" }}', { credentials: 'same-origin' });
+    r = await fetch('/api/recommendations?limit=30&fresh=1&shuffle=1{{ "&audience=kids" if kids_mode else "" }}', { credentials: 'same-origin' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     data = await r.json();
     items = Array.isArray(data.items) ? data.items : [];
   }
 
+      // 必ず10件表示: ランダムシャッフル後、最大10件に制限
+      const shuffleArr = (arr) => arr.sort(() => Math.random() - 0.5);
+      shuffleArr(items);
+      const selected = items.slice(0, 10);
+
       // 再描画
       listEl.innerHTML = '';
-      const typeLabel = (t) => t === 'news' ? 'ニュース' : (t === 'event' ? 'イベント' : '豆知識');
-      for (const item of items){
+      for (const item of selected){
         const li = document.createElement('li');
         li.className = 'py-3';
         const row = document.createElement('div');
@@ -178,10 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const side = document.createElement('div');
         side.className = 'shrink-0 flex flex-col items-center';
-        const badge = document.createElement('span');
-        badge.className = 'text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border';
-        badge.textContent = typeLabel(item.type);
-        side.appendChild(badge);
+        // タイプバッジは表示しない
         if (item.image_url){
           const aimg = document.createElement('a');
           aimg.href = item.url || '#';
@@ -220,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // 既出URLに追記
       try{
         const nowSeen = loadSeenUrls();
-        const add = items.map(it => it && it.url).filter(u => u && u !== '#');
+        const add = selected.map(it => it && it.url).filter(u => u && u !== '#');
         saveSeenUrls(nowSeen.concat(add));
       }catch{}
     } catch(e){
