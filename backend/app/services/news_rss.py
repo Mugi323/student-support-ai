@@ -10,7 +10,7 @@ import httpx
 import feedparser
 
 from app.db.sqlite import execute, query_all, now_iso
-from app.core.config import KIDS_MODE, KIDS_NEWS_FEEDS
+from app.core.config import KIDS_MODE, KIDS_NEWS_FEEDS, KIDS_INTEREST_KEYWORDS
 
 # NHK以外のデフォルトRSS（環境変数が未設定の場合のフォールバック）
 # 利用規約に従って見出し・概要・リンクを表示する前提。必要に応じて差し替え可能。
@@ -344,6 +344,25 @@ def _is_kid_safe_text(text: Optional[str]) -> bool:
     return not any(kw in t for kw in block)
 
 
+def _kid_interest_keywords() -> List[str]:
+    try:
+        raw = (KIDS_INTEREST_KEYWORDS or "").strip()
+        if not raw:
+            return []
+        return [s.strip() for s in raw.split(',') if s.strip()]
+    except Exception:
+        return []
+
+
+def _kid_interest_score(title: Optional[str], desc: Optional[str]) -> int:
+    text = (title or "") + "\n" + (desc or "")
+    score = 0
+    for kw in _kid_interest_keywords():
+        if kw and kw in text:
+            score += 1
+    return score
+
+
 async def get_news_for_topics(
     topics: Iterable[str],
     limit_per_topic: int = 3,
@@ -404,9 +423,19 @@ async def get_news_for_topics(
                     continue
                 collected.append(c)
 
+    # 子ども向けは興味キーワードにマッチするものを優先
+    if audience == "kids" or KIDS_MODE:
+        liked = [c for c in collected if _kid_interest_score(c.get("title"), c.get("description")) > 0]
+        others = [c for c in collected if c not in liked]
+        if shuffle:
+            random.shuffle(liked)
+            random.shuffle(others)
+        collected = liked + others
+    else:
+        if shuffle:
+            random.shuffle(collected)
+
     # 正規化して返却（type=news にして、既存UIと合わせる）
-    if shuffle:
-        random.shuffle(collected)
     normalized: List[Dict[str, str]] = []
     for it in collected:
         # 念のためここでも除外

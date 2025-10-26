@@ -25,3 +25,10 @@ KIDS_NEWS_FEEDS = os.getenv(
     "KIDS_NEWS_FEEDS",
     "https://www3.nhk.or.jp/news/easy/news-list.rss",
 )
+
+# 子どもが興味を持ちやすいテーマのキーワード（カンマ区切りで上書き可能）
+# 例: 宇宙,恐竜,動物,パンダ,犬,猫,科学,実験,発見,ロボット,ゲーム,スポーツ,サッカー,野球,アニメ,マンガ,自然,海
+KIDS_INTEREST_KEYWORDS = os.getenv(
+    "KIDS_INTEREST_KEYWORDS",
+    "宇宙,月,星,火星,宇宙飛行士,恐竜,動物,パンダ,犬,猫,生き物,昆虫,科学,実験,発見,ロボット,AI,ゲーム,eスポーツ,スポーツ,サッカー,野球,世界大会,オリンピック,アニメ,マンガ,キャラクター,自然,植物,海,深海",
+)
