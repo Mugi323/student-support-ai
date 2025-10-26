@@ -16,6 +16,16 @@ pip install -r requirements.txt
 cp .env.example .env
 # エディタで OPENAI_API_KEY=... を設定
 ```
+
+## 任意設定（おすすめ拡張: Web記事/SNS）
+- 一般Web記事（Bing Web Search）
+	- BING_SEARCH_API_KEY=あなたのキー
+	- BING_SEARCH_ENDPOINT=https://api.bing.microsoft.com （既定のままでOK）
+- SNS（Mastodon）
+	- MASTODON_BASE_URL=https://mastodon.social（使用するインスタンス）
+	- MASTODON_ACCESS_TOKEN=発行したトークン
+
+これらを設定すると、トップページ「あなたへのおすすめ」にニュースに加えて「記事」「SNS」も混在表示されます（未設定時は従来どおりニュース/イベント/豆知識のみ）。
 # 4) OpneAI APIをテスト
 ```
 cd backend

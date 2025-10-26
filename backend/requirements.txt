@@ -6,3 +6,6 @@ python-multipart
 openai
 authlib
 app
+httpx>=0.27.0
+feedparser>=6.0.11
+python-dotenv>=1.0.1
