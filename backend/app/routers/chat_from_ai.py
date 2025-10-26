@@ -15,5 +15,5 @@ MESSAGES = [
 @router.post("/chat_from_ai")
 async def api_chat_stream():
     # （デモ用）10秒待ってから返す。不要ならこの行は削除可
-    await asyncio.sleep(10)
+    await asyncio.sleep(1)
     return {"message": random.choice(MESSAGES)}
