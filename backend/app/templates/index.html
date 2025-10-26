@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-  <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover flex flex-col">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 items-start">
+  <div class="flex flex-col space-y-3">
+    <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover flex flex-col">
       <h2 class="text-xl font-semibold mb-2 section-title">ようこそ</h2>
     <p class="text-sm text-gray-600 mb-4">メニューから利用したい機能を選んでください。</p>
     <div class="space-y-3">
@@ -22,6 +23,18 @@
 
   <a id="btnMessages" href="/messages" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 cta-btn">自分のログを見る</a>
     </div>
+    </div>
+
+    {# 教員向けメニュー（左カラム直下にスタック） #}
+    {% if request.session.role == 'teacher' %}
+    <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover">
+      <h3 class="text-lg font-semibold mb-2 section-title">教員向け</h3>
+      <div class="space-y-3">
+        <a href="/dashboard" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50 link-elevate">AIリスク一覧</a>
+        <a href="/admin" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50 link-elevate">管理者ページ</a>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- あなたへのおすすめ（右側） -->
@@ -70,17 +83,6 @@
   </div>
 
 
-
-  {# 教員向けメニュー（別枠表示） #}
-  {% if request.session.role == 'teacher' %}
-    <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover">
-      <h3 class="text-lg font-semibold mb-2 section-title">教員向け</h3>
-      <div class="space-y-3">
-        <a href="/dashboard" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50 link-elevate">AIリスク一覧</a>
-        <a href="/admin" class="block w-full text-left border px-4 py-3 rounded hover:bg-gray-50 link-elevate">管理者ページ</a>
-    </div>
-  </div>
-  {% endif %}
 </div>
 
 {# ▼追加スクリプト：バッジ更新（既存UIは不変更） #}

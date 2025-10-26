@@ -349,7 +349,7 @@ def _kid_interest_keywords() -> List[str]:
         raw = (KIDS_INTEREST_KEYWORDS or "").strip()
         if not raw:
             return []
-        return [s.strip() for s in raw.split(',') if s.strip()]
+        return [s.strip() for s in raw.split(",") if s.strip()]
     except Exception:
         return []
 
@@ -425,7 +425,11 @@ async def get_news_for_topics(
 
     # 子ども向けは興味キーワードにマッチするものを優先
     if audience == "kids" or KIDS_MODE:
-        liked = [c for c in collected if _kid_interest_score(c.get("title"), c.get("description")) > 0]
+        liked = [
+            c
+            for c in collected
+            if _kid_interest_score(c.get("title"), c.get("description")) > 0
+        ]
         others = [c for c in collected if c not in liked]
         if shuffle:
             random.shuffle(liked)
