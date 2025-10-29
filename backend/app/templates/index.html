@@ -5,23 +5,73 @@
     <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover flex flex-col">
       <h2 class="text-xl font-semibold mb-2 section-title">ようこそ</h2>
     <p class="text-sm text-gray-600 mb-4">メニューから利用したい機能を選んでください。</p>
-    <div class="space-y-3">
-  <a id="btnAiChat" href="/chat" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 cta-btn">AIチャットで相談する</a>
-  <a id="btnTeacherChat" href="/chat_teacher" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 cta-btn">先生に相談する</a>
+  <div class="grid gap-3 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1">
+      <!-- AIチャットで相談する -->
+      <a id="btnAiChat" href="/chat" class="group flex items-center gap-3 p-4 bg-white border rounded-xl hover:shadow-md hover:-translate-y-0.5 transition cta-btn">
+        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-indigo-500 to-violet-600 shadow-sm">
+          <!-- Simple robot icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="8" width="14" height="9" rx="3"/>
+            <circle cx="10" cy="12.5" r="1.2"/>
+            <circle cx="14" cy="12.5" r="1.2"/>
+            <path d="M12 5v2"/>
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block font-semibold leading-tight">AIチャットで相談する</span>
+          <span class="block text-sm text-gray-500">気軽に悩みや質問を話してみましょう</span>
+        </span>
+        <span class="text-gray-300 group-hover:text-gray-400 transition" aria-hidden="true">→</span>
+      </a>
 
-      {# ▼ここだけ最小変更：バッジ付き #}
-      <div class="relative">
-          <a id="btnAiMessage" href="/chat_from_ai" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 relative cta-btn">
-          AIからのメッセージ
-          <span id="aiBadge"
-                class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs font-semibold rounded-full px-2 py-0.5">
-            0
-          </span>
-        </a>
-      </div>
-      {# ▲ここだけ最小変更：バッジ付き #}
+      <!-- 先生に相談する -->
+      <a id="btnTeacherChat" href="/chat_teacher" class="group flex items-center gap-3 p-4 bg-white border rounded-xl hover:shadow-md hover:-translate-y-0.5 transition cta-btn">
+        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm">
+          <!-- Simple academic cap icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 6l8 4-8 4-8-4 8-4z"/>
+            <path d="M6.5 12.5V15a5.5 5.5 0 0011 0v-2.5"/>
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block font-semibold leading-tight">先生に相談する</span>
+          <span class="block text-sm text-gray-500">必要に応じて教員に直接相談</span>
+        </span>
+        <span class="text-gray-300 group-hover:text-gray-400 transition" aria-hidden="true">→</span>
+      </a>
 
-  <a id="btnMessages" href="/messages" class="block w-full text-left bg-indigo-600 text-white px-4 py-3 rounded hover:opacity-90 cta-btn">自分のログを見る</a>
+      <!-- AIからのメッセージ（バッジ付き） -->
+      <a id="btnAiMessage" href="/chat_from_ai" class="group relative flex items-center gap-3 p-4 bg-white border rounded-xl hover:shadow-md hover:-translate-y-0.5 transition cta-btn">
+        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-pink-500 to-rose-600 shadow-sm">
+          <!-- Simple bell icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 5a5 5 0 00-5 5v3l-1.5 2.5h13L17 13v-3a5 5 0 00-5-5z"/>
+            <path d="M9.75 18.5a2.25 2.25 0 004.5 0"/>
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block font-semibold leading-tight">AIからのメッセージ</span>
+          <span class="block text-sm text-gray-500">毎日15:00にAIからお知らせ</span>
+        </span>
+        <span class="text-gray-300 group-hover:text-gray-400 transition" aria-hidden="true">→</span>
+        <span id="aiBadge" class="hidden absolute -top-2 -right-2 bg-red-500 text-white text-xs font-semibold rounded-full px-2 py-0.5">0</span>
+      </a>
+
+      <!-- 自分のログを見る -->
+      <a id="btnMessages" href="/messages" class="group flex items-center gap-3 p-4 bg-white border rounded-xl hover:shadow-md hover:-translate-y-0.5 transition cta-btn">
+        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm">
+          <!-- Simple clock icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="7"/>
+            <path d="M12 8v4l3 2"/>
+          </svg>
+        </span>
+        <span class="flex-1 min-w-0">
+          <span class="block font-semibold leading-tight">自分のログを見る</span>
+          <span class="block text-sm text-gray-500">これまでの相談履歴を確認できます</span>
+        </span>
+        <span class="text-gray-300 group-hover:text-gray-400 transition" aria-hidden="true">→</span>
+      </a>
     </div>
     </div>
 
@@ -112,6 +162,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 教員向けの文言変更はテンプレート側で対応（JSでは未処理）
 
+  // 推薦リストのURL表示を抑制（タイトルや説明に含まれる生URLを非表示化）
+  const urlLike = (text) => /^(https?:\/\/|www\.)/i.test((text || '').trim());
+  const stripUrls = (text) => (text || '')
+    .replace(/https?:\/\/\S+|www\.[^\s]+/gi, '')
+    .replace(/\(https?:\/\/[^\s)]+\)/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  function sanitizeRecommendList(){
+    try{
+      const root = document.getElementById('recommendList');
+      if (!root) return;
+      // タイトルに含まれるURL文字列を除去（全体がURLなら置換）
+      root.querySelectorAll('a.font-medium').forEach(a => {
+        const raw = (a.textContent || '').trim();
+        const cleaned = stripUrls(raw);
+        a.textContent = cleaned || 'リンクを開く';
+      });
+      // 説明文の生URLを除去
+      root.querySelectorAll('p.text-sm').forEach(p => {
+        const cleaned = stripUrls(p.textContent || '');
+        if (cleaned) p.textContent = cleaned; else p.remove();
+      });
+    }catch{}
+  }
+
+  // 初期描画分をサニタイズ
+  sanitizeRecommendList();
+
   // ニュース更新ボタン
   const btnRefresh = document.getElementById('btnRefreshNews');
   const listEl = document.getElementById('recommendList');
@@ -194,13 +272,16 @@ document.addEventListener("DOMContentLoaded", () => {
         atitle.href = item.url || '#';
         atitle.target = '_blank';
         atitle.rel = 'noopener';
-        atitle.className = 'font-medium hover:underline break-words';
-        atitle.textContent = item.title || '(無題)';
+  atitle.className = 'font-medium hover:underline break-words';
+  const rawTitle = (item.title || '(無題)').trim();
+  const cleanedTitle = stripUrls(rawTitle);
+  atitle.textContent = cleanedTitle || 'リンクを開く';
         main.appendChild(atitle);
         if (item.type !== 'news' && item.description){
           const p = document.createElement('p');
           p.className = 'text-sm text-gray-600 mt-0.5 break-words';
-          p.textContent = item.description;
+          const cleaned = stripUrls(item.description || '');
+          if (cleaned) p.textContent = cleaned; else { /* 何も残らなければ説明非表示 */ }
           main.appendChild(p);
         }
 
@@ -209,6 +290,8 @@ document.addEventListener("DOMContentLoaded", () => {
         li.appendChild(row);
         listEl.appendChild(li);
       }
+      // 再描画後もサニタイズ保険
+      sanitizeRecommendList();
       // 既出URLに追記
       try{
         const nowSeen = loadSeenUrls();
