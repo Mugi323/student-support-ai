@@ -16,7 +16,7 @@
       <thead class="bg-red-100">
         <tr class="text-left border-b border-red-200">
           <th class="py-2 px-3">生徒名</th>
-          <th class="py-2 px-3">高リスク項目</th>
+          <th class="py-2 px-3 whitespace-nowrap">高リスク項目</th>
           <th class="py-2 px-3">AI要約</th>
           <th class="py-2 px-3">総合リスク</th>
           <th class="py-2 px-3">時刻</th>
@@ -27,18 +27,18 @@
         {% for student in high_risk_students %}
         <tr class="border-b border-red-100 hover:bg-red-50 transition">
           <td class="py-2 px-3 font-medium">{{ student.display_name }}</td>
-          <td class="py-2 px-3">
-            <span class="inline-block bg-red-200 text-red-800 px-2 py-1 rounded text-xs font-medium">
+          <td class="py-2 px-3 whitespace-nowrap">
+            <span class="inline-block bg-red-200 text-red-800 px-2 py-1 rounded text-xs font-medium whitespace-nowrap">
               {{ student.high_items }}
             </span>
           </td>
-          <td class="py-2 px-3 max-w-xs truncate">{{ student.summary }}</td>
+          <td class="py-2 px-3 whitespace-pre-wrap break-words">{{ student.summary }}</td>
           <td class="py-2 px-3">
             <span class="font-semibold text-red-700">{{ '%.1f'|format(student.overall) }}</span>
           </td>
           <td class="py-2 px-3 text-xs text-gray-600">{{ student.created_at }}</td>
           <td class="py-2 px-3">
-            <a class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition inline-block" 
+            <a class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition inline-block whitespace-nowrap"
                href="/chat_teacher?uid={{ student.user_id }}">
               すぐに相談
             </a>
@@ -78,7 +78,7 @@
           <th class="py-2 pr-4">直近AI要約</th>
           <th class="py-2 pr-4">直近AIリスク</th>
           <th class="py-2 pr-4">最終時刻</th>
-          <th class="py-2">ログ</th>
+          <th class="py-2 whitespace-nowrap">ログ</th>
         </tr>
       </thead>
       <tbody>
@@ -90,7 +90,7 @@
           <td class="py-2 pr-4">{{ x.last_summary }}</td>
           <td class="py-2 pr-4">{{ '%.2f'|format(x.last_ai_risk or 0) }}</td>
           <td class="py-2 pr-4">{{ x.last_at }}</td>
-          <td class="py-2">
+          <td class="py-2 whitespace-nowrap">
             <button class="text-indigo-600 underline" onclick="openLogs('{{ x.user_id }}')">表示</button>
             <a class="text-blue-600 underline ml-3" href="/chat_teacher?uid={{ x.user_id }}">チャット</a>
             {% if request.session.role == 'teacher' %}
