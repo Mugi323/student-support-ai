@@ -381,7 +381,7 @@ async def chat_stream_local(request: Request, data: ChatIn):
     text = data.text
 
     # Ollamaの設定を取得
-    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3-vl:8b")
     OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
     # OllamaAdapterを初期化
@@ -469,6 +469,173 @@ async def chat_stream_local(request: Request, data: ChatIn):
                         {
                             "role": "user",
                             "content": f"ユーザー: {text}\nAI: {reply_text}",
+                        },
+                    ],
+                )
+                one_liner = (
+                    getattr(summary_resp, "output_text", "").strip() or ai_summary
+                )
+            except Exception:
+                one_liner = ai_summary
+
+            try:
+                add_memory(uid, one_liner, keep=10)
+            except Exception:
+                pass
+
+            yield sse_event(
+                {
+                    "type": "final",
+                    "result": {
+                        "user_id": uid,
+                        "reply": reply_text,
+                        "memory_summary": one_liner,
+                        "ai_summary": ai_summary,
+                        "ai_risk_overall": ai_overall,
+                        "ai_risk_detail": {
+                            "scores": ai_scores,
+                            "reason": ai_reason,
+                            "tags": ai_tags,
+                        },
+                    },
+                }
+            )
+        except Exception as e:
+            yield sse_event(
+                {
+                    "type": "error",
+                    "message": f"AI解析に失敗しました: {type(e).__name__}: {str(e)}",
+                }
+            )
+
+    headers = {
+        "Cache-Control": "no-cache",
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "X-Accel-Buffering": "no",
+    }
+    return StreamingResponse(generator(), headers=headers)
+
+@router.post("/chat_stream_local_with_images")
+async def chat_stream_local_with_images(
+    request: Request, text: str = Form(...), images: List[UploadFile] = File(default=[])
+):
+    """Ollama(Qwen3-VL)を使用した画像付きチャットのストリーミングエンドポイント"""
+
+    # セッションからユーザーIDを取得
+    session_uid = None
+    try:
+        session_uid = request.session.get("user_id")
+    except Exception:
+        pass
+
+    if not session_uid:
+        from fastapi import HTTPException, status
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
+        )
+
+    uid = session_uid
+
+    # Ollamaの設定を取得
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3-vl:8b")
+    OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+
+    # OllamaAdapterを初期化
+    ollama_adapter = OllamaAdapter(model_name=OLLAMA_MODEL, host=OLLAMA_HOST)
+
+    async def generator():
+        # 画像をBase64エンコード
+        image_data_list = []
+        for img in images:
+            content = await img.read()
+            b64 = base64.b64encode(content).decode("utf-8")
+            image_data_list.append(b64)
+
+        # 直近のユーザーメモ（1文要約）を取得して、コンテキストとして渡す
+        recent_memos = []
+        try:
+            recent_memos = get_memories(uid, limit=10) or []
+        except Exception:
+            recent_memos = []
+        memos_text = "\n".join(f"- {m}" for m in recent_memos)
+
+        prompt = f"""あなたは学校の相談支援AIです。日本語で、相手に寄り添う短い返答を出力してください。小学生にも伝わるように話してください。
+
+相談文:
+{text}
+
+{"[画像が添付されています。画像の内容も考慮して回答してください。]" if images else ""}
+
+まずは短く共感してください。その後、具体的な解決策を助言してください。
+
+【参考メモ】以下はこのユーザーの最近の話題・関心の要約です。会話の文脈として自然に活用してください。
+{memos_text}
+"""
+
+        try:
+            # Ollamaでストリーミング応答を生成（画像付き）
+            reply_text = ""
+            for chunk in ollama_adapter.infer_stream_with_images(prompt, image_data_list):
+                reply_text += chunk
+                yield sse_event({"type": "delta", "text": chunk})
+
+        except Exception as e:
+            yield sse_event(
+                {
+                    "type": "error",
+                    "message": f"Ollama Streaming failed: {type(e).__name__}: {str(e)}",
+                }
+            )
+            reply_text = ""
+
+        # ---- 第2段: リスク分析 → DB保存 → メモ生成・保存 ----
+        try:
+            # テキストと画像の枚数情報を記録
+            full_text = text
+            if images:
+                full_text += f"\n[画像{len(images)}枚添付]"
+
+            result = analyze_risk_sync(full_text)
+            ai_summary = result["summary"]
+            ai_scores = result["scores"]
+            ai_reason = result["reason"]
+            ai_tags = result["tags"]
+            ai_overall = result["overall"]
+
+            execute(
+                "INSERT INTO messages (user_id, is_anonymous, text, risk_score, sentiment, tags, created_at, ai_summary, ai_risk_detail, ai_risk_overall) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (
+                    uid,
+                    0,
+                    full_text,
+                    0.0,
+                    0.0,
+                    '["general"]',
+                    now_iso(),
+                    ai_summary,
+                    json.dumps(
+                        {"scores": ai_scores, "reason": ai_reason, "tags": ai_tags},
+                        ensure_ascii=False,
+                    ),
+                    ai_overall,
+                ),
+            )
+
+            # 1文要約（ユーザー発話＋AI返答）を生成してメモ化（最新10件を保持）
+            try:
+                summary_sys = (
+                    "次のユーザー発話とAI返答を、日本語で1文(60〜120文字程度)に要約してください。"
+                    "継続的な関心や悩み、進捗があれば簡潔に含めてください。改行や箇条書きは禁止です。"
+                )
+                summary_resp = client.responses.create(
+                    model=OPENAI_MODEL,
+                    input=[
+                        {"role": "system", "content": summary_sys},
+                        {
+                            "role": "user",
+                            "content": f"ユーザー: {full_text}\nAI: {reply_text}",
                         },
                     ],
                 )

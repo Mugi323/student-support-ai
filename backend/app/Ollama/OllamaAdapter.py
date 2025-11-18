@@ -78,3 +78,57 @@ class OllamaAdapter:
         # 残りのバッファを出力（<think>タグ内でない場合のみ）
         if buffer and not in_think_tag:
             yield buffer
+    
+    def infer_stream_with_images(self, prompt, images_base64):
+        """画像付きでストリーミング返答を生成する
+
+        Args:
+            prompt (str): ユーザーの入力
+            images_base64 (list): Base64エンコードされた画像のリスト
+
+        Yields:
+            str: ボットの返答（チャンク単位）
+        """
+        # ollamaライブラリでは、imagesパラメータにBase64文字列のリストを渡す
+        stream = self.client.chat(
+            model=self.model_name,
+            messages=[{
+                'role': 'user', 
+                'content': prompt,
+                'images': images_base64  # 画像をBase64リストで渡す
+            }],
+            stream=True
+        )
+        
+        in_think_tag = False
+        buffer = ""
+        
+        for chunk in stream:
+            if 'message' in chunk and 'content' in chunk['message']:
+                content = chunk['message']['content']
+                
+                for char in content:
+                    buffer += char
+                    
+                    # <think>の開始を検出
+                    if buffer.endswith('<think>'):
+                        in_think_tag = True
+                        buffer = buffer[:-7]  # <think>を削除
+                        if buffer:
+                            yield buffer
+                            buffer = ""
+                    # </think>の終了を検出
+                    elif buffer.endswith('</think>'):
+                        in_think_tag = False
+                        buffer = ""
+                    # <think>タグ内でない場合のみ出力
+                    elif not in_think_tag and len(buffer) > 8:  # バッファリング
+                        # タグの途中でない部分を出力
+                        safe_length = len(buffer) - 8
+                        if safe_length > 0:
+                            yield buffer[:safe_length]
+                            buffer = buffer[safe_length:]
+        
+        # 残りのバッファを出力（<think>タグ内でない場合のみ）
+        if buffer and not in_think_tag:
+            yield buffer

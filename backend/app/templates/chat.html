@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
   apiSelector.addEventListener('change', (e) => {
     const api = e.target.value;
     if(api === 'ollama'){
-      statusEl.textContent = 'Qwen3 8Bを使用中';
+      statusEl.textContent = 'Qwen3-vl 8Bを使用中';
       statusEl.className = 'text-xs text-green-600 mb-2';
     } else {
       statusEl.textContent = 'GPT-5-nanoを使用中';
@@ -276,23 +276,28 @@ async function sendMsg(){
 
   // 選択されたAPIを取得
   const selectedApi = document.getElementById('apiSelector').value;
+  console.log('Selected API:', selectedApi);  // ← デバッグログ追加
 
   // 画像がある場合はFormDataを使用（OpenAIのみ）
   let res;
   if(imagesToSend.length > 0){
-    if(selectedApi === 'ollama'){
-      aiBubble.textContent = 'エラー: Ollamaは画像に対応していません。OpenAIを選択してください。';
-      statusEl.textContent = '送信失敗';
-      return;
-    }
+    // if(selectedApi === 'ollama'){
+    //   aiBubble.textContent = 'エラー: Ollamaは画像に対応していません。OpenAIを選択してください。';
+    //   statusEl.textContent = '送信失敗';
+    //   return;
+    // }
     
     const formData = new FormData();
     formData.append('text', text || '画像を送信しました');
     imagesToSend.forEach(img => {
       formData.append('images', img);
     });
-
-    res = await fetch('/api/chat_stream_with_images', {
+    // 選択されたAPIに応じてエンドポイントを変更
+    // const endpoint = selectedApi === 'ollama' 
+    //   ? '/api/chat_stream_local_with_images'  // Ollama用の画像対応エンドポイント
+    //   : '/api/chat_stream_with_images';       // OpenAI用
+    const endpoint = '/api/chat_stream_local_with_images'
+    res = await fetch(endpoint, {
       method: 'POST',
       body: formData,
     });

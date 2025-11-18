@@ -32,7 +32,7 @@ from .OllamaAdapter import OllamaAdapter
 # == 初期化 ==
 # .envファイルを参照（backendディレクトリ）
 load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / ".env")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3-vl:8b")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
 ollama_adapter = OllamaAdapter(model_name=OLLAMA_MODEL, host=OLLAMA_HOST)
