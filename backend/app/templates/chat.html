@@ -293,10 +293,10 @@ async function sendMsg(){
       formData.append('images', img);
     });
     // 選択されたAPIに応じてエンドポイントを変更
-    // const endpoint = selectedApi === 'ollama' 
-    //   ? '/api/chat_stream_local_with_images'  // Ollama用の画像対応エンドポイント
-    //   : '/api/chat_stream_with_images';       // OpenAI用
-    const endpoint = '/api/chat_stream_local_with_images'
+    const endpoint = selectedApi === 'ollama' 
+      ? '/api/chat_stream_local_with_images'  // Ollama用の画像対応エンドポイント
+      : '/api/chat_stream_with_images';       // OpenAI用
+
     res = await fetch(endpoint, {
       method: 'POST',
       body: formData,
