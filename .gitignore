@@ -1,1 +1,4 @@
-backend/student_support.db
+# Python
+__pycache__/
+*.pyc
+*.db
