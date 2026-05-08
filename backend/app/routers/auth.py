@@ -37,6 +37,12 @@ router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
 
+def _save_session(request: Request, user_row) -> None:
+    request.session["user_id"] = user_row[0]
+    request.session["role"]    = user_row[3]
+    request.session["name"]    = user_row[1]
+
+
 @router.get("/login", include_in_schema=False)
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -70,10 +76,8 @@ def login_action(
         set_user_role(uid, role)
         full = get_user_by_id(uid)
 
-    request.session["user_id"] = full[0]
-    request.session["role"] = full[3]
-    request.session["name"] = full[1]
-    
+    _save_session(request, full)
+
     # 🔥 教師の場合、メールアドレスが未登録ならsetup-profileへ
     if role == "teacher":
         from app.utils.user import get_email_by_user_id  # この関数を追加する必要があります
@@ -136,9 +140,7 @@ async def authorize_google(request: Request):
         
         # セッションに情報を保存
         full = get_user_by_id(uid)
-        request.session["user_id"] = full[0]
-        request.session["role"] = full[3]
-        request.session["name"] = full[1]
+        _save_session(request, full)
         request.session["google_email"] = email
         request.session["google_picture"] = user_info.get('picture', '')
         
