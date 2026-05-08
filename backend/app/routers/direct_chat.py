@@ -1,9 +1,16 @@
 from __future__ import annotations
+import asyncio
+import json
 from fastapi import APIRouter, Request, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from app.db import execute, query_all, now_iso
 from app.utils.user import get_user_by_id
+
 router = APIRouter(prefix="/api/direct")
+
+# ユーザーペアごとの SSE キュー（メモリ内）
+# key: sorted(uid, other_id) を "_" で結合
+_dm_queues: dict[str, asyncio.Queue] = {}
 
 # ユーティリティ
 
@@ -212,10 +219,28 @@ def send_direct_message(request: Request, other_id: str, body: dict):
         raise HTTPException(status_code=403, detail="forbidden pair")
 
     # is_anonymousカラムを含めて保存（real_other_idを使用）
+    ts = now_iso()
     mid = execute(
         "INSERT INTO direct_messages (sender_id, recipient_id, text, is_anonymous, created_at, is_read) VALUES (?,?,?,?,?,0)",
-        (uid, real_other_id, text, 1 if is_anonymous else 0, now_iso()),
+        (uid, real_other_id, text, 1 if is_anonymous else 0, ts),
     )
+
+    # SSE キューに新着メッセージを push
+    pair_key = "_".join(sorted([uid, real_other_id]))
+    if pair_key in _dm_queues:
+        msg_payload = {
+            "id": mid,
+            "sender_id": uid,
+            "recipient_id": real_other_id,
+            "text": text,
+            "created_at": ts,
+            "is_read": False,
+            "is_anonymous": bool(is_anonymous),
+        }
+        try:
+            _dm_queues[pair_key].put_nowait(msg_payload)
+        except asyncio.QueueFull:
+            pass
 
     return JSONResponse({"id": mid, "ok": True})
 
@@ -337,3 +362,44 @@ def get_user_info(request: Request, user_id: str):
         "created_at": created_at,
         "teacher_type": teacher_type
     })
+
+
+@router.get("/stream/{other_id}")
+async def stream_direct(other_id: str, request: Request):
+    """
+    1対1チャットの SSE ストリーム。
+    送信側が POST /messages/{other_id} を呼ぶとキューに push され、
+    受信側の EventSource がリアルタイムで受け取れる。
+    """
+    uid = _require_login(request)
+    real_other_id = other_id.replace(":anonymous", "")
+    pair_key = "_".join(sorted([uid, real_other_id]))
+
+    q: asyncio.Queue = _dm_queues.setdefault(pair_key, asyncio.Queue(maxsize=50))
+
+    async def event_generator():
+        # 接続確認用の初期イベント
+        yield f"data: {json.dumps({'type': 'connected'}, ensure_ascii=False)}\n\n"
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    msg = await asyncio.wait_for(q.get(), timeout=25.0)
+                    yield f"data: {json.dumps({'type': 'message', **msg}, ensure_ascii=False)}\n\n"
+                except asyncio.TimeoutError:
+                    # keepalive ping
+                    yield ": ping\n\n"
+        finally:
+            # キューが空なら辞書からエントリを削除
+            if pair_key in _dm_queues and _dm_queues[pair_key].empty():
+                _dm_queues.pop(pair_key, None)
+
+    return StreamingResponse(
+        event_generator(),
+        headers={
+            "Cache-Control": "no-cache",
+            "Content-Type": "text/event-stream; charset=utf-8",
+            "X-Accel-Buffering": "no",
+        },
+    )

@@ -40,7 +40,9 @@
 
 <script>
 let currentOtherId = null;
-let currentUserRole = null; // 自分の役割を保存
+let currentUserRole = null;
+let _dmEventSource = null;
+let _dmPollTimer = null;
 const chatEl = document.getElementById('chat');
 const statusEl = document.getElementById('status');
 
@@ -204,6 +206,45 @@ async function selectOther(uid, name, isAnonymous, teacherType){
 	} else {
 		anonymousToggle.classList.add('hidden');
 	}
+
+	_connectDMStream(uid);
+}
+
+function _connectDMStream(otherId){
+	// 前の接続をクリア
+	if(_dmEventSource){ _dmEventSource.close(); _dmEventSource = null; }
+	if(_dmPollTimer){ clearInterval(_dmPollTimer); _dmPollTimer = null; }
+
+	const realId = otherId.replace(':anonymous', '');
+
+	if(typeof EventSource === 'undefined'){
+		// フォールバック: 30秒ポーリング
+		_dmPollTimer = setInterval(()=>{ if(currentOtherId) loadMessages(); }, 30000);
+		return;
+	}
+
+	let es = new EventSource(`/api/direct/stream/${realId}`);
+	_dmEventSource = es;
+
+	es.onmessage = (e) => {
+		try{
+			const data = JSON.parse(e.data);
+			if(data.type === 'message' && currentOtherId){
+				loadMessages(); // 新着があったら全体を再取得
+				refreshUnread();
+				loadParticipants();
+			}
+		}catch(_){}
+	};
+
+	es.onerror = () => {
+		es.close();
+		_dmEventSource = null;
+		// SSE 失敗時は 30秒ポーリングにフォールバック
+		if(!_dmPollTimer){
+			_dmPollTimer = setInterval(()=>{ if(currentOtherId) loadMessages(); }, 30000);
+		}
+	};
 }
 
 async function loadMessages(){
@@ -335,8 +376,6 @@ async function boot(){
 			await selectOther(pre, pre, false, null);
 		}
 	}
-	// 10秒ごとにメッセージ一覧を再取得（簡易ポーリング）
-	setInterval(()=>{ if(currentOtherId) loadMessages(); }, 10000);
 }
 
 boot();
