@@ -45,7 +45,8 @@ def list_participants(request: Request):
             "SELECT user_id, name, role FROM users WHERE role='student' ORDER BY created_at DESC"
         )
         out = []
-        
+        anon_counter = 0
+
         # 各生徒について、匿名・通常の両方のチャットをチェック
         for r in rows:
             student_id = r[0]
@@ -83,12 +84,14 @@ def list_participants(request: Request):
             
             # 匿名チャットがある場合は匿名エントリを追加
             if has_anonymous:
+                anon_counter += 1
                 out.append({
-                    "user_id": f"{student_id}:anonymous",  # 仮想ID
-                    "real_user_id": student_id,  # 実際のユーザーID
-                    "name": f"匿名生徒 (ID: {student_id[:8]}...)",
+                    "user_id": f"{student_id}:anonymous",
+                    "real_user_id": student_id,
+                    "name": f"匿名生徒 #{anon_counter}",
                     "role": student_role,
-                    "is_anonymous": True
+                    "is_anonymous": True,
+                    "anon_index": anon_counter,
                 })
     else:
         # 生徒の場合: すべての教員（通常エントリのみ）

@@ -157,6 +157,15 @@ async def authorize_google(request: Request):
             {"request": request, "error": "Google認証中にエラーが発生しました。"}
         )
 
+@router.get("/api/me")
+def get_me(request: Request):
+    uid = request.session.get("user_id")
+    if not uid:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="ログインが必要です")
+    return {"user_id": uid, "role": request.session.get("role", "student")}
+
+
 @router.post("/logout", include_in_schema=False)
 def logout_action(request: Request):
     request.session.clear()
