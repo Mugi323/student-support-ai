@@ -1,15 +1,12 @@
 from __future__ import annotations
 import sqlite3
 import datetime
-from typing import Tuple, Any, List
+from typing import Tuple, Any, List, Dict
 
 DB_PATH = "student_support.db"
 
-<<<<<<< HEAD
-=======
 # データ保持期間（日数）
 DATA_RETENTION_DAYS = 30
->>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
 
 def init_db() -> None:
     con = sqlite3.connect(DB_PATH)
@@ -27,8 +24,6 @@ def init_db() -> None:
         created_at TEXT NOT NULL
     )
     """)
-<<<<<<< HEAD
-=======
     # messagesテーブルのインデックス（自動削除用）
     try:
         cur.execute(
@@ -40,7 +35,6 @@ def init_db() -> None:
     except Exception:
         pass
 
->>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         user_id TEXT PRIMARY KEY,
@@ -69,13 +63,10 @@ def init_db() -> None:
         cur.execute(
             "CREATE INDEX IF NOT EXISTS idx_dm_recipient ON direct_messages(recipient_id, is_read)"
         )
-<<<<<<< HEAD
-=======
         # 自動削除用のインデックス
         cur.execute(
             "CREATE INDEX IF NOT EXISTS idx_dm_created ON direct_messages(created_at)"
         )
->>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
     except Exception:
         pass
 
@@ -175,51 +166,38 @@ def query_all(query: str, params: Tuple[Any, ...] = ()) -> List[Tuple]:
 
 
 def now_iso() -> str:
-    return datetime.datetime.utcnow().isoformat()
-<<<<<<< HEAD
-=======
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
 
 def cleanup_old_logs(days: int = DATA_RETENTION_DAYS) -> Dict[str, int]:
-    """
-    指定日数より古いログを削除する（データ最小化）
-    
-    Args:
-        days: 保持期間（日数）デフォルトは30日
-        
-    Returns:
-        削除件数の辞書 {"messages": X, "direct_messages": Y, "anonymous_messages": Z}
-    """
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
-    
-    # 削除基準日時を計算
-    cutoff_date = (datetime.datetime.utcnow() - datetime.timedelta(days=days)).isoformat()
-    
-    # 匿名メッセージを完全削除
+
+    cutoff_date = (
+        datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+    ).isoformat()
+
     cur.execute(
         "DELETE FROM messages WHERE is_anonymous = 1 AND created_at < ?",
         (cutoff_date,)
     )
     anonymous_deleted = cur.rowcount
-    
-    # 非匿名メッセージも30日経過で削除
+
     cur.execute(
         "DELETE FROM messages WHERE is_anonymous = 0 AND created_at < ?",
         (cutoff_date,)
     )
     messages_deleted = cur.rowcount
-    
-    # ダイレクトメッセージ（匿名・非匿名両方）を削除
+
     cur.execute(
         "DELETE FROM direct_messages WHERE created_at < ?",
         (cutoff_date,)
     )
     dm_deleted = cur.rowcount
-    
+
     con.commit()
     con.close()
-    
+
     return {
         "messages": messages_deleted,
         "direct_messages": dm_deleted,
@@ -228,40 +206,29 @@ def cleanup_old_logs(days: int = DATA_RETENTION_DAYS) -> Dict[str, int]:
 
 
 def get_log_statistics() -> Dict[str, Any]:
-    """
-    ログの統計情報を取得（監査用）
-    
-    Returns:
-        統計情報の辞書
-    """
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
-    
-    # 全メッセージ数
+
     cur.execute("SELECT COUNT(*) FROM messages")
     total_messages = cur.fetchone()[0]
-    
-    # 匿名メッセージ数
+
     cur.execute("SELECT COUNT(*) FROM messages WHERE is_anonymous = 1")
     anonymous_messages = cur.fetchone()[0]
-    
-    # ダイレクトメッセージ数
+
     cur.execute("SELECT COUNT(*) FROM direct_messages")
     total_dm = cur.fetchone()[0]
-    
-    # 匿名ダイレクトメッセージ数
+
     cur.execute("SELECT COUNT(*) FROM direct_messages WHERE is_anonymous = 1")
     anonymous_dm = cur.fetchone()[0]
-    
-    # 最古のログ日時
+
     cur.execute("SELECT MIN(created_at) FROM messages")
     oldest_message = cur.fetchone()[0]
-    
+
     cur.execute("SELECT MIN(created_at) FROM direct_messages")
     oldest_dm = cur.fetchone()[0]
-    
+
     con.close()
-    
+
     return {
         "total_messages": total_messages,
         "anonymous_messages": anonymous_messages,
@@ -271,4 +238,3 @@ def get_log_statistics() -> Dict[str, Any]:
         "oldest_dm_date": oldest_dm,
         "retention_days": DATA_RETENTION_DAYS
     }
->>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee

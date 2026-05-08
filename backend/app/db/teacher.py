@@ -87,7 +87,7 @@ def add_teachers(teachers_data: List[Dict[str, str]]) -> int:
     con = sqlite3.connect(DB_PATH)
     cur = con.cursor()
     
-    now = datetime.datetime.utcnow().isoformat()
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     count = 0
     
     for teacher in teachers_data:

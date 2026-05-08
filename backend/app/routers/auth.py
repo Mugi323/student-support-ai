@@ -103,7 +103,7 @@ async def authorize_google(request: Request):
             )
         # メールアドレスからユーザー名を取得(またはメールアドレスをそのまま使用)
         email = user_info.get('email')
-        initial_name = user_info.get('name', email.split('@')[0])
+        initial_name = user_info.get('name') or (email.split('@')[0] if email and '@' in email else 'user')
         
         uid = get_user_id_by_google_email(email)
         is_new_user = False

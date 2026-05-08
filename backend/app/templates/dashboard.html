@@ -151,10 +151,11 @@ async function openLogs(uid){
     const pScores = document.createElement('p');
     pScores.className = 'text-xs text-gray-700 mt-1';
     pScores.textContent =
-      `self_harm:${(scores.self_harm ?? 0).toFixed(2)}, ` +
-      `bullying:${(scores.bullying ?? 0).toFixed(2)}, ` +
-      `truancy:${(scores.truancy ?? 0).toFixed(2)}, ` +
-      `health:${(scores.health ?? 0).toFixed(2)}`;
+      `健康:${(scores.health ?? 0).toFixed(2)}, ` +
+      `家族:${(scores.family ?? 0).toFixed(2)}, ` +
+      `友人:${(scores.friends ?? 0).toFixed(2)}, ` +
+      `学習:${(scores.learning ?? 0).toFixed(2)}, ` +
+      `いじめ:${(scores.bullying ?? 0).toFixed(2)}`;
 
     const pReason = document.createElement('p');
     pReason.className = 'text-xs text-gray-500 mt-1';
@@ -219,7 +220,7 @@ async function openRadar(uid){
   radarChartInstance = new Chart(ctx, {
     type: 'radar',
     data: {
-      labels: ['health','family','friends','learning','bullying'],
+      labels: ['健康','家族','友人','学習','いじめ'],
       datasets: [{
         label: uid + ' AI Risk',
         data: avg,

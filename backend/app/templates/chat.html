@@ -371,7 +371,7 @@ async function loadMyLogs(){
     const det = m.ai_risk_detail || {};
     const sc = det.scores || {};
     const text = `[${m.created_at}] 総合:${m.ai_risk_overall ?? '-'} / `+
-                 `self:${sc.self_harm ?? '-'} bully:${sc.bullying ?? '-'} tru:${sc.truancy ?? '-'} health:${sc.health ?? '-'}`;
+                 `健康:${sc.health ?? '-'} 家族:${sc.family ?? '-'} 友人:${sc.friends ?? '-'} 学習:${sc.learning ?? '-'} いじめ:${sc.bullying ?? '-'}`;
     div.textContent = text;
 
     const btn = document.createElement('button');
