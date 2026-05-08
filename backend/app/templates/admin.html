@@ -61,6 +61,17 @@
     .edit-table input[type="checkbox"]{width:18px;height:18px;cursor:pointer}
     .edit-table select{background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:6px 10px;border-radius:8px;font-size:.9rem;cursor:pointer}
     .edit-table select:focus{outline:none;border-color:var(--acc)}
+<<<<<<< HEAD
+=======
+    
+    /* トグルスイッチ */
+    .toggle-switch{position:relative;display:inline-block;width:48px;height:24px}
+    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--line);border-radius:24px;transition:.3s}
+    .toggle-slider:before{position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s}
+    .toggle-switch input:checked + .toggle-slider{background:var(--acc)}
+    .toggle-switch input:checked + .toggle-slider:before{transform:translateX(24px)}
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
   </style>
 </head>
 <body>
@@ -128,7 +139,11 @@
   <div class="modal" id="editModal">
     <div class="modal-content">
       <div class="modal-header">
+<<<<<<< HEAD
         <h3>教師の編集・削除</h3>
+=======
+        <h3 id="editModalTitle">アカウント管理</h3>
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
         <button class="close-btn" onclick="closeEditModal()">&times;</button>
       </div>
       
@@ -138,16 +153,36 @@
           class="search-input" 
           id="searchInput" 
           placeholder="名前またはメールアドレスで検索..."
+<<<<<<< HEAD
           oninput="filterTeachers()"
+=======
+          oninput="filterItems()"
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
         />
       </div>
       
       <div id="editTeachersContainer" class="loading">読み込み中...</div>
       
       <div class="modal-footer">
+<<<<<<< HEAD
         <button class="btn ghost" onclick="closeEditModal()">キャンセル</button>
         <button class="btn danger" onclick="deleteSelectedTeachers()" id="deleteButton" disabled>選択した教師を削除</button>
         <button class="btn" onclick="updateSelectedTeachers()" id="updateButton" disabled>変更を保存</button>
+=======
+        <!-- トグルスイッチを左側に配置 -->
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="font-size:.9rem;font-weight:600;color:var(--fg);cursor:pointer" for="editViewToggle">教員</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="editViewToggle" onchange="toggleEditView()">
+            <span class="toggle-slider"></span>
+          </label>
+          <label style="font-size:.9rem;font-weight:600;color:var(--fg);cursor:pointer" for="editViewToggle">学生</label>
+        </div>
+        
+        <button class="btn ghost" onclick="closeEditModal()">キャンセル</button>
+        <button class="btn danger" onclick="deleteSelectedItems()" id="deleteButton" disabled>選択項目を削除</button>
+        <button class="btn" onclick="updateSelectedItems()" id="updateButton" disabled>変更を保存</button>
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
       </div>
     </div>
   </div>
@@ -156,6 +191,12 @@
     let pendingTeachers = [];
     let allTeachersForEdit = [];
     let filteredTeachersForEdit = [];
+<<<<<<< HEAD
+=======
+    let allStudentsForEdit = [];
+    let filteredStudentsForEdit = [];
+    let editViewMode = 'teacher'; // 'teacher' or 'student'
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
     
     // 初期読み込み
     async function loadTeachers() {
@@ -324,6 +365,11 @@
     async function openEditModal() {
       document.getElementById('editModal').classList.add('active');
       document.getElementById('searchInput').value = '';
+<<<<<<< HEAD
+=======
+      document.getElementById('editViewToggle').checked = false;
+      editViewMode = 'teacher';
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
       await loadAllTeachersForEdit();
     }
     
@@ -331,6 +377,25 @@
       document.getElementById('editModal').classList.remove('active');
     }
     
+<<<<<<< HEAD
+=======
+    // モーダル内でのトグル切り替え
+    function toggleEditView() {
+      const toggle = document.getElementById('editViewToggle');
+      document.getElementById('searchInput').value = '';
+      
+      if (toggle.checked) {
+        // 学生表示
+        editViewMode = 'student';
+        loadAllStudentsForEdit();
+      } else {
+        // 教員表示
+        editViewMode = 'teacher';
+        loadAllTeachersForEdit();
+      }
+    }
+    
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
     async function loadAllTeachersForEdit() {
       const container = document.getElementById('editTeachersContainer');
       container.innerHTML = '<div class="loading">読み込み中...</div>';
@@ -356,6 +421,7 @@
       }
     }
     
+<<<<<<< HEAD
     function filterTeachers() {
       const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
       
@@ -370,6 +436,35 @@
       }
       
       renderEditTeachers();
+=======
+    function filterItems() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+      
+      if (editViewMode === 'teacher') {
+        if (!searchTerm) {
+          filteredTeachersForEdit = [...allTeachersForEdit];
+        } else {
+          filteredTeachersForEdit = allTeachersForEdit.filter(t => {
+            const name = (t.name || '').toLowerCase();
+            const email = (t.email || '').toLowerCase();
+            return name.includes(searchTerm) || email.includes(searchTerm);
+          });
+        }
+        renderEditTeachers();
+      } else {
+        if (!searchTerm) {
+          filteredStudentsForEdit = [...allStudentsForEdit];
+        } else {
+          filteredStudentsForEdit = allStudentsForEdit.filter(s => {
+            const name = (s.name || '').toLowerCase();
+            const email = (s.email || '').toLowerCase();
+            const grade = (s.grade || '').toLowerCase();
+            return name.includes(searchTerm) || email.includes(searchTerm) || grade.includes(searchTerm);
+          });
+        }
+        renderEditStudents();
+      }
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
     }
     
     function renderEditTeachers() {
@@ -415,13 +510,94 @@
       updateEditButtons();
     }
     
+<<<<<<< HEAD
     function updateEditButtons() {
       const deleteCheckboxes = document.querySelectorAll('.delete-checkbox:checked');
       const roleSelects = document.querySelectorAll('.role-select');
+=======
+    // 学生編集機能
+    async function loadAllStudentsForEdit() {
+      const container = document.getElementById('editTeachersContainer');
+      container.innerHTML = '<div class="loading">読み込み中...</div>';
+      
+      try {
+        const res = await fetch('/api/admin/students');
+        const data = await res.json();
+        
+        if (data.success) {
+          allStudentsForEdit = data.students || [];
+          filteredStudentsForEdit = [...allStudentsForEdit];
+          renderEditStudents();
+        }
+      } catch (error) {
+        console.error('学生リスト読み込みエラー:', error);
+        container.innerHTML = '<div class="empty-msg">読み込みに失敗しました</div>';
+      }
+    }
+    
+    function renderEditStudents() {
+      const container = document.getElementById('editTeachersContainer');
+      
+      if (filteredStudentsForEdit.length === 0) {
+        container.innerHTML = '<div class="empty-msg">該当する学生が見つかりません</div>';
+        document.getElementById('deleteButton').disabled = true;
+        document.getElementById('updateButton').disabled = true;
+        return;
+      }
+      
+      const tableHTML = `
+        <table class="edit-table">
+          <thead>
+            <tr>
+              <th style="width:8%">削除</th>
+              <th style="width:28%">名前</th>
+              <th style="width:15%">学年</th>
+              <th style="width:49%">メール</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredStudentsForEdit.map((s, idx) => `
+              <tr>
+                <td><input type="checkbox" class="delete-checkbox" data-user-id="${escapeHtml(s.user_id)}" onchange="updateEditButtons()"></td>
+                <td>
+                  <input type="text" 
+                    class="cell" 
+                    style="width:100%;border:1px solid var(--line)" 
+                    data-user-id="${escapeHtml(s.user_id)}" 
+                    data-field="name" 
+                    data-original="${escapeHtml(s.name || '')}" 
+                    value="${escapeHtml(s.name || '')}" 
+                    onchange="updateEditButtons()">
+                </td>
+                <td>
+                  <input type="text" 
+                    class="cell" 
+                    style="width:100%;border:1px solid var(--line)" 
+                    data-user-id="${escapeHtml(s.user_id)}" 
+                    data-field="grade" 
+                    data-original="${escapeHtml(s.grade || '')}" 
+                    value="${escapeHtml(s.grade || '')}" 
+                    onchange="updateEditButtons()">
+                </td>
+                <td><span class="cell">${escapeHtml(s.email || '(メールなし)')}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      
+      container.innerHTML = tableHTML;
+      updateEditButtons();
+    }
+    
+    function updateEditButtons() {
+      const deleteCheckboxes = document.querySelectorAll('.delete-checkbox:checked');
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
       
       // 削除ボタンの有効/無効
       document.getElementById('deleteButton').disabled = deleteCheckboxes.length === 0;
       
+<<<<<<< HEAD
       // 変更ボタンの有効/無効（役割が変更されているか確認）
       let hasChanges = false;
       roleSelects.forEach(select => {
@@ -429,11 +605,36 @@
           hasChanges = true;
         }
       });
+=======
+      // 変更ボタンの有効/無効
+      let hasChanges = false;
+      
+      if (editViewMode === 'teacher') {
+        const roleSelects = document.querySelectorAll('.role-select');
+        roleSelects.forEach(select => {
+          if (select.value !== select.dataset.original) {
+            hasChanges = true;
+          }
+        });
+      } else {
+        // 学生の場合、名前と学年の入力フィールドをチェック
+        const inputs = document.querySelectorAll('input[data-field]');
+        inputs.forEach(input => {
+          if (input.value !== input.dataset.original) {
+            hasChanges = true;
+          }
+        });
+      }
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
       
       document.getElementById('updateButton').disabled = !hasChanges;
     }
     
+<<<<<<< HEAD
     async function deleteSelectedTeachers() {
+=======
+    async function deleteSelectedItems() {
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
       const checkboxes = document.querySelectorAll('.delete-checkbox:checked');
       const userIds = Array.from(checkboxes).map(cb => cb.dataset.userId);
       
@@ -441,7 +642,13 @@
         return;
       }
       
+<<<<<<< HEAD
       if (!confirm(`${userIds.length}名の教師を削除してもよろしいですか？`)) {
+=======
+      const itemType = editViewMode === 'teacher' ? '教師' : '学生';
+      
+      if (!confirm(`${userIds.length}名の${itemType}を削除してもよろしいですか？`)) {
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
         return;
       }
       
@@ -449,8 +656,15 @@
         let successCount = 0;
         let failCount = 0;
         
+<<<<<<< HEAD
         for (const userId of userIds) {
           const res = await fetch(`/api/admin/teachers/${encodeURIComponent(userId)}`, {
+=======
+        const endpoint = editViewMode === 'teacher' ? '/api/admin/teachers' : '/api/admin/students';
+        
+        for (const userId of userIds) {
+          const res = await fetch(`${endpoint}/${encodeURIComponent(userId)}`, {
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
             method: 'DELETE'
           });
           
@@ -466,6 +680,7 @@
         if (failCount > 0) {
           alert(`${successCount}名削除、${failCount}名失敗しました`);
         } else {
+<<<<<<< HEAD
           alert(`${successCount}名の教師を削除しました`);
         }
         
@@ -473,10 +688,24 @@
         await loadTeachers();
       } catch (error) {
         console.error('教師削除エラー:', error);
+=======
+          alert(`${successCount}名の${itemType}を削除しました`);
+        }
+        
+        if (editViewMode === 'teacher') {
+          await loadAllTeachersForEdit();
+          await loadTeachers();
+        } else {
+          await loadAllStudentsForEdit();
+        }
+      } catch (error) {
+        console.error(`${itemType}削除エラー:`, error);
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
         alert('削除に失敗しました');
       }
     }
     
+<<<<<<< HEAD
     async function updateSelectedTeachers() {
       const roleSelects = document.querySelectorAll('.role-select');
       const updates = [];
@@ -529,6 +758,119 @@
       } catch (error) {
         console.error('役割更新エラー:', error);
         alert('更新に失敗しました');
+=======
+    async function updateSelectedItems() {
+      if (editViewMode === 'teacher') {
+        // 教師の役割更新
+        const roleSelects = document.querySelectorAll('.role-select');
+        const updates = [];
+        
+        roleSelects.forEach(select => {
+          if (select.value !== select.dataset.original) {
+            updates.push({
+              user_id: select.dataset.userId,
+              teacher_type: select.value
+            });
+          }
+        });
+        
+        if (updates.length === 0) {
+          return;
+        }
+        
+        if (!confirm(`${updates.length}件の役割を変更してもよろしいですか？`)) {
+          return;
+        }
+        
+        try {
+          let successCount = 0;
+          let failCount = 0;
+          
+          for (const update of updates) {
+            const res = await fetch(`/api/admin/teachers/${encodeURIComponent(update.user_id)}/type`, {
+              method: 'PUT',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({teacher_type: update.teacher_type})
+            });
+            
+            const data = await res.json();
+            
+            if (data.success) {
+              successCount++;
+            } else {
+              failCount++;
+            }
+          }
+          
+          if (failCount > 0) {
+            alert(`${successCount}件更新、${failCount}件失敗しました`);
+          } else {
+            alert(`${successCount}件の役割を更新しました`);
+          }
+          
+          await loadAllTeachersForEdit();
+          await loadTeachers();
+        } catch (error) {
+          console.error('役割更新エラー:', error);
+          alert('更新に失敗しました');
+        }
+      } else {
+        // 学生の名前・学年更新
+        const inputs = document.querySelectorAll('input[data-field]');
+        const updates = {};
+        
+        inputs.forEach(input => {
+          if (input.value !== input.dataset.original) {
+            const userId = input.dataset.userId;
+            if (!updates[userId]) {
+              updates[userId] = {};
+            }
+            updates[userId][input.dataset.field] = input.value;
+          }
+        });
+        
+        const userIds = Object.keys(updates);
+        
+        if (userIds.length === 0) {
+          return;
+        }
+        
+        if (!confirm(`${userIds.length}名の学生情報を更新してもよろしいですか？`)) {
+          return;
+        }
+        
+        try {
+          let successCount = 0;
+          let failCount = 0;
+          
+          for (const userId of userIds) {
+            const res = await fetch(`/api/admin/students/${encodeURIComponent(userId)}`, {
+              method: 'PUT',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify(updates[userId])
+            });
+            
+            const data = await res.json();
+            
+            if (data.success) {
+              successCount++;
+            } else {
+              failCount++;
+            }
+          }
+          
+          if (failCount > 0) {
+            alert(`${successCount}件更新、${failCount}件失敗しました`);
+          } else {
+            alert(`${successCount}名の学生情報を更新しました`);
+          }
+          
+          await loadAllStudentsForEdit();
+        } catch (error) {
+          console.error('学生情報更新エラー:', error);
+          alert('更新に失敗しました');
+        }
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
       }
     }
     

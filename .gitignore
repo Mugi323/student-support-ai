@@ -1,1 +1,8 @@
+<<<<<<< HEAD
 backend/student_support.db
+=======
+# Python
+__pycache__/
+*.pyc
+*.db
+>>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee

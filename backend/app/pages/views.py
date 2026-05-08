@@ -99,10 +99,7 @@ def dashboard(request: Request, q: Optional[str] = None):
             preview = ai_summary or ((text[:50] + "…") if len(text) > 50 else text)
             # get display name from users table when available
             user_rows = query_all("SELECT name FROM users WHERE user_id=?", (user_id,))
-            if user_rows and user_rows[0][0]:
-                display_name = user_rows[0][0]
-            else:
-                display_name = "匿名" if str(user_id or "").startswith("anon_") else user_id
+            display_name = user_rows[0][0] if user_rows else user_id
             items.append(
                 {
                     "user_id": user_id,
@@ -172,12 +169,9 @@ def dashboard(request: Request, q: Optional[str] = None):
 
                 # 表示名を取得
                 user_rows = query_all(
-                    "SELECT name FROM users WHERE user_id=\u003F", (user_id,)
+                    "SELECT name FROM users WHERE user_id=?", (user_id,)
                 )
-                if user_rows and user_rows[0][0]:
-                    display_name = user_rows[0][0]
-                else:
-                    display_name = "匿名" if str(user_id or "").startswith("anon_") else user_id
+                display_name = user_rows[0][0] if user_rows else user_id
 
                 user_high_risk[user_id] = {
                     "user_id": user_id,
