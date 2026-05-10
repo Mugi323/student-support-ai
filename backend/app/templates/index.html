@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 items-start">
-  <div class="flex flex-col space-y-3">
-    <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover flex flex-col">
-      <h2 class="text-xl font-semibold mb-2 section-title">ようこそ</h2>
-    <p class="text-sm text-gray-600 mb-4">メニューから利用したい機能を選んでください。</p>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+  <div class="flex flex-col space-y-4">
+    <div class="bg-white rounded-2xl shadow p-8 glass-card no-hover flex flex-col">
+      <h2 class="text-2xl font-bold tracking-tight mb-1 section-title">ようこそ</h2>
+      <p class="text-sm text-gray-500 mb-5">気になること、話したいことがあれば、いつでもどうぞ。</p>
   <div class="grid gap-3 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1">
       <!-- AIチャットで相談する -->
       <a id="btnAiChat" href="/chat" class="group flex items-center gap-3 p-4 bg-white border rounded-xl hover:shadow-md hover:-translate-y-0.5 transition cta-btn">
-        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-indigo-500 to-violet-600 shadow-sm">
+        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-[#84a59d] to-[#6a8f88] shadow-sm">
           <!-- Simple robot icon -->
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="5" y="8" width="14" height="9" rx="3"/>
@@ -26,7 +26,7 @@
 
       <!-- 先生に相談する -->
       <a id="btnTeacherChat" href="/chat_teacher" class="group flex items-center gap-3 p-4 bg-white border rounded-xl hover:shadow-md hover:-translate-y-0.5 transition cta-btn">
-        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm">
+        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-[#6a8f88] to-[#537a74] shadow-sm">
           <!-- Simple academic cap icon -->
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 6l8 4-8 4-8-4 8-4z"/>
@@ -42,7 +42,7 @@
 
       <!-- AIからのメッセージ（バッジ付き） -->
       <a id="btnAiMessage" href="/chat_from_ai" class="group relative flex items-center gap-3 p-4 bg-white border rounded-xl hover:shadow-md hover:-translate-y-0.5 transition cta-btn">
-        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-pink-500 to-rose-600 shadow-sm">
+        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-[#f6bd60] to-[#d4a040] shadow-sm">
           <!-- Simple bell icon -->
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 5a5 5 0 00-5 5v3l-1.5 2.5h13L17 13v-3a5 5 0 00-5-5z"/>
@@ -59,7 +59,7 @@
 
       <!-- 自分のログを見る -->
       <a id="btnMessages" href="/messages" class="group flex items-center gap-3 p-4 bg-white border rounded-xl hover:shadow-md hover:-translate-y-0.5 transition cta-btn">
-        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm">
+        <span class="inline-grid place-items-center w-12 h-12 rounded-full text-white bg-gradient-to-br from-[#a0b5b2] to-[#84a59d] shadow-sm">
           <!-- Simple clock icon -->
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="7"/>
@@ -88,7 +88,7 @@
   </div>
 
   <!-- あなたへのおすすめ（右側） -->
-  <div class="bg-white rounded-2xl shadow p-6 glass-card no-hover flex flex-col max-h-[70vh]">
+  <div class="bg-white rounded-2xl shadow p-8 glass-card no-hover flex flex-col max-h-[70vh]">
     <div class="flex items-center justify-between mb-3">
       <h3 class="text-lg font-semibold section-title">あなたへのおすすめ</h3>
       <button id="btnRefreshNews" type="button" class="text-sm border px-3 py-1 rounded hover:bg-gray-50 inline-flex items-center gap-1" title="おすすめを更新">

@@ -22,10 +22,10 @@
     </div>
 
     <div id="status" class="text-xs text-gray-500 mb-2">未送信</div>
-    <div id="chat" class="h-[50vh] overflow-y-auto space-y-3 border rounded p-3 bg-gray-50"></div>
+    <div id="chat" class="h-[calc(100vh-320px)] min-h-[300px] overflow-y-auto space-y-3 border border-gray-200 rounded-xl p-3 bg-white"></div>
 
     <!-- 入力エリア -->
-    <div class="mt-3 border-2 border-gray-300 rounded-xl p-3 bg-white">
+    <div class="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
       <!-- 画像プレビューエリア -->
       <div id="imagePreviewContainer" class="mb-2 flex flex-wrap gap-2"></div>
       
@@ -50,7 +50,7 @@
         <button 
           id="sendBtn" 
           onclick="sendMsg()" 
-          class="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed self-end" 
+          class="p-2 bg-[#5EA880] text-white rounded-lg hover:bg-[#4a9068] transition disabled:opacity-50 disabled:cursor-not-allowed self-end"
           title="送信"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" viewBox="0 0 20 20" fill="currentColor">
@@ -62,50 +62,95 @@
   </div>
 
   <!-- AIリスクパネル -->
-  <div class="bg-white rounded-2xl shadow p-4">
-    <h3 class="text-lg font-semibold mb-3">AIリスク（最新）</h3>
-    <p id="aiSummary" class="text-sm text-gray-800 mb-3">要約：—</p>
-    <div class="text-sm space-y-3">
-      <div class="flex justify-between items-center">
-        <span class="w-12 shrink-0">総合</span>
-        <span id="riskOverall" class="w-8 shrink-0 text-right">—</span>
-        <div class="flex-1 ml-2"></div>
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col gap-3">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">リスク分析</h3>
+      <span id="riskStatusBadge" class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-400">待機中</span>
+    </div>
+
+    <!-- Summary -->
+    <p id="aiSummary" class="text-xs text-gray-400 italic leading-relaxed">チャットを送信すると分析が表示されます</p>
+
+    <!-- Overall gauge (SVG semicircle) -->
+    <div class="flex flex-col items-center py-1">
+      <svg width="120" height="68" viewBox="0 0 120 68">
+        <!-- Track -->
+        <path d="M 12 63 A 48 48 0 0 1 108 63"
+              fill="none" stroke="#f3f4f6" stroke-width="10" stroke-linecap="round"/>
+        <!-- Colored fill -->
+        <path id="overallArc"
+              d="M 12 63 A 48 48 0 0 1 108 63"
+              fill="none" stroke="#22c55e" stroke-width="10" stroke-linecap="round"
+              style="stroke-dasharray:0 151;transition:stroke-dasharray 0.6s ease,stroke 0.3s ease"/>
+        <!-- Score number -->
+        <text id="riskOverallSvg" x="60" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#d1d5db">—</text>
+      </svg>
+      <span class="text-xs text-gray-400 -mt-1">総合スコア / 10</span>
+    </div>
+
+    <!-- Category bars -->
+    <div class="space-y-2">
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-gray-400 w-9 shrink-0">健康</span>
+        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
+          <div id="riskHealthBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
+        </div>
+        <span id="riskHealth" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="w-12 shrink-0">健康</span>
-        <span id="riskHealth" class="w-8 shrink-0 text-right">—</span>
-        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskHealthBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
+        <span class="text-xs text-gray-400 w-9 shrink-0">家族</span>
+        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
+          <div id="riskFamilyBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
+        </div>
+        <span id="riskFamily" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="w-12 shrink-0">家族</span>
-        <span id="riskFamily" class="w-8 shrink-0 text-right">—</span>
-        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskFamilyBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
+        <span class="text-xs text-gray-400 w-9 shrink-0">友人</span>
+        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
+          <div id="riskFriendsBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
+        </div>
+        <span id="riskFriends" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="w-12 shrink-0">友人</span>
-        <span id="riskFriends" class="w-8 shrink-0 text-right">—</span>
-        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskFriendsBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
+        <span class="text-xs text-gray-400 w-9 shrink-0">学習</span>
+        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
+          <div id="riskLearningBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
+        </div>
+        <span id="riskLearning" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="w-12 shrink-0">学習</span>
-        <span id="riskLearning" class="w-8 shrink-0 text-right">—</span>
-        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskLearningBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="w-12 shrink-0">いじめ</span>
-        <span id="riskBullying" class="w-8 shrink-0 text-right">—</span>
-        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskBullyingBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
+        <span class="text-xs text-gray-400 w-9 shrink-0">いじめ</span>
+        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
+          <div id="riskBullyingBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
+        </div>
+        <span id="riskBullying" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
       </div>
     </div>
-    <p id="riskReason" class="text-xs text-gray-500 mt-3">根拠：—</p>
-    <hr class="my-3">
-    <button id="toggleLogsBtn" class="text-sm text-indigo-600 underline inline-flex items-center gap-2" onclick="toggleMyLogs()">
-      <span>ログを読み直す</span>
-      <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+
+    <!-- Tags -->
+    <div id="riskTags" class="flex flex-wrap gap-1.5 hidden"></div>
+
+    <!-- Reason (collapsible) -->
+    <details class="group">
+      <summary class="text-xs text-gray-400 cursor-pointer select-none list-none flex items-center gap-1 hover:text-gray-600 transition-colors">
+        <svg class="h-3 w-3 transition-transform group-open:rotate-90" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+        </svg>
+        <span>根拠を見る</span>
+      </summary>
+      <p id="riskReason" class="text-xs text-gray-500 mt-1.5 leading-relaxed pl-4">—</p>
+    </details>
+
+    <hr class="border-gray-100">
+
+    <button id="toggleLogsBtn" class="text-xs text-indigo-400 hover:text-indigo-600 inline-flex items-center gap-1.5 transition-colors" onclick="toggleMyLogs()">
+      <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
       </svg>
+      <span>過去のログ</span>
     </button>
-    <div id="myLogsWrapper" class="mt-2 overflow-hidden transition-all duration-300" style="max-height:0; opacity:0;">
+    <div id="myLogsWrapper" class="overflow-hidden transition-all duration-300" style="max-height:0; opacity:0;">
       <div id="myLogs" class="space-y-2 text-xs p-1"></div>
     </div>
   </div>
@@ -162,7 +207,7 @@ function line(text, side='left', images=[]){
   const wrap = document.createElement('div');
   wrap.className = `flex ${side==='right'?'justify-end':''}`;
   const bubble = document.createElement('div');
-  bubble.className = `max-w-[80%] p-2 rounded-xl ${side==='right'?'bg-indigo-600 text-white':'bg-white border'} shadow whitespace-pre-wrap`;
+  bubble.className = `max-w-[80%] p-2 rounded-xl ${side==='right'?'bg-[#84a59d] text-white':'bg-white border border-gray-100'} shadow whitespace-pre-wrap`;
   
   // 画像がある場合は画像を表示
   if(images && images.length > 0){
@@ -194,36 +239,78 @@ function line(text, side='left', images=[]){
   return bubble;
 }
 
-function _barColor(v){ return v >= 7 ? 'bg-red-500' : v >= 4 ? 'bg-yellow-400' : 'bg-green-400'; }
+const GAUGE_LEN = Math.PI * 48; // semicircle arc length (r=48) ≈ 150.8
+
+function _barColor(v){ return v >= 7 ? '#ef4444' : v >= 4 ? '#f59e0b' : '#22c55e'; }
 function _setBar(id, val){
-  const v = Number(val || 0);
-  document.getElementById(id).textContent = v.toFixed(1);
+  const v = Number(val ?? 0);
+  const color = _barColor(v);
+  const el = document.getElementById(id);
   const bar = document.getElementById(id + 'Bar');
-  if(bar){
-    bar.style.width = (v * 10) + '%';
-    bar.className = 'h-2 rounded transition-all ' + _barColor(v);
-  }
+  if(el){ el.textContent = v.toFixed(1); el.style.color = color; }
+  if(bar){ bar.style.width = (v * 10) + '%'; bar.style.backgroundColor = color; }
 }
 
 function setRiskPanel(res){
-  document.getElementById('aiSummary').textContent = '要約：' + (res.ai_summary ?? '—');
+  // Summary
+  const sum = res.ai_summary ?? '';
+  const summaryEl = document.getElementById('aiSummary');
+  summaryEl.textContent = sum || '分析結果なし';
+  summaryEl.className = 'text-xs leading-relaxed ' + (sum ? 'text-gray-600' : 'text-gray-400 italic');
 
+  // Overall gauge
   const overall = Number(res.ai_risk_overall || 0);
-  const overallEl = document.getElementById('riskOverall');
-  overallEl.textContent = overall.toFixed(1);
-  overallEl.className = 'w-8 shrink-0 text-right font-semibold ' + (overall >= 7 ? 'text-red-600' : '');
+  const gaugeColor = _barColor(overall);
+  const shown = (overall / 10) * GAUGE_LEN;
+  const arc = document.getElementById('overallArc');
+  if(arc){
+    arc.style.stroke = gaugeColor;
+    arc.style.strokeDasharray = `${shown.toFixed(1)} ${GAUGE_LEN.toFixed(1)}`;
+  }
+  const overallText = document.getElementById('riskOverallSvg');
+  if(overallText){ overallText.textContent = overall.toFixed(1); overallText.setAttribute('fill', gaugeColor); }
 
+  // Status badge
+  const badge = document.getElementById('riskStatusBadge');
+  if(badge){
+    const label = overall >= 7 ? '警戒' : overall >= 4 ? '注意' : '安全';
+    const cls = overall >= 7 ? 'text-red-600 bg-red-50' : overall >= 4 ? 'text-amber-600 bg-amber-50' : 'text-green-600 bg-green-50';
+    badge.textContent = label;
+    badge.className = `text-xs font-medium px-2.5 py-0.5 rounded-full ${cls}`;
+  }
+
+  // Categories
   const det = res.ai_risk_detail || {};
   const sc = det.scores || {};
-
   _setBar('riskHealth',   sc.health);
   _setBar('riskFamily',   sc.family);
   _setBar('riskFriends',  sc.friends);
   _setBar('riskLearning', sc.learning);
   _setBar('riskBullying', sc.bullying);
 
-  document.getElementById('riskReason').textContent = '根拠：' + (det.reason ?? '—');
+  // Tags
+  const tags = det.tags || [];
+  const tagsEl = document.getElementById('riskTags');
+  if(tagsEl){
+    tagsEl.innerHTML = '';
+    if(tags.length > 0){
+      tags.forEach(t => {
+        const pill = document.createElement('span');
+        pill.className = 'text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500';
+        pill.textContent = t;
+        tagsEl.appendChild(pill);
+      });
+      tagsEl.classList.remove('hidden');
+    } else {
+      tagsEl.classList.add('hidden');
+    }
+  }
 
+  // Reason
+  const reasonEl = document.getElementById('riskReason');
+  if(reasonEl) reasonEl.textContent = det.reason ?? '—';
+
+  // High risk check
   const hasHighRisk = ['health','family','friends','learning','bullying']
     .some(k => Number(sc[k] || 0) >= 8);
   if(hasHighRisk) showTeacherConsultationPrompt();
