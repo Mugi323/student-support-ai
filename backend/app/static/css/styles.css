@@ -1,37 +1,21 @@
 /* ==================== カスタムプロパティ（カラー変数） ==================== */
 :root {
-    /* * 元のカラーパレット:
-     * メインカラー: #CADCAE
-     * サブカラー1: #E1E9C9
-     * サブカラー2: #EDA35A (アクセント)
-     * サブカラー3: #FEE8D9 (背景)
-     * * その他ユーティリティカラー
-     * テキストカラー（濃）: #333
-     * テキストカラー（中）: #666
-     * 白: white
-    */
-    --color-main: #AED4BD;
-    --color-sub1: #E1E9C9;
-    --color-accent: #EDA35A;
-    /* 背景色を白に設定 */
-    --color-background: #fffff0;
+    /* パレット: #f28482 coral / #84a59d teal / #f5cac3 blush / #f7ede2 cream / #f6bd60 gold */
+    --color-main: #84a59d;
+    --color-sub1: #f5cac3;
+    --color-accent: #f6bd60;
+    --color-background: #f7ede2;
 
     --color-text-dark: #333;
     --color-text-mid: #666;
     --color-white: white;
-    --color-btn: #DEEADE;
+    --color-btn: #edf2f1;
 
-    /* ホバーや影などに使用するアクセントカラーの透明版 */
-    --color-accent-transparent: rgba(237, 163, 90, 0.1); /* #EDA35Aの0.1透明度 */
-    /* メインカラーより少し暗い色（スクロールバーホバー用） */
-    --color-main-darker: #B5C99A; /* CADCAEより暗い色 */
-    /* アクセントカラーより少し暗い色（ボタンホバー用） */
-    --color-accent-darker: #d89248; /* EDA35Aより暗い色 */
-    /* チャット背景のグラデーション終点（背景色より少し暗い色） */
-    /* グラデーション終点も白にして実質フラットな白背景に */
-    --color-chat-gradient-end: #ffffff;
-    /* スクロールバーのトラックの透明度 */
-    --color-scrollbar-track: rgba(202, 220, 174, 0.2); /* CADCAEの0.2透明度 */
+    --color-accent-transparent: rgba(246, 189, 96, 0.1);
+    --color-main-darker: #6a8f88;
+    --color-accent-darker: #d4a040;
+    --color-chat-gradient-end: #fff4ec;
+    --color-scrollbar-track: rgba(132, 165, 157, 0.2);
 }
 
 
@@ -440,11 +424,11 @@ body {
 /* ==================== 送信ボタンの色（ページ個別） ==================== */
 /* /chat の送信ボタン */
 #sendBtn {
-    background-color: var(--color-btn) !important; /* 変更したい色に置き換え */
-    border-color: var(--color-btn) !important;
-    color: #333 !important; /* 明るい背景向けのテキスト色 */
+    background-color: #84a59d !important;
+    border-color: #84a59d !important;
+    color: #fff !important;
 }
-#sendBtn:hover { filter: brightness(0.95); }
+#sendBtn:hover { background-color: #6a8f88 !important; filter: none; }
 
 /* /chat_teacher の送信ボタン */
 #sendBtnDirect {
@@ -709,30 +693,36 @@ body {
 /* ===== Tailwindユーティリティ → カラーパレット上書き（base.html専用ブリッジ） ===== */
 
 /* ページ背景と標準テキスト色 */
-/* 背景を全ページのbodyにグラデーションで適用 */
+/* 背景を全ページのbodyにグラデーション＋ドットグリッドで適用 */
 body.bg-gray-50 {
-    background: linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end)) !important;
+    background-color: var(--color-background) !important;
+    background-image:
+        radial-gradient(circle, rgba(132, 165, 157, 0.18) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end)) !important;
+    background-size: 28px 28px, 100% 100% !important;
 }
 .text-gray-900  { color: var(--color-text-dark) !important; }
 
-/* ヘッダーのバー色（bg-indigo-600 をメインカラーへ） */
-header.bg-indigo-600 { background-color: var(--color-main) !important; }
+/* ヘッダーのバー色（白 + 下ボーダー） */
+header.bg-indigo-600 {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: none !important;
+}
 
-/* ヘッダー内の文字色（既存は text-white だが、パレットに合わせて濃い文字色へ） */
+/* ヘッダー内の文字色（白背景なので濃い文字色を維持） */
 header.bg-indigo-600,
 header.bg-indigo-600 a,
 header.bg-indigo-600 .text-white {
   color: var(--color-text-dark) !important;
 }
 
-/* ヘッダーのログインボタンは独自色を優先（黒固定ルールより強く上書き） */
+/* ヘッダーのログインボタン（白背景上でも視認できるよう枠線追加） */
 #btnLogin {
-    color: var(--color-accent) !important; /* Tailwindの text-indigo-600 を当プロジェクトのアクセントに橋渡し */
-}
-/* ログインボタンのホバー演出 */
-#btnLogin {
+    color: var(--color-accent) !important;
+    border: 1px solid rgba(0, 0, 0, 0.12) !important;
     transition: transform 0.1s ease, box-shadow 0.15s ease, background-color 0.2s ease;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 #btnLogin:hover {
     transform: translateY(-1px);
@@ -770,7 +760,7 @@ header.bg-indigo-600 .text-white {
 .bg-white { background-color: var(--color-white) !important; }
 
 /* メイン領域の背景は透明にして、bodyのグラデーションを見せる */
-main.max-w-5xl.mx-auto.px-4.py-6 {
+main.max-w-7xl.mx-auto.px-6.pt-8 {
     background: transparent;
 }
 
