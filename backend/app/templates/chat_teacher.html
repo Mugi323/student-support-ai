@@ -40,7 +40,9 @@
 
 <script>
 let currentOtherId = null;
-let currentUserRole = null; // 自分の役割を保存
+let currentUserRole = null;
+let _dmEventSource = null;
+let _dmPollTimer = null;
 const chatEl = document.getElementById('chat');
 const statusEl = document.getElementById('status');
 
@@ -204,6 +206,45 @@ async function selectOther(uid, name, isAnonymous, teacherType){
 	} else {
 		anonymousToggle.classList.add('hidden');
 	}
+
+	_connectDMStream(uid);
+}
+
+function _connectDMStream(otherId){
+	// 前の接続をクリア
+	if(_dmEventSource){ _dmEventSource.close(); _dmEventSource = null; }
+	if(_dmPollTimer){ clearInterval(_dmPollTimer); _dmPollTimer = null; }
+
+	const realId = otherId.replace(':anonymous', '');
+
+	if(typeof EventSource === 'undefined'){
+		// フォールバック: 30秒ポーリング
+		_dmPollTimer = setInterval(()=>{ if(currentOtherId) loadMessages(); }, 30000);
+		return;
+	}
+
+	let es = new EventSource(`/api/direct/stream/${realId}`);
+	_dmEventSource = es;
+
+	es.onmessage = (e) => {
+		try{
+			const data = JSON.parse(e.data);
+			if(data.type === 'message' && currentOtherId){
+				loadMessages(); // 新着があったら全体を再取得
+				refreshUnread();
+				loadParticipants();
+			}
+		}catch(_){}
+	};
+
+	es.onerror = () => {
+		es.close();
+		_dmEventSource = null;
+		// SSE 失敗時は 30秒ポーリングにフォールバック
+		if(!_dmPollTimer){
+			_dmPollTimer = setInterval(()=>{ if(currentOtherId) loadMessages(); }, 30000);
+		}
+	};
 }
 
 async function loadMessages(){
@@ -288,18 +329,15 @@ function getQuery(key){
 }
 
 async function boot(){
-	// 自分の役割を取得
+	// /api/me でロールを確定（参加者推測ロジックを廃止）
 	try{
-		const r = await fetch('/api/direct/participants');
-		const participants = await r.json();
-		// 参加者から自分の役割を推測（teacherなら生徒リスト、studentなら教師リスト）
-		if(participants.length > 0){
-			// 最初の参加者の役割をチェック
-			const firstParticipantRole = participants[0].role;
-			currentUserRole = firstParticipantRole === 'teacher' ? 'student' : 'teacher';
+		const meRes = await fetch('/api/me');
+		if(meRes.ok){
+			const me = await meRes.json();
+			currentUserRole = me.role || 'student';
 		}
 	}catch(_e){
-		currentUserRole = 'student'; // デフォルトは生徒
+		currentUserRole = 'student';
 	}
 
 	await loadParticipants();
@@ -338,8 +376,6 @@ async function boot(){
 			await selectOther(pre, pre, false, null);
 		}
 	}
-	// 10秒ごとにメッセージ一覧を再取得（簡易ポーリング）
-	setInterval(()=>{ if(currentOtherId) loadMessages(); }, 10000);
 }
 
 boot();

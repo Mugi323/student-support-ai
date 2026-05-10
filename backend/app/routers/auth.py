@@ -37,6 +37,12 @@ router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
 
+def _save_session(request: Request, user_row) -> None:
+    request.session["user_id"] = user_row[0]
+    request.session["role"]    = user_row[3]
+    request.session["name"]    = user_row[1]
+
+
 @router.get("/login", include_in_schema=False)
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -70,10 +76,8 @@ def login_action(
         set_user_role(uid, role)
         full = get_user_by_id(uid)
 
-    request.session["user_id"] = full[0]
-    request.session["role"] = full[3]
-    request.session["name"] = full[1]
-    
+    _save_session(request, full)
+
     # 🔥 教師の場合、メールアドレスが未登録ならsetup-profileへ
     if role == "teacher":
         from app.utils.user import get_email_by_user_id  # この関数を追加する必要があります
@@ -103,7 +107,7 @@ async def authorize_google(request: Request):
             )
         # メールアドレスからユーザー名を取得(またはメールアドレスをそのまま使用)
         email = user_info.get('email')
-        initial_name = user_info.get('name', email.split('@')[0])
+        initial_name = user_info.get('name') or (email.split('@')[0] if email and '@' in email else 'user')
         
         uid = get_user_id_by_google_email(email)
         is_new_user = False
@@ -136,9 +140,7 @@ async def authorize_google(request: Request):
         
         # セッションに情報を保存
         full = get_user_by_id(uid)
-        request.session["user_id"] = full[0]
-        request.session["role"] = full[3]
-        request.session["name"] = full[1]
+        _save_session(request, full)
         request.session["google_email"] = email
         request.session["google_picture"] = user_info.get('picture', '')
         
@@ -154,6 +156,15 @@ async def authorize_google(request: Request):
             "login.html", 
             {"request": request, "error": "Google認証中にエラーが発生しました。"}
         )
+
+@router.get("/api/me")
+def get_me(request: Request):
+    uid = request.session.get("user_id")
+    if not uid:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="ログインが必要です")
+    return {"user_id": uid, "role": request.session.get("role", "student")}
+
 
 @router.post("/logout", include_in_schema=False)
 def logout_action(request: Request):

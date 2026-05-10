@@ -140,7 +140,9 @@ def api_get_user_messages(request: Request, user_id: str):
 
 
 @router.post("/messages/erase_anonymous")
-def api_erase_anonymous():
+def api_erase_anonymous(request: Request):
     """匿名メッセージを削除"""
+    if request.session.get("role") != "teacher":
+        raise HTTPException(status_code=401, detail="教師ログインが必要です")
     execute("DELETE FROM messages WHERE is_anonymous=1", ())
     return PlainTextResponse("anonymous messages deleted.")

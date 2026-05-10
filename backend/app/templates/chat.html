@@ -65,13 +65,37 @@
   <div class="bg-white rounded-2xl shadow p-4">
     <h3 class="text-lg font-semibold mb-3">AIリスク（最新）</h3>
     <p id="aiSummary" class="text-sm text-gray-800 mb-3">要約：—</p>
-    <div class="text-sm space-y-2">
-    <div class="flex justify-between"><span>総合</span><span id="riskOverall">—</span></div>
-    <div class="flex justify-between"><span>健康</span><span id="riskHealth">—</span></div>
-    <div class="flex justify-between"><span>家族</span><span id="riskFamily">—</span></div>
-    <div class="flex justify-between"><span>友人</span><span id="riskFriends">—</span></div>
-    <div class="flex justify-between"><span>学習</span><span id="riskLearning">—</span></div>
-    <div class="flex justify-between"><span>いじめ</span><span id="riskBullying">—</span></div>
+    <div class="text-sm space-y-3">
+      <div class="flex justify-between items-center">
+        <span class="w-12 shrink-0">総合</span>
+        <span id="riskOverall" class="w-8 shrink-0 text-right">—</span>
+        <div class="flex-1 ml-2"></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-12 shrink-0">健康</span>
+        <span id="riskHealth" class="w-8 shrink-0 text-right">—</span>
+        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskHealthBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-12 shrink-0">家族</span>
+        <span id="riskFamily" class="w-8 shrink-0 text-right">—</span>
+        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskFamilyBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-12 shrink-0">友人</span>
+        <span id="riskFriends" class="w-8 shrink-0 text-right">—</span>
+        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskFriendsBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-12 shrink-0">学習</span>
+        <span id="riskLearning" class="w-8 shrink-0 text-right">—</span>
+        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskLearningBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-12 shrink-0">いじめ</span>
+        <span id="riskBullying" class="w-8 shrink-0 text-right">—</span>
+        <div class="flex-1 bg-gray-100 rounded h-2"><div id="riskBullyingBar" class="h-2 rounded bg-green-400 transition-all" style="width:0%"></div></div>
+      </div>
     </div>
     <p id="riskReason" class="text-xs text-gray-500 mt-3">根拠：—</p>
     <hr class="my-3">
@@ -170,37 +194,39 @@ function line(text, side='left', images=[]){
   return bubble;
 }
 
+function _barColor(v){ return v >= 7 ? 'bg-red-500' : v >= 4 ? 'bg-yellow-400' : 'bg-green-400'; }
+function _setBar(id, val){
+  const v = Number(val || 0);
+  document.getElementById(id).textContent = v.toFixed(1);
+  const bar = document.getElementById(id + 'Bar');
+  if(bar){
+    bar.style.width = (v * 10) + '%';
+    bar.className = 'h-2 rounded transition-all ' + _barColor(v);
+  }
+}
+
 function setRiskPanel(res){
   document.getElementById('aiSummary').textContent = '要約：' + (res.ai_summary ?? '—');
-  document.getElementById('riskOverall').textContent = (res.ai_risk_overall ?? '—');
+
+  const overall = Number(res.ai_risk_overall || 0);
+  const overallEl = document.getElementById('riskOverall');
+  overallEl.textContent = overall.toFixed(1);
+  overallEl.className = 'w-8 shrink-0 text-right font-semibold ' + (overall >= 7 ? 'text-red-600' : '');
 
   const det = res.ai_risk_detail || {};
   const sc = det.scores || {};
 
-  document.getElementById('riskHealth').textContent   = sc.health   ?? '—';
-  document.getElementById('riskFamily').textContent   = sc.family   ?? '—';
-  document.getElementById('riskFriends').textContent  = sc.friends  ?? '—';
-  document.getElementById('riskLearning').textContent = sc.learning ?? '—';
-  document.getElementById('riskBullying').textContent = sc.bullying ?? '—';
+  _setBar('riskHealth',   sc.health);
+  _setBar('riskFamily',   sc.family);
+  _setBar('riskFriends',  sc.friends);
+  _setBar('riskLearning', sc.learning);
+  _setBar('riskBullying', sc.bullying);
 
   document.getElementById('riskReason').textContent = '根拠：' + (det.reason ?? '—');
 
-  const overall = Number(res.ai_risk_overall || 0);
-  document.getElementById('riskOverall').className =
-    overall >= 7 ? 'text-red-600 font-semibold' : '';
-  
-  // いずれかの項目が8以上の場合、先生への相談を優しく促すメッセージを表示
-  const health = Number(sc.health || 0);
-  const family = Number(sc.family || 0);
-  const friends = Number(sc.friends || 0);
-  const learning = Number(sc.learning || 0);
-  const bullying = Number(sc.bullying || 0);
-  
-  const hasHighRisk = health >= 8 || family >= 8 || friends >= 8 || learning >= 8 || bullying >= 8;
-  
-  if(hasHighRisk){
-    showTeacherConsultationPrompt();
-  }
+  const hasHighRisk = ['health','family','friends','learning','bullying']
+    .some(k => Number(sc[k] || 0) >= 8);
+  if(hasHighRisk) showTeacherConsultationPrompt();
 }
 
 function showTeacherConsultationPrompt(){
@@ -272,6 +298,12 @@ async function sendMsg(){
   clearAllImages();
   statusEl.textContent = '送信中…';
 
+  const sendBtn = document.getElementById('sendBtn');
+  const sendBtnOriginal = sendBtn.innerHTML;
+  sendBtn.disabled = true;
+  sendBtn.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+  const _restoreBtn = () => { sendBtn.disabled = false; sendBtn.innerHTML = sendBtnOriginal; };
+
   const aiBubble = line('', 'left');
 
   // 選択されたAPIを取得
@@ -308,12 +340,14 @@ async function sendMsg(){
   }
 
   if(res.status === 401){
+    _restoreBtn();
     alert('ログインが必要です。ログインページに移動します');
     window.location.href = '/login';
     return;
   }
 
   if(!res.ok || !res.body){
+    _restoreBtn();
     statusEl.textContent = '送信失敗';
     aiBubble.textContent = 'サーバエラーが発生しました。';
     return;
@@ -345,9 +379,11 @@ async function sendMsg(){
             const result = evt.result || {};
             setRiskPanel(result);
             statusEl.textContent = '送信完了';
+            _restoreBtn();
           }else if(evt.type === 'error'){
             aiBubble.textContent += `\n[エラー] ${evt.message || '不明なエラー'}`;
             statusEl.textContent = '送信失敗';
+            _restoreBtn();
           }
         }catch(_e){ }
       }
@@ -371,7 +407,7 @@ async function loadMyLogs(){
     const det = m.ai_risk_detail || {};
     const sc = det.scores || {};
     const text = `[${m.created_at}] 総合:${m.ai_risk_overall ?? '-'} / `+
-                 `self:${sc.self_harm ?? '-'} bully:${sc.bullying ?? '-'} tru:${sc.truancy ?? '-'} health:${sc.health ?? '-'}`;
+                 `健康:${sc.health ?? '-'} 家族:${sc.family ?? '-'} 友人:${sc.friends ?? '-'} 学習:${sc.learning ?? '-'} いじめ:${sc.bullying ?? '-'}`;
     div.textContent = text;
 
     const btn = document.createElement('button');
