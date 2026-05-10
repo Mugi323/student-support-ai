@@ -9,3 +9,5 @@ __pycache__/
 brushup.txt
 usage.txt
 .claude/settings.local.json
+.claude/CLAUDE.md
+colors.txt
