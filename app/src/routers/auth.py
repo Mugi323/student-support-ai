@@ -4,8 +4,8 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config
-from app.core.config import TEMPLATE_DIR
-from app.utils.user import (
+from src.core.config import TEMPLATE_DIR
+from src.utils.user import (
     get_user_by_name,
     create_user,
     set_password_for_user,
@@ -80,7 +80,7 @@ def login_action(
 
     # 🔥 教師の場合、メールアドレスが未登録ならsetup-profileへ
     if role == "teacher":
-        from app.utils.user import get_email_by_user_id  # この関数を追加する必要があります
+        from src.utils.user import get_email_by_user_id  # この関数を追加する必要があります
         email = get_email_by_user_id(uid)
         if not email:
             request.session["needs_email"] = True  # メール登録が必要なフラグ

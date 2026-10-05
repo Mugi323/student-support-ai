@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Request
 
-from app.services.recommendations import get_recommendations_async
+from src.services.recommendations import get_recommendations_async
 
 
 router = APIRouter(prefix="/api")

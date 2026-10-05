@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 ### 4. 環境変数の設定
 
-`backend/.env` ファイルに以下を設定します:
+`app/.env` ファイルに以下を設定します:
 
 ```bash
 OLLAMA_MODEL=qwen3:8b
@@ -42,14 +42,14 @@ OLLAMA_HOST=http://localhost:11434
 PORT=8000
 ```
 
-**注意:** `.env_ollama.example` はサンプルファイルです。実際の設定は `backend/.env` ファイルに記述してください。
+**注意:** `.env_ollama.example` はサンプルファイルです。実際の設定は `app/.env` ファイルに記述してください。
 
 ### 5. アプリケーションの起動
 
 ```bash
-# backendディレクトリから起動（重要！）
-cd backend
-uvicorn app.main:app --reload --port 8000
+# appディレクトリから起動（重要！）
+cd app
+uvicorn src.main:app --reload --port 8000
 ```
 # 5) Webページにアクセス
 ```bash
@@ -68,7 +68,7 @@ Ollama/
 ├── .env_ollama.example       # 環境変数のサンプル
 └── README_OLLAMA.md          # このファイル
 
-backend/
+app/
 └── .env                      # 環境変数設定ファイル（要作成）
 ```
 
@@ -105,7 +105,7 @@ backend/
 
 ### 起動時のパスエラー
 
-起動は必ず `backend` ディレクトリから行ってください：
+起動は必ず `app` ディレクトリから行ってください：
 
 
 

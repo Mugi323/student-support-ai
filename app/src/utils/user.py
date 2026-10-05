@@ -2,7 +2,7 @@ from __future__ import annotations
 import hashlib
 import os
 import datetime
-from app.db import execute, query_all, now_iso
+from src.db import execute, query_all, now_iso
 
 
 def stable_user_id(name: str | None, is_anonymous: bool) -> str:

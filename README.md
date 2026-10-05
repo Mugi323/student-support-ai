@@ -92,7 +92,7 @@ cp .env.example .env
 ### 4. アプリを起動
 
 ```bash
-uvicorn app.main:app --reload --port 8000
+uvicorn src.main:app --reload --port 8000
 ```
 
 ### 5. ブラウザでアクセス

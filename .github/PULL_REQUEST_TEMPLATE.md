@@ -7,7 +7,7 @@ Closes #<!-- issue番号 -->
 - 
 
 ## 動作確認
-- [ ] ローカルでサーバーを起動して確認した (`uvicorn app.main:app --reload`)
+- [ ] ローカルでサーバーを起動して確認した (`uvicorn src.main:app --reload`)
 - [ ] 関連する画面・APIエンドポイントを手動で確認した
 - [ ] 既存機能への影響がないことを確認した
 

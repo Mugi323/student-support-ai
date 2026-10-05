@@ -2,13 +2,13 @@ from __future__ import annotations
 from typing import List, Dict, Optional
 import random
 
-from app.core.config import KIDS_MODE
+from src.core.config import KIDS_MODE
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
-# from app.db.memory import get_memories  # personalization disabled
-from app.services.news_rss import get_news_for_topics
-from app.services.web_search import get_articles_for_topics
-from app.services.social_mastodon import get_social_for_topics
+# from src.db.memory import get_memories  # personalization disabled
+from src.services.news_rss import get_news_for_topics
+from src.services.web_search import get_articles_for_topics
+from src.services.social_mastodon import get_social_for_topics
 
 
 # 簡易キーワード → カテゴリのマップ（日本語の素朴な一致）

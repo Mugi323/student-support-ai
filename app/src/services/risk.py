@@ -2,8 +2,8 @@ from __future__ import annotations
 import json
 from typing import Dict, Any
 from .openai_client import client
-from app.core.config import OPENAI_MODEL
-from app.core.schemas import ai_risk_schema
+from src.core.config import OPENAI_MODEL
+from src.core.schemas import ai_risk_schema
 
 
 def compute_overall(scores: Dict[str, float]) -> float:

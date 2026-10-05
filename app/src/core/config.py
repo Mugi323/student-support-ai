@@ -6,7 +6,7 @@ load_dotenv()
 
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5-nano")
 APP_TITLE = "Student Support (OpenAI Only + Streaming)"
-TEMPLATE_DIR = "app/templates"
+TEMPLATE_DIR = "src/templates"
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
 
 # ニュース表示の受け手（オーディエンス）設定
