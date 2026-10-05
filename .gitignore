@@ -2,10 +2,13 @@
 __pycache__/
 *.pyc
 *.db
+*.rej
 app/student_support.db
 brushup.txt
 usage.txt
-.claude/settings.local.json
-.claude/CLAUDE.md
 colors.txt
 app/.github/
+
+# Claude local settings
+.claude/settings.local.json
+.claude/CLAUDE.md
