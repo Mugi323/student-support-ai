@@ -91,6 +91,7 @@ def init_db() -> None:
     ensure_column("messages", "ai_risk_detail", "TEXT")
     ensure_column("messages", "ai_risk_overall", "REAL")
     ensure_column("messages", "conversation_id", "TEXT")
+    ensure_column("messages", "ai_reply", "TEXT")
     # ensure users.role exists for existing DBs
     ensure_column("users", "role", "TEXT NOT NULL DEFAULT 'student'")
     ensure_column("users", "password_hash", "TEXT")

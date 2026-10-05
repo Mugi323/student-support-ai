@@ -122,7 +122,6 @@
     </details>
   </div>
 </div>
-{% endblock %}
 
 <script>
 // ==================== 状態 ====================
@@ -167,9 +166,13 @@ function renderConvList(convs) {
     lbl.textContent = label;
     box.appendChild(lbl);
     items.forEach(c => {
+      const wrap = document.createElement('div');
+      wrap.className = 'conv-item-wrap';
+
       const btn = document.createElement('button');
       btn.className = 'conv-item' + (c.id === currentConvId ? ' active' : '');
       btn.dataset.id = c.id;
+      btn.style.flex = '1';
       btn.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/>
@@ -177,36 +180,74 @@ function renderConvList(convs) {
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.title)}</span>
       `;
       btn.onclick = () => selectConversation(c.id, c.title);
-      box.appendChild(btn);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'conv-delete-btn';
+      delBtn.title = '削除';
+      delBtn.innerHTML = '✕';
+      delBtn.onclick = (e) => { e.stopPropagation(); deleteConversation(c.id, wrap); };
+
+      wrap.appendChild(btn);
+      wrap.appendChild(delBtn);
+      box.appendChild(wrap);
     });
   });
 }
 
-async function newChat() {
+// サイドバーの「新しいチャット」ボタン用: DB作成せずUIだけリセット
+function newChat() {
+  currentConvId = null;
+  clearChat();
+  document.getElementById('chatTitleDisplay').textContent = '新しいチャット';
+  document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+  closeSidebar();
+}
+
+// sendMsg から呼ぶ: 実際に会話レコードを作成して id を返す
+async function createConversation() {
   const r = await fetch('/api/conversations', { method: 'POST', credentials: 'same-origin' });
-  if (!r.ok) { alert('新しいチャットを作成できませんでした'); return; }
+  if (r.status === 401) { window.location.href = '/login'; return null; }
+  if (!r.ok) { alert('会話を開始できませんでした'); return null; }
   const conv = await r.json();
   currentConvId = conv.id;
-  clearChat();
   document.getElementById('chatTitleDisplay').textContent = conv.title;
-  await loadConversations();
+  return conv.id;
+}
+
+async function deleteConversation(id, wrapEl) {
+  const r = await fetch(`/api/conversations/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+  if (!r.ok) return;
+  wrapEl.remove();
+  if (currentConvId === id) {
+    currentConvId = null;
+    clearChat();
+    document.getElementById('chatTitleDisplay').textContent = '新しいチャット';
+  }
+  // グループラベルが空になったら消す
+  document.querySelectorAll('#convList p.sidebar-section-label').forEach(lbl => {
+    if (!lbl.nextElementSibling || lbl.nextElementSibling.classList.contains('sidebar-section-label')) {
+      lbl.remove();
+    }
+  });
 }
 
 async function selectConversation(id, title) {
   currentConvId = id;
   document.getElementById('chatTitleDisplay').textContent = title;
   clearChat();
-  // 会話のメッセージを読み込む
   const r = await fetch(`/api/messages/me?conv_id=${id}`, { credentials: 'same-origin' });
   if (!r.ok) return;
   const msgs = await r.json();
-  document.getElementById('chatEmpty').style.display = 'none';
-  msgs.forEach(m => addBubble(m.text, 'user'));
-  // 会話リストのactiveを更新
+  if (msgs.length) {
+    document.getElementById('chatEmpty').style.display = 'none';
+    msgs.forEach(m => {
+      addBubble(m.text, 'user');
+      if (m.ai_reply) addBubble(m.ai_reply, 'ai');
+    });
+  }
   document.querySelectorAll('.conv-item').forEach(el => {
     el.classList.toggle('active', el.dataset.id === id);
   });
-  // モバイルではサイドバーを閉じる
   closeSidebar();
 }
 
@@ -273,7 +314,10 @@ async function sendMsg() {
   if (!text && !selectedImages.length) return;
 
   // 会話がなければ新規作成
-  if (!currentConvId) await newChat();
+  if (!currentConvId) {
+    const id = await createConversation();
+    if (!id) return;
+  }
 
   const imgDataUrls = [];
   for (const f of selectedImages) {
@@ -407,6 +451,7 @@ function showTeacherPrompt() {
 
 function toggleRiskDrawer() {
   document.getElementById('riskDrawer').classList.toggle('open');
+  document.querySelector('.main-area').classList.toggle('risk-open');
 }
 
 // ==================== 画像処理 ====================
@@ -481,3 +526,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (cid) await selectConversation(cid, '');
 });
 </script>
+{% endblock %}

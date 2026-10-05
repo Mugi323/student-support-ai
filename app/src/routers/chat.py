@@ -37,10 +37,23 @@ async def create_conversation(request: Request):
 async def list_conversations(request: Request):
     uid = require_login(request)
     rows = query_all(
-        "SELECT id, title, created_at FROM conversations WHERE user_id=? ORDER BY created_at DESC LIMIT 60",
+        """
+        SELECT c.id, c.title, c.created_at FROM conversations c
+        WHERE c.user_id=?
+          AND EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id=c.id AND m.user_id=c.user_id)
+        ORDER BY c.created_at DESC LIMIT 60
+        """,
         (uid,),
     )
     return JSONResponse([{"id": r[0], "title": r[1], "created_at": r[2]} for r in rows])
+
+
+@router.delete("/conversations/{conv_id}")
+async def delete_conversation(conv_id: str, request: Request):
+    uid = require_login(request)
+    execute("DELETE FROM messages WHERE conversation_id=? AND user_id=?", (conv_id, uid))
+    execute("DELETE FROM conversations WHERE id=? AND user_id=?", (conv_id, uid))
+    return JSONResponse({"ok": True})
 
 
 @router.patch("/conversations/{conv_id}/title")
@@ -83,8 +96,8 @@ async def _save_and_memorize(
     ai_overall = result["overall"]
 
     execute(
-        "INSERT INTO messages (user_id, is_anonymous, text, risk_score, sentiment, tags, created_at, ai_summary, ai_risk_detail, ai_risk_overall, conversation_id) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO messages (user_id, is_anonymous, text, risk_score, sentiment, tags, created_at, ai_summary, ai_reply, ai_risk_detail, ai_risk_overall, conversation_id) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         (
             uid,
             0,
@@ -94,6 +107,7 @@ async def _save_and_memorize(
             '["general"]',
             now_iso(),
             ai_summary,
+            reply_text,
             json.dumps(
                 {"scores": ai_scores, "reason": ai_reason, "tags": ai_tags},
                 ensure_ascii=False,

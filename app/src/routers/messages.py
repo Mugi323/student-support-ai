@@ -29,7 +29,7 @@ def api_get_my_messages(request: Request, conv_id: str = None):
     if conv_id:
         rows = query_all(
             """
-            SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at
+            SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at, ai_reply
             FROM messages
             WHERE user_id=? AND conversation_id=?
             ORDER BY created_at ASC
@@ -40,7 +40,7 @@ def api_get_my_messages(request: Request, conv_id: str = None):
     else:
         rows = query_all(
             """
-            SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at
+            SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at, ai_reply
             FROM messages
             WHERE user_id=?
             ORDER BY created_at DESC
@@ -50,7 +50,7 @@ def api_get_my_messages(request: Request, conv_id: str = None):
         )
 
     out = []
-    for mid, user_id_val, text, ai_summary, ai_overall, ai_detail, created_at in rows:
+    for mid, user_id_val, text, ai_summary, ai_overall, ai_detail, created_at, ai_reply in rows:
         detail_obj = {}
         try:
             detail_obj = json.loads(ai_detail) if ai_detail else {}
@@ -61,6 +61,7 @@ def api_get_my_messages(request: Request, conv_id: str = None):
                 "id": mid,
                 "user_id": user_id_val,
                 "text": text,
+                "ai_reply": ai_reply or "",
                 "ai_summary": ai_summary or "",
                 "ai_risk_overall": ai_overall or 0.0,
                 "ai_risk_detail": detail_obj,

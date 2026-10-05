@@ -157,7 +157,7 @@
 })();
 </script>
 
-<!-- サイドバー開閉 -->
+<!-- サイドバー開閉 + アクティブリンク -->
 <script>
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('sidebar-open');
@@ -167,6 +167,13 @@ function closeSidebar() {
   document.getElementById('sidebar').classList.remove('sidebar-open');
   document.getElementById('sidebarOverlay').classList.remove('active');
 }
+// 現在のページに対応するリンクをアクティブ表示
+(function() {
+  const p = location.pathname;
+  document.querySelectorAll('.sidebar-footer-link').forEach(a => {
+    if (a.getAttribute('href') === p) a.classList.add('active');
+  });
+})();
 </script>
 
 </body>

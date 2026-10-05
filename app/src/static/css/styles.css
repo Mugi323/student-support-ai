@@ -124,7 +124,7 @@ body {
     color: var(--color-text);
     cursor: pointer;
     border-radius: 8px;
-    margin: 0 0.4rem;
+    margin: 0 0 0 0.4rem;
     transition: background 0.12s;
     white-space: nowrap;
     overflow: hidden;
@@ -132,14 +132,35 @@ body {
     border: none;
     background: none;
     text-align: left;
-    width: calc(100% - 0.8rem);
+    flex: 1;
+    min-width: 0;
     text-decoration: none;
 }
 
 .conv-item:hover { background: rgba(61,46,30,0.06); }
 .conv-item.active { background: var(--color-active-bg); font-weight: 500; }
-
 .conv-item svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--color-text-mid); }
+
+.conv-item-wrap {
+    display: flex;
+    align-items: center;
+    padding-right: 0.5rem;
+}
+.conv-item-wrap:hover .conv-delete-btn { opacity: 1; }
+.conv-delete-btn {
+    opacity: 0;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.2rem 0.3rem;
+    color: var(--color-text-mid);
+    border-radius: 4px;
+    line-height: 1;
+    font-size: 0.75rem;
+    transition: opacity 0.15s, color 0.15s;
+}
+.conv-delete-btn:hover { color: #ef4444; }
 
 /* サイドバーフッター */
 .sidebar-footer {
@@ -169,6 +190,11 @@ body {
 }
 
 .sidebar-footer-link:hover { background: rgba(61,46,30,0.06); color: var(--color-text); }
+.sidebar-footer-link.active {
+    color: var(--color-main);
+    background: rgba(246,189,96,0.18);
+    font-weight: 600;
+}
 .sidebar-footer-link svg { width: 16px; height: 16px; flex-shrink: 0; }
 
 .sidebar-user {
@@ -531,6 +557,14 @@ body {
     color: var(--color-text);
     cursor: pointer;
     outline: none;
+}
+
+/* main-area がリスクドロワー分だけ右に詰める */
+.main-area {
+    transition: padding-right 0.25s ease;
+}
+.main-area.risk-open {
+    padding-right: 280px;
 }
 
 /* ==================== リスクパネル（折りたたみ） ==================== */
