@@ -7,15 +7,15 @@ from typing import List
 
 from fastapi import APIRouter, Request, File, UploadFile, Form
 from fastapi.responses import StreamingResponse
-from app.core.schemas import ChatIn
-from app.core.config import OPENAI_MODEL
-from app.db import execute, now_iso
-from app.Ollama.OllamaAdapter import OllamaAdapter
-from app.services.openai_client import client
-from app.db.memory import get_memories, add_memory
-from app.services.risk import analyze_risk_sync
-from app.utils.sse import sse_event
-from app.utils.deps import require_login
+from src.core.schemas import ChatIn
+from src.core.config import OPENAI_MODEL
+from src.db import execute, now_iso
+from src.Ollama.OllamaAdapter import OllamaAdapter
+from src.services.openai_client import client
+from src.db.memory import get_memories, add_memory
+from src.services.risk import analyze_risk_sync
+from src.utils.sse import sse_event
+from src.utils.deps import require_login
 
 
 router = APIRouter(prefix="/api")

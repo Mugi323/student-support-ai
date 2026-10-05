@@ -3,9 +3,9 @@ from typing import Optional
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from app.core.config import TEMPLATE_DIR, KIDS_MODE
-from app.db import query_all
-from app.services.recommendations import get_recommendations
+from src.core.config import TEMPLATE_DIR, KIDS_MODE
+from src.db import query_all
+from src.services.recommendations import get_recommendations
 
 router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATE_DIR)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Tuple
-from app.db.sqlite import execute, query_all, now_iso
+from src.db.sqlite import execute, query_all, now_iso
 
 
 KEEP_DEFAULT = 10

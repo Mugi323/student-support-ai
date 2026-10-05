@@ -2,9 +2,9 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from app.db import teacher
-from app.db.sqlite import query_all, execute, now_iso
-from app.utils.deps import require_teacher
+from src.db import teacher
+from src.db.sqlite import query_all, execute, now_iso
+from src.utils.deps import require_teacher
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 

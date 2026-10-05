@@ -9,8 +9,8 @@ import random
 import httpx
 import feedparser
 
-from app.db.sqlite import execute, query_all, now_iso
-from app.core.config import KIDS_MODE, KIDS_NEWS_FEEDS, KIDS_INTEREST_KEYWORDS
+from src.db.sqlite import execute, query_all, now_iso
+from src.core.config import KIDS_MODE, KIDS_NEWS_FEEDS, KIDS_INTEREST_KEYWORDS
 
 # NHK以外のデフォルトRSS（環境変数が未設定の場合のフォールバック）
 # 利用規約に従って見出し・概要・リンクを表示する前提。必要に応じて差し替え可能。

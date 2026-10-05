@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from fastapi import APIRouter, Request, HTTPException, status
 from fastapi.responses import JSONResponse, PlainTextResponse
-from app.db import execute, query_all
+from src.db import execute, query_all
 from typing import List, Dict
 
 # 明示エクスポート（安全策）
