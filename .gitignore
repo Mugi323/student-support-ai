@@ -1,13 +1,17 @@
-<<<<<<< HEAD
-backend/student_support.db
-=======
 # Python
 __pycache__/
 *.pyc
 *.db
->>>>>>> 4c980dc8656a8e8f7b9f31e5a8b1edfe50c878ee
+*.rej
+
+# Application DB
+backend/student_support.db
+
+# Dev notes
 brushup.txt
 usage.txt
+colors.txt
+
+# Claude local settings
 .claude/settings.local.json
 .claude/CLAUDE.md
-colors.txt

@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field
 
 class ChatIn(BaseModel):
     text: str = Field(..., min_length=1, max_length=2000)
-    pass
 
 
 def ai_risk_schema() -> Dict[str, Any]:
