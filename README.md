@@ -42,7 +42,7 @@ OpenAI GPT とローカル LLM（Ollama）の両方に対応し、教員・管�
 |---------|------|
 | バックエンド | FastAPI, Uvicorn, Python 3.11 |
 | テンプレート | Jinja2 |
-| AI | OpenAI API (gpt-5-nano), Ollama (qwen3:8b 推奨) |
+| AI | OpenAI API (gpt-6-luna), Ollama (qwen3:8b 推奨) |
 | データベース | SQLite |
 | 認証 | セッション認証 / Google OAuth (Authlib) |
 | HTTP クライアント | httpx |
@@ -117,7 +117,7 @@ http://127.0.0.1:8000
 
 | 変数名 | デフォルト | 説明 |
 |--------|-----------|------|
-| `OPENAI_MODEL` | `gpt-5-nano` | 使用する OpenAI モデル |
+| `OPENAI_MODEL` | `gpt-6-luna` | 使用する OpenAI モデル |
 | `OLLAMA_MODEL` | `qwen3:8b` | Ollama で使用するモデル名 |
 | `OLLAMA_HOST` | `http://localhost:11434` | Ollama サーバーのエンドポイント |
 
