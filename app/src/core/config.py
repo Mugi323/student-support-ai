@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5-nano")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-6-luna")
 APP_TITLE = "Student Support (OpenAI Only + Streaming)"
 TEMPLATE_DIR = "src/templates"
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
