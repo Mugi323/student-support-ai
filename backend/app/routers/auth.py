@@ -135,9 +135,6 @@ async def authorize_google(request: Request):
                 # DBには既にinitial_nameが入っている
                 # setup-profileページへリダイレクト
                 pass # 次のセッション保存後にリダイレクト
-        else:
-            print(f"既存のGoogle連携ユーザー: {uid}")
-        
         # セッションに情報を保存
         full = get_user_by_id(uid)
         _save_session(request, full)
@@ -150,8 +147,7 @@ async def authorize_google(request: Request):
         
         return RedirectResponse(url="/dashboard", status_code=302)
         
-    except Exception as e:
-        print(f"Google認証エラー: {e}")
+    except Exception:
         return templates.TemplateResponse(
             "login.html", 
             {"request": request, "error": "Google認証中にエラーが発生しました。"}

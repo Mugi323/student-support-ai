@@ -1,10 +1,11 @@
 from __future__ import annotations
 import asyncio
 import json
-from fastapi import APIRouter, Request, HTTPException, status
+from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from app.db import execute, query_all, now_iso
 from app.utils.user import get_user_by_id
+from app.utils.deps import require_login
 
 router = APIRouter(prefix="/api/direct")
 
@@ -12,27 +13,9 @@ router = APIRouter(prefix="/api/direct")
 # key: sorted(uid, other_id) を "_" で結合
 _dm_queues: dict[str, asyncio.Queue] = {}
 
-# ユーティリティ
-
-
-def _require_login(request: Request) -> str:
-    try:
-        uid = request.session.get("user_id")
-    except Exception:
-        uid = None
-    if not uid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
-        )
-    return uid
-
 
 def _require_role(request: Request) -> str:
-    try:
-        role = request.session.get("role")
-    except Exception:
-        role = None
-    return role or ""
+    return request.session.get("role") or ""
 
 
 @router.get("/participants")
@@ -43,7 +26,7 @@ def list_participants(request: Request):
     - 教員: すべての生徒 + 匿名チャット中の生徒を「匿名生徒」として表示
     返却: [{user_id, name, role, is_anonymous}]
     """
-    uid = _require_login(request)
+    uid = require_login(request)
     role = _require_role(request)
     
     if role == "teacher":
@@ -123,7 +106,7 @@ def get_direct_messages(request: Request, other_id: str, anonymous: str = None):
     is_anonymousフラグも含めて返す。
     匿名チャット(?anonymous=true)と通常チャットを分離。
     """
-    uid = _require_login(request)
+    uid = require_login(request)
     
     # 匿名モードかどうかを判定（クエリパラメータまたはURL内の:anonymous）
     is_anonymous_mode = anonymous == "true" or ":anonymous" in other_id
@@ -180,7 +163,7 @@ def send_direct_message(request: Request, other_id: str, body: dict):
     - is_anonymous=trueの場合、先生側に送信者名を表示しない
     - other_idに:anonymousが含まれている場合は匿名チャットとして扱う
     """
-    uid = _require_login(request)
+    uid = require_login(request)
     role = _require_role(request)
 
     text = (body or {}).get("text", "").strip()
@@ -251,7 +234,7 @@ def mark_as_read(request: Request, other_id: str):
     相手から自分宛の未読を既読化。
     匿名チャットと通常チャットを分離して既読化。
     """
-    uid = _require_login(request)
+    uid = require_login(request)
     
     # 匿名チャットかどうかを判定
     is_anonymous_chat = ":anonymous" in other_id
@@ -278,7 +261,7 @@ def unread_count(request: Request):
     """
     自分宛て未読件数の合計を返す。
     """
-    uid = _require_login(request)
+    uid = require_login(request)
     rows = query_all(
         "SELECT COUNT(*) FROM direct_messages WHERE recipient_id=? AND is_read=0",
         (uid,),
@@ -293,7 +276,7 @@ def unread_by_sender(request: Request):
     匿名チャットと通常チャットを分離してカウント。
     返却: {sender_id: count, "sender_id:anonymous": count, ...}
     """
-    uid = _require_login(request)
+    uid = require_login(request)
     
     # 通常チャット（is_anonymous = 0 または NULL）の未読件数
     normal_rows = query_all(
@@ -371,7 +354,7 @@ async def stream_direct(other_id: str, request: Request):
     送信側が POST /messages/{other_id} を呼ぶとキューに push され、
     受信側の EventSource がリアルタイムで受け取れる。
     """
-    uid = _require_login(request)
+    uid = require_login(request)
     real_other_id = other_id.replace(":anonymous", "")
     pair_key = "_".join(sorted([uid, real_other_id]))
 

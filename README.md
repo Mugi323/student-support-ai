@@ -8,7 +8,7 @@ OpenAI GPT とローカル LLM（Ollama）の両方に対応し、教員・管�
 ## スクリーンショット
 | AI チャット |
 |------------|
- ![AIチャット画面](docs/images/screenshot_chat.png) |
+| ![AIチャット画面](docs/images/screenshot_chat.png) |
 ---
 
 ## 🔥News

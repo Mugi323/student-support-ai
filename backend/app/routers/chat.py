@@ -15,6 +15,7 @@ from app.services.openai_client import client
 from app.db.memory import get_memories, add_memory
 from app.services.risk import analyze_risk_sync
 from app.utils.sse import sse_event
+from app.utils.deps import require_login
 
 
 router = APIRouter(prefix="/api")
@@ -22,6 +23,16 @@ router = APIRouter(prefix="/api")
 _SUMMARY_SYS = (
     "次のユーザー発話とAI返答を、日本語で1文(60〜120文字程度)に要約してください。"
     "継続的な関心や悩み、進捗があれば簡潔に含めてください。改行や箇条書きは禁止です。"
+)
+
+_CHAT_SYS_PROMPT = (
+    "以下の方針で回答してください。\n"
+    "・日本語で300文字以内の返答を出力してください。\n"
+    "・会話相手は小学生もしくは中学生です。目線を合わせて話してください。\n"
+    "・日常会話の場合は、相手が話しやすいように会話を発展させてください。\n"
+    "・相手が悩みを抱えていると判断したときのみ、具体的な解決策を提示してください。\n"
+    "・提案を行う際は、その理由も伝えてください。\n\n"
+    "【参考メモ】以下はこのユーザーの最近の話題・関心の要約です。会話の文脈として自然に活用してください。\n"
 )
 
 
@@ -86,42 +97,22 @@ async def _save_and_memorize(uid: str, user_text: str, reply_text: str) -> dict:
     }
 
 
-@router.post("/chat_stream")
-def api_chat_stream(request: Request, payload: ChatIn):
-    session_uid = None
+def _build_sys_prompt(uid: str) -> str:
+    recent_memos = []
     try:
-        session_uid = request.session.get("user_id")
+        recent_memos = get_memories(uid, limit=10) or []
     except Exception:
-        session_uid = None
+        pass
+    memos_text = "\n".join(f"- {m}" for m in recent_memos)
+    return _CHAT_SYS_PROMPT + memos_text
 
-    if session_uid:
-        uid = session_uid
-    else:
-        from fastapi import HTTPException, status
 
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
-        )
+@router.post("/chat_stream")
+async def api_chat_stream(request: Request, payload: ChatIn):
+    uid = require_login(request)
 
     async def generator():
-        recent_memos = []
-        try:
-            recent_memos = get_memories(uid, limit=10) or []
-        except Exception:
-            recent_memos = []
-
-        memos_text = "\n".join(f"- {m}" for m in recent_memos)
-
-        sys = (
-            "以下の方針で回答してください。\n"
-            "・日本語で300文字以内の返答を出力してください。\n"
-            "・会話相手は小学生もしくは中学生です。目線を合わせて話してください。\n"
-            "・日常会話の場合は、相手が話しやすいように会話を発展させてください。\n"
-            "・相手が悩みを抱えていると判断したときのみ、具体的な解決策を提示してください。\n"
-            "・提案を行う際は、その理由も伝えてください。\n\n"
-            "【参考メモ】以下はこのユーザーの最近の話題・関心の要約です。会話の文脈として自然に活用してください。\n"
-            f"{memos_text}"
-        )
+        sys = _build_sys_prompt(uid)
 
         try:
             with client.responses.stream(
@@ -169,21 +160,7 @@ def api_chat_stream(request: Request, payload: ChatIn):
 async def api_chat_stream_with_images(
     request: Request, text: str = Form(...), images: List[UploadFile] = File(default=[])
 ):
-    """画像付きチャットのストリーミングエンドポイント"""
-    session_uid = None
-    try:
-        session_uid = request.session.get("user_id")
-    except Exception:
-        pass
-
-    if not session_uid:
-        from fastapi import HTTPException, status
-
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
-        )
-
-    uid = session_uid
+    uid = require_login(request)
 
     async def generator():
         image_contents = []
@@ -197,23 +174,7 @@ async def api_chat_stream_with_images(
                 }
             )
 
-        recent_memos = []
-        try:
-            recent_memos = get_memories(uid, limit=10) or []
-        except Exception:
-            recent_memos = []
-        memos_text = "\n".join(f"- {m}" for m in recent_memos)
-
-        sys = (
-            "以下の方針で回答してください。\n"
-            "・日本語で300文字以内の返答を出力してください。\n"
-            "・会話相手は小学生もしくは中学生です。目線を合わせて話してください。\n"
-            "・日常会話の場合は、相手が話しやすいように会話を発展させてください。\n"
-            "・相手が悩みを抱えていると判断したときのみ、具体的な解決策を提示してください。\n"
-            "・提案を行う際は、その理由も伝えてください。\n\n"
-            "【参考メモ】以下はこのユーザーの最近の話題・関心の要約です。会話の文脈として自然に活用してください。\n"
-            f"{memos_text}"
-        )
+        sys = _build_sys_prompt(uid)
         user_content = [{"type": "text", "text": text}]
         user_content.extend(image_contents)
 
@@ -268,21 +229,7 @@ async def api_chat_stream_with_images(
 
 @router.post("/chat_stream_local")
 async def chat_stream_local(request: Request, data: ChatIn):
-    """Ollamaを使用したローカルチャットストリーミング"""
-    session_uid = None
-    try:
-        session_uid = request.session.get("user_id")
-    except Exception:
-        pass
-
-    if not session_uid:
-        from fastapi import HTTPException, status
-
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
-        )
-
-    uid = session_uid
+    uid = require_login(request)
     text = data.text
 
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
@@ -294,7 +241,7 @@ async def chat_stream_local(request: Request, data: ChatIn):
         try:
             recent_memos = get_memories(uid, limit=10) or []
         except Exception:
-            recent_memos = []
+            pass
         memos_text = "\n".join(f"- {m}" for m in recent_memos)
 
         prompt = (

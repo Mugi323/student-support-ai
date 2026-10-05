@@ -1,6 +1,6 @@
 from __future__ import annotations
 import json
-from typing import Dict, Any, Iterable
+from typing import Dict, Any
 from .openai_client import client
 from app.core.config import OPENAI_MODEL
 from app.core.schemas import ai_risk_schema
@@ -62,29 +62,7 @@ def analyze_risk_sync(text: str) -> Dict[str, Any]:
             ],
             response_format={"type": "json_schema", "json_schema": schema},
         )
-        data = None
-        for block in getattr(analysis, "output", []) or []:
-            for c in getattr(block, "content", []) or []:
-                cj = getattr(c, "json", None)
-                if isinstance(cj, (dict, list)):
-                    data = cj
-                    break
-            if data is not None:
-                break
-        if data is None:
-            text_json = getattr(analysis, "output_text", None) or ""
-            if not text_json:
-                for block in getattr(analysis, "output", []) or []:
-                    for c in getattr(block, "content", []) or []:
-                        if getattr(c, "type", None) in (
-                            "json_schema",
-                            "output_text",
-                            "text",
-                        ):
-                            tt = getattr(c, "text", None)
-                            if isinstance(tt, str):
-                                text_json += tt
-            data = json.loads(text_json)
+        data = extract_json_from_response(analysis)
     except TypeError:
         comp = client.chat.completions.create(
             model=OPENAI_MODEL,
