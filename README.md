@@ -71,7 +71,7 @@ OpenAI GPT とローカル LLM（Ollama）の両方に対応し、教員・管�
 
 ```bash
 git clone git@github.com:Mugi3233/student-support-ai.git
-cd student-support-ai/backend
+cd student-support-ai/app
 ```
 
 ### 2. conda 環境を作成して有効化
@@ -226,7 +226,7 @@ OLLAMA_HOST=http://localhost:11434
 
 ## データベース構成
 
-SQLite（`backend/student_support.db`）を使用します。
+SQLite（`app/student_support.db`）を使用します。
 
 | テーブル | 主な列 | 説明 |
 |---------|--------|------|
