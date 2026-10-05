@@ -105,6 +105,49 @@ http://127.0.0.1:8000
 
 ---
 
+## Google OAuth 設定（任意）
+
+Googleアカウントでのログインを有効にするには、Google Cloud Console での設定が必要です。
+
+### 1. Google Cloud Console でプロジェクトを作成
+
+1. [Google Cloud Console](https://console.cloud.google.com/) を開く
+2. 左上のプロジェクト選択 → 「新しいプロジェクト」を作成
+
+### 2. OAuth 同意画面を設定
+
+1. **API とサービス → OAuth 同意画面** に移動
+2. User Type: **外部** を選択 → 作成
+3. アプリ名・サポートメールを入力して保存（スコープ設定はスキップ可）
+
+### 3. OAuth 2.0 クライアント ID を作成
+
+1. **API とサービス → 認証情報** に移動
+2. 「認証情報を作成」→「OAuth 2.0 クライアント ID」を選択
+3. アプリケーションの種類: **ウェブ アプリケーション**
+4. **「承認済みのリダイレクト URI」** に以下を追加：
+
+```
+http://127.0.0.1:8000/login/google/callback
+http://localhost:8000/login/google/callback
+```
+
+> **注意:** 本番環境にデプロイする場合は本番ドメインの URI も追加してください。  
+> 例: `https://your-domain.com/login/google/callback`
+
+5. 「作成」→ 表示された **クライアント ID** と **クライアント シークレット** をコピー
+
+### 4. `.env` に追記
+
+```
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
+> Google OAuth を使用しない場合はこれらの変数を設定しなくても起動できます（Googleログインボタンが機能しないだけです）。
+
+---
+
 ## 環境変数一覧
 
 ### 必須
@@ -113,6 +156,13 @@ http://127.0.0.1:8000
 |--------|-----------|------|
 | `OPENAI_API_KEY` | — | OpenAI API キー |
 | `SECRET_KEY` | `dev-secret-change-me` | セッション署名用の秘密鍵（**本番環境では必ず変更**） |
+
+### Google OAuth（任意）
+
+| 変数名 | デフォルト | 説明 |
+|--------|-----------|------|
+| `GOOGLE_CLIENT_ID` | — | Google OAuth クライアント ID |
+| `GOOGLE_CLIENT_SECRET` | — | Google OAuth クライアント シークレット |
 
 ### AI モデル設定
 
