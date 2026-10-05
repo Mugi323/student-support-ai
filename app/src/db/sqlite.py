@@ -90,6 +90,7 @@ def init_db() -> None:
     ensure_column("messages", "ai_summary", "TEXT")
     ensure_column("messages", "ai_risk_detail", "TEXT")
     ensure_column("messages", "ai_risk_overall", "REAL")
+    ensure_column("messages", "conversation_id", "TEXT")
     # ensure users.role exists for existing DBs
     ensure_column("users", "role", "TEXT NOT NULL DEFAULT 'student'")
     ensure_column("users", "password_hash", "TEXT")
@@ -97,6 +98,22 @@ def init_db() -> None:
 
     # 匿名チャット用カラムを追加
     ensure_column("direct_messages", "is_anonymous", "INTEGER NOT NULL DEFAULT 0")
+
+    # 会話セッション管理
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS conversations (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            title TEXT NOT NULL DEFAULT '新しいチャット',
+            created_at TEXT NOT NULL
+        )
+    """)
+    try:
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id, created_at DESC)"
+        )
+    except Exception:
+        pass
 
     # ユーザーごとのチャット要約（最新N件のメモ）
     cur.execute(

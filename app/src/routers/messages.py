@@ -14,8 +14,8 @@ router = APIRouter(prefix="/api")
 
 
 @router.get("/messages/me")
-def api_get_my_messages(request: Request):
-    """ログインユーザー自身のメッセージを取得"""
+def api_get_my_messages(request: Request, conv_id: str = None):
+    """ログインユーザー自身のメッセージを取得。conv_id で絞り込み可能"""
     try:
         uid = request.session.get("user_id")
     except Exception:
@@ -26,16 +26,28 @@ def api_get_my_messages(request: Request):
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required"
         )
 
-    rows = query_all(
-        """
-        SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at
-        FROM messages
-        WHERE user_id=?
-        ORDER BY created_at DESC
-        LIMIT 100
-        """,
-        (uid,),
-    )
+    if conv_id:
+        rows = query_all(
+            """
+            SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at
+            FROM messages
+            WHERE user_id=? AND conversation_id=?
+            ORDER BY created_at ASC
+            LIMIT 200
+            """,
+            (uid, conv_id),
+        )
+    else:
+        rows = query_all(
+            """
+            SELECT id, user_id, text, ai_summary, ai_risk_overall, ai_risk_detail, created_at
+            FROM messages
+            WHERE user_id=?
+            ORDER BY created_at DESC
+            LIMIT 100
+            """,
+            (uid,),
+        )
 
     out = []
     for mid, user_id_val, text, ai_summary, ai_overall, ai_detail, created_at in rows:

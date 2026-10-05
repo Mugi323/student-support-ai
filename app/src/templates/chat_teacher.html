@@ -1,383 +1,300 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-	<!-- 相手一覧 -->
-	<div class="bg-white rounded-2xl shadow p-4">
-		<div class="flex items-center justify-between mb-2">
-			<h2 class="text-lg font-semibold">相手を選ぶ</h2>
-			<span id="unreadBadge" class="text-xs bg-red-500 text-white px-2 py-0.5 rounded hidden"></span>
-		</div>
-		<div id="participants" class="space-y-2"></div>
-	</div>
 
-	<!-- チャット本体 -->
-	<div class="lg:col-span-2 bg-white rounded-2xl shadow p-4 flex flex-col">
-		<div class="flex items-center justify-between mb-2">
-			<h2 id="chatTitle" class="text-lg font-semibold">1対1チャット</h2>
-			<div id="status" class="text-xs text-gray-500">未接続</div>
-		</div>
-		<div id="chat" class="flex-1 overflow-y-auto space-y-3 border rounded p-3 bg-gray-50"></div>
-
-		<!-- 匿名モード切り替え（生徒のみ表示） -->
-		<div id="anonymousToggle" class="mt-2 hidden">
-			<label class="flex items-center gap-2 text-sm cursor-pointer bg-yellow-50 border border-yellow-300 rounded p-2">
-				<input type="checkbox" id="anonymousMode" class="rounded" onchange="toggleAnonymousMode()">
-				<span class="flex items-center gap-1">
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-						<path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-					</svg>
-					匿名モードで送信（先生に名前が表示されません）
-				</span>
-			</label>
-		</div>
-
-		<div class="mt-3 flex gap-2">
-			<textarea id="msg" class="flex-1 border rounded p-2 min-h-[60px]" placeholder="メッセージを入力" onkeydown="handleKeyDown(event)"></textarea>
-			<button id="sendBtnDirect" class="px-4 py-2 bg-indigo-600 text-white rounded" onclick="sendMsg()">送信</button>
-		</div>
-	</div>
+{% block sidebar_top_action %}
+<div style="padding:0 0.875rem 0.5rem">
+  <span style="font-size:0.78rem;font-weight:600;color:var(--color-text-mid);text-transform:uppercase;letter-spacing:0.06em">相手を選ぶ</span>
+  <span id="unreadBadge" class="hidden" style="display:none;background:#ef4444;color:white;font-size:0.65rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:9999px;margin-left:0.375rem"></span>
 </div>
+{% endblock %}
+
+{% block sidebar_list %}
+<div id="participants"></div>
+{% endblock %}
+
+{% block sidebar_footer_links %}
+<a href="/chat" class="sidebar-footer-link">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+  </svg>
+  AIチャットに戻る
+</a>
+{% if request.session.role == 'teacher' %}
+<a href="/dashboard" class="sidebar-footer-link">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  ダッシュボード
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- チャット本体 -->
+<div class="teacher-chat-area">
+
+  <!-- タイトルバー -->
+  <div class="chat-status-bar">
+    <span id="chatTitle" class="chat-title-bar">相手を選んでください</span>
+    <span id="statusDot" style="font-size:0.75rem;color:var(--color-text-mid)">未接続</span>
+  </div>
+
+  <!-- メッセージ表示 -->
+  <div class="chat-viewport" id="chatViewport">
+    <div class="messages-col" id="chatMessages">
+      <div class="chat-empty" id="chatEmpty">
+        <div class="chat-empty-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <h3>相手を選んでください</h3>
+        <p>左のリストから話したい先生または生徒を選んでください。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 匿名モード切り替え（生徒のみ） -->
+  <div id="anonymousToggle" style="display:none;padding:0.375rem 1rem">
+    <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.82rem;cursor:pointer;background:rgba(246,189,96,0.15);border:1px solid rgba(246,189,96,0.4);border-radius:8px;padding:0.5rem 0.75rem">
+      <input type="checkbox" id="anonymousMode" onchange="toggleAnonymousMode()" style="accent-color:var(--color-accent)">
+      🔒 匿名で送信（先生には名前が表示されません）
+    </label>
+  </div>
+
+  <!-- 入力エリア（画面最下部固定） -->
+  <div class="chat-input-dock">
+    <div class="chat-input-inner">
+      <textarea
+        id="msg"
+        class="chat-textarea"
+        placeholder="メッセージを入力（Shift+Enterで改行）"
+        rows="1"
+        onkeydown="handleKeyDown(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button id="sendBtnDirect" class="chat-send-btn" onclick="sendMsg()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
 
 <script>
 let currentOtherId = null;
 let currentUserRole = null;
 let _dmEventSource = null;
 let _dmPollTimer = null;
-const chatEl = document.getElementById('chat');
-const statusEl = document.getElementById('status');
+const chatEl = document.getElementById('chatMessages');
+const viewport = document.getElementById('chatViewport');
 
-// 教員タイプの日本語表示
-const teacherTypeLabels = {
-	'teacher': '教師',
-	'school_nurse': '養護教諭',
-	'counselor': 'カウンセラー'
-};
+const teacherTypeLabels = { teacher: '教師', school_nurse: '養護教諭', counselor: 'カウンセラー' };
 
-function line(text, side='left', isAnonymous=false, senderId=null){
-	const wrap = document.createElement('div');
-	wrap.className = `flex ${side==='right'?'justify-end':''}`;
-	const bubble = document.createElement('div');
-	bubble.className = `max-w-[80%] p-2 rounded-xl ${side==='right'?'bg-indigo-600 text-white':'bg-white border'} shadow whitespace-pre-wrap`;
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-	// 匿名メッセージの場合は🔒アイコンを表示
-	if(isAnonymous && side === 'left'){
-		const anonymousLabel = document.createElement('div');
-		anonymousLabel.className = 'text-xs text-gray-500 mb-1 flex items-center gap-1';
-		anonymousLabel.innerHTML = '🔒 匿名メッセージ';
-		bubble.appendChild(anonymousLabel);
-	}
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; }
 
-	const textNode = document.createTextNode(text);
-	bubble.appendChild(textNode);
-	wrap.appendChild(bubble);
-	chatEl.appendChild(wrap);
-	chatEl.scrollTop = chatEl.scrollHeight;
+function scrollToBottom() { requestAnimationFrame(() => { viewport.scrollTop = viewport.scrollHeight; }); }
+
+function addMsg(text, side, isAnonymous = false) {
+  document.getElementById('chatEmpty').style.display = 'none';
+  const wrap = document.createElement('div');
+
+  if (side === 'right') {
+    wrap.className = 'msg-teacher-right';
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-teacher-bubble-right';
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+  } else {
+    wrap.className = 'msg-teacher-left';
+    if (isAnonymous) {
+      const anonLabel = document.createElement('div');
+      anonLabel.style.cssText = 'font-size:0.7rem;color:var(--color-text-mid);margin-bottom:0.25rem';
+      anonLabel.textContent = '🔒 匿名メッセージ';
+      const inner = document.createElement('div');
+      inner.style.cssText = 'display:flex;flex-direction:column;gap:0.125rem';
+      inner.appendChild(anonLabel);
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-teacher-bubble-left';
+      bubble.textContent = text;
+      inner.appendChild(bubble);
+      wrap.appendChild(inner);
+    } else {
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-teacher-bubble-left';
+      bubble.textContent = text;
+      wrap.appendChild(bubble);
+    }
+  }
+
+  chatEl.appendChild(wrap);
+  scrollToBottom();
 }
 
-async function loadParticipants(){
-	const r = await fetch('/api/direct/participants', {credentials:'same-origin'});
-	if(r.status === 401){
-		alert('ログインが必要です');
-		location.href = '/login';
-		return;
-	}
-	const data = await r.json();
+async function loadParticipants() {
+  const r = await fetch('/api/direct/participants', { credentials: 'same-origin' });
+  if (r.status === 401) { alert('ログインが必要です'); location.href = '/login'; return; }
+  const data = await r.json();
+  const unreadR = await fetch('/api/direct/unread_by_sender', { credentials: 'same-origin' });
+  const unreadData = unreadR.ok ? await unreadR.json() : {};
 
-	// 未読件数を取得
-	const unreadR = await fetch('/api/direct/unread_by_sender', {credentials:'same-origin'});
-	const unreadData = unreadR.ok ? await unreadR.json() : {};
+  const box = document.getElementById('participants');
+  box.innerHTML = '';
 
-	const box = document.getElementById('participants');
-	box.innerHTML = '';
+  if (currentUserRole === 'student') {
+    const groups = { teacher: [], school_nurse: [], counselor: [] };
+    data.forEach(p => { const t = p.teacher_type || 'teacher'; if (groups[t]) groups[t].push(p); });
 
-	// 生徒の場合：教師タイプでグループ分け
-	if(currentUserRole === 'student'){
-		// データをタイプ別に分類
-		const groups = {
-			teacher: [],
-			school_nurse: [],
-			counselor: []
-		};
-
-		data.forEach(p => {
-			const type = p.teacher_type || 'teacher';
-			if(groups[type]){
-				groups[type].push(p);
-			}
-		});
-
-		// 各グループを表示
-		const groupTitles = {
-			teacher: '👨‍🏫 教師',
-			school_nurse: '🏥 養護教諭',
-			counselor: '💬 カウンセラー'
-		};
-
-		['teacher', 'school_nurse', 'counselor'].forEach(type => {
-			if(groups[type].length > 0){
-				// グループタイトル
-				const groupTitle = document.createElement('div');
-				groupTitle.className = 'text-sm font-semibold text-gray-700 mt-3 mb-1 px-2';
-				groupTitle.textContent = groupTitles[type];
-				box.appendChild(groupTitle);
-
-				// グループ内の教師
-				groups[type].forEach(p => {
-					const btn = createParticipantButton(p, unreadData);
-					box.appendChild(btn);
-				});
-			}
-		});
-	} else {
-		// 教師の場合：生徒と匿名生徒を表示（グループ分けなし）
-		data.forEach(p => {
-			const btn = createParticipantButton(p, unreadData);
-			box.appendChild(btn);
-		});
-	}
+    const groupTitles = { teacher: '👨‍🏫 教師', school_nurse: '🏥 養護教諭', counselor: '💬 カウンセラー' };
+    ['teacher', 'school_nurse', 'counselor'].forEach(type => {
+      if (!groups[type].length) return;
+      const lbl = document.createElement('p');
+      lbl.className = 'sidebar-section-label';
+      lbl.textContent = groupTitles[type];
+      box.appendChild(lbl);
+      groups[type].forEach(p => box.appendChild(makeParticipantBtn(p, unreadData)));
+    });
+  } else {
+    data.forEach(p => box.appendChild(makeParticipantBtn(p, unreadData)));
+  }
 }
 
-function createParticipantButton(p, unreadData){
-	const btn = document.createElement('button');
+function makeParticipantBtn(p, unreadData) {
+  const btn = document.createElement('button');
+  const unread = unreadData[p.user_id] || 0;
+  btn.className = 'participant-item' + (p.user_id === currentOtherId ? ' active' : '');
+  btn.dataset.uid = p.user_id;
 
-	// 未読件数を取得
-	const unreadCount = unreadData[p.user_id] || 0;
+  let nameHtml = escHtml(p.name);
+  if (p.is_anonymous) nameHtml = '🔒 ' + nameHtml + ' <span style="font-size:0.72rem;color:var(--color-text-mid)">(匿名)</span>';
+  if (currentUserRole !== 'student' && p.role === 'student') nameHtml += ' <span style="font-size:0.72rem;color:var(--color-text-mid)">(生徒)</span>';
 
-	// 匿名生徒の場合は背景色を変える
-	if(p.is_anonymous){
-		btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 bg-yellow-50 border-yellow-300 relative';
-		btn.innerHTML = `
-			🔒 ${p.name} <span class="text-xs text-gray-500">(匿名)</span>
-			${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
-		`;
-	} else {
-		btn.className = 'w-full text-left border rounded px-3 py-2 hover:bg-gray-50 relative';
-
-		// 生徒側でグループ分けしている場合は役割ラベルを表示しない
-		let displayLabel = '';
-		if(currentUserRole !== 'student'){
-			// 教師側：生徒の役割を表示
-			displayLabel = p.role === 'student' ? ' <span class="text-xs text-gray-600">(生徒)</span>' : '';
-		}
-
-		btn.innerHTML = `
-			${p.name}${displayLabel}
-			${unreadCount > 0 ? `<span class="absolute right-2 top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">${unreadCount}</span>` : ''}
-		`;
-	}
-
-	btn.onclick = ()=> selectOther(p.user_id, p.name, p.is_anonymous, p.teacher_type);
-	return btn;
+  btn.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nameHtml}</span>
+    ${unread ? `<span class="unread-dot">${unread}</span>` : ''}`;
+  btn.onclick = () => selectOther(p.user_id, p.name, p.is_anonymous, p.teacher_type);
+  return btn;
 }
 
-async function selectOther(uid, name, isAnonymous, teacherType){
-	currentOtherId = uid;
+async function selectOther(uid, name, isAnonymous, teacherType) {
+  currentOtherId = uid;
 
-	// チャットタイトルに役割も表示
-	let titleSuffix = '';
-	if(isAnonymous){
-		titleSuffix = '(匿名)';
-	} else if(teacherType){
-		titleSuffix = `(${teacherTypeLabels[teacherType] || teacherType})`;
-	}
+  let titleSuffix = isAnonymous ? '（匿名）' : (teacherType ? `（${teacherTypeLabels[teacherType] || teacherType}）` : '');
+  document.getElementById('chatTitle').textContent = (isAnonymous ? '🔒 ' : '') + name + titleSuffix;
 
-	// 匿名生徒の場合はチャットタイトルにも匿名表示
-	if(isAnonymous){
-		document.getElementById('chatTitle').textContent = `1対1チャット: 🔒 ${name} ${titleSuffix}`;
-	} else {
-		document.getElementById('chatTitle').textContent = `1対1チャット: ${name} ${titleSuffix}`;
-	}
+  const chatEmpty = document.getElementById('chatEmpty');
+  chatEl.innerHTML = '';
+  chatEl.appendChild(chatEmpty);
+  chatEmpty.style.display = 'none';
 
-	chatEl.innerHTML = '';
-	await loadMessages();
-	// 既読化
-	await fetch(`/api/direct/messages/${currentOtherId}/read`, {method:'POST'});
+  await loadMessages();
+  await fetch(`/api/direct/messages/${uid}/read`, { method: 'POST' });
+  refreshUnread();
+  loadParticipants();
+  document.getElementById('statusDot').textContent = '接続中';
 
-	// 既読化後、未読バッジと参加者リストを更新
-	refreshUnread();
-	loadParticipants();
+  if (currentUserRole === 'student') {
+    document.getElementById('anonymousToggle').style.display = 'block';
+  }
 
-	statusEl.textContent = '接続中';
-
-	// 生徒の場合のみ匿名トグルを表示
-	const anonymousToggle = document.getElementById('anonymousToggle');
-	if(currentUserRole === 'student'){
-		anonymousToggle.classList.remove('hidden');
-	} else {
-		anonymousToggle.classList.add('hidden');
-	}
-
-	_connectDMStream(uid);
+  _connectDMStream(uid);
+  document.querySelectorAll('.participant-item').forEach(el => el.classList.toggle('active', el.dataset.uid === uid));
+  closeSidebar();
 }
 
-function _connectDMStream(otherId){
-	// 前の接続をクリア
-	if(_dmEventSource){ _dmEventSource.close(); _dmEventSource = null; }
-	if(_dmPollTimer){ clearInterval(_dmPollTimer); _dmPollTimer = null; }
-
-	const realId = otherId.replace(':anonymous', '');
-
-	if(typeof EventSource === 'undefined'){
-		// フォールバック: 30秒ポーリング
-		_dmPollTimer = setInterval(()=>{ if(currentOtherId) loadMessages(); }, 30000);
-		return;
-	}
-
-	let es = new EventSource(`/api/direct/stream/${realId}`);
-	_dmEventSource = es;
-
-	es.onmessage = (e) => {
-		try{
-			const data = JSON.parse(e.data);
-			if(data.type === 'message' && currentOtherId){
-				loadMessages(); // 新着があったら全体を再取得
-				refreshUnread();
-				loadParticipants();
-			}
-		}catch(_){}
-	};
-
-	es.onerror = () => {
-		es.close();
-		_dmEventSource = null;
-		// SSE 失敗時は 30秒ポーリングにフォールバック
-		if(!_dmPollTimer){
-			_dmPollTimer = setInterval(()=>{ if(currentOtherId) loadMessages(); }, 30000);
-		}
-	};
+function _connectDMStream(otherId) {
+  if (_dmEventSource) { _dmEventSource.close(); _dmEventSource = null; }
+  if (_dmPollTimer) { clearInterval(_dmPollTimer); _dmPollTimer = null; }
+  const realId = otherId.replace(':anonymous', '');
+  if (typeof EventSource === 'undefined') {
+    _dmPollTimer = setInterval(() => { if (currentOtherId) loadMessages(); }, 30000); return;
+  }
+  let es = new EventSource(`/api/direct/stream/${realId}`);
+  _dmEventSource = es;
+  es.onmessage = e => {
+    try {
+      const data = JSON.parse(e.data);
+      if (data.type === 'message' && currentOtherId) { loadMessages(); refreshUnread(); loadParticipants(); }
+    } catch (_) {}
+  };
+  es.onerror = () => {
+    es.close(); _dmEventSource = null;
+    if (!_dmPollTimer) _dmPollTimer = setInterval(() => { if (currentOtherId) loadMessages(); }, 30000);
+  };
 }
 
-async function loadMessages(){
-	if(!currentOtherId) return;
-
-	// 匿名モードのチェック状態を取得
-	const anonymousModeCheckbox = document.getElementById('anonymousMode');
-	const isAnonymousMode = anonymousModeCheckbox ? anonymousModeCheckbox.checked : false;
-
-	// 匿名モードの場合はクエリパラメータを追加
-	const url = isAnonymousMode
-		? `/api/direct/messages/${currentOtherId}?anonymous=true`
-		: `/api/direct/messages/${currentOtherId}`;
-
-	const r = await fetch(url);
-	const data = await r.json();
-	chatEl.innerHTML = '';
-
-	// 匿名チャットかどうかを判定
-	const realOtherId = currentOtherId.replace(':anonymous', '');
-
-	data.forEach(m=>{
-		const side = (m.sender_id === realOtherId || m.sender_id === currentOtherId) ? 'left' : 'right';
-		const isAnonymous = m.is_anonymous || false;
-		line(m.text, side, isAnonymous, m.sender_id);
-	});
+async function loadMessages() {
+  if (!currentOtherId) return;
+  const isAnon = document.getElementById('anonymousMode')?.checked;
+  const url = isAnon ? `/api/direct/messages/${currentOtherId}?anonymous=true` : `/api/direct/messages/${currentOtherId}`;
+  const r = await fetch(url);
+  const data = await r.json();
+  const chatEmpty = document.getElementById('chatEmpty');
+  chatEl.innerHTML = '';
+  chatEl.appendChild(chatEmpty);
+  chatEmpty.style.display = 'none';
+  const realOtherId = currentOtherId.replace(':anonymous', '');
+  data.forEach(m => {
+    const side = (m.sender_id === realOtherId || m.sender_id === currentOtherId) ? 'left' : 'right';
+    addMsg(m.text, side, m.is_anonymous || false);
+  });
 }
 
-async function sendMsg(){
-	const ta = document.getElementById('msg');
-	const text = ta.value.trim();
-	if(!text || !currentOtherId) return;
-
-	// 匿名モードのチェック状態を取得
-	const anonymousModeCheckbox = document.getElementById('anonymousMode');
-	const isAnonymous = anonymousModeCheckbox ? anonymousModeCheckbox.checked : false;
-
-	ta.value = '';
-	line(text, 'right', isAnonymous);
-
-	// 匿名フラグを含めて送信
-	const r = await fetch(`/api/direct/messages/${currentOtherId}`, {
-		method: 'POST',
-		headers: {'Content-Type':'application/json'},
-		body: JSON.stringify({text, is_anonymous: isAnonymous})
-	});
-	if(!r.ok){
-		alert('送信に失敗しました');
-		return;
-	}
-	// 再読込（相手側のボットなどはないので自分側は末尾だけでOK）
+async function sendMsg() {
+  const ta = document.getElementById('msg');
+  const text = ta.value.trim();
+  if (!text || !currentOtherId) return;
+  const isAnonymous = document.getElementById('anonymousMode')?.checked || false;
+  ta.value = '';
+  autoResize(ta);
+  addMsg(text, 'right', isAnonymous);
+  const r = await fetch(`/api/direct/messages/${currentOtherId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, is_anonymous: isAnonymous }),
+  });
+  if (!r.ok) alert('送信に失敗しました');
 }
 
-function handleKeyDown(e){
-	if(e.key === 'Enter' && !e.shiftKey){
-		e.preventDefault();
-		sendMsg();
-	}
+function handleKeyDown(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } }
+
+function toggleAnonymousMode() { loadMessages(); }
+
+async function refreshUnread() {
+  const r = await fetch('/api/direct/unread_count');
+  if (!r.ok) return;
+  const { count } = await r.json();
+  const badge = document.getElementById('unreadBadge');
+  if (count > 0) { badge.textContent = `未読 ${count}`; badge.style.display = 'inline'; }
+  else { badge.style.display = 'none'; }
 }
 
-// 匿名モード切り替え時にメッセージを再読み込み
-function toggleAnonymousMode(){
-	loadMessages();
-}
+async function boot() {
+  try {
+    const me = await fetch('/api/me');
+    if (me.ok) { const d = await me.json(); currentUserRole = d.role || 'student'; }
+  } catch (_) { currentUserRole = 'student'; }
 
-async function refreshUnread(){
-	const r = await fetch('/api/direct/unread_count');
-	if(!r.ok) return;
-	const {count} = await r.json();
-	const badge = document.getElementById('unreadBadge');
-	if(count>0){
-		badge.textContent = `未読 ${count}`;
-		badge.classList.remove('hidden');
-	}else{
-		badge.classList.add('hidden');
-	}
-}
+  await loadParticipants();
+  refreshUnread();
+  setInterval(() => { refreshUnread(); loadParticipants(); }, 10000);
 
-function getQuery(key){
-	const u = new URL(location.href);
-	return u.searchParams.get(key);
-}
-
-async function boot(){
-	// /api/me でロールを確定（参加者推測ロジックを廃止）
-	try{
-		const meRes = await fetch('/api/me');
-		if(meRes.ok){
-			const me = await meRes.json();
-			currentUserRole = me.role || 'student';
-		}
-	}catch(_e){
-		currentUserRole = 'student';
-	}
-
-	await loadParticipants();
-	refreshUnread();
-
-	// 10秒ごとに未読バッジと参加者リストを更新
-	setInterval(() => {
-		refreshUnread();
-		loadParticipants(); // 参加者リストの未読バッジも更新
-	}, 10000);
-
-	// クエリのuidがあれば自動選択
-	const pre = getQuery('uid');
-	if(pre){
-		// 参加者情報を取得し、名前解決
-		try{
-			const r = await fetch('/api/direct/participants');
-			const arr = await r.json();
-			const hit = arr.find(x=>x.user_id===pre);
-			if(hit){
-				await selectOther(hit.user_id, hit.name, hit.is_anonymous);
-			}else {
-				// 参加者リストにない場合は、usersテーブルから名前を取得
-				const userR = await fetch(`/api/direct/user/${pre}`);
-				if(userR.ok){
-					const userData = await userR.json();
-					await selectOther(pre, userData.name || pre, false, null);
-				} else {
-					// ユーザー情報が取得できない場合はuser_idをそのまま使用
-					await selectOther(pre, pre, false, null);
-					println('ユーザー情報が取得できませんでした:', pre);
-				}
-			}
-		}catch(_e){
-			console.error('ユーザー選択エラー:', e);
-			await selectOther(pre, pre, false, null);
-		}
-	}
+  const uid = new URLSearchParams(location.search).get('uid');
+  if (uid) {
+    try {
+      const r = await fetch('/api/direct/participants');
+      const arr = await r.json();
+      const hit = arr.find(x => x.user_id === uid);
+      if (hit) await selectOther(hit.user_id, hit.name, hit.is_anonymous, hit.teacher_type);
+      else {
+        const ur = await fetch(`/api/direct/user/${uid}`);
+        const ud = ur.ok ? await ur.json() : null;
+        await selectOther(uid, ud?.name || uid, false, null);
+      }
+    } catch (_) { await selectOther(uid, uid, false, null); }
+  }
 }
 
 boot();
 </script>
-{% endblock %}

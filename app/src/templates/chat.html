@@ -1,733 +1,483 @@
 {% extends "base.html" %}
+
+{% block sidebar_top_action %}
+<button class="new-chat-btn" onclick="newChat()">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+  </svg>
+  新しいチャット
+</button>
+{% endblock %}
+
+{% block sidebar_list %}
+<div id="convList">
+  <p class="sidebar-section-label" style="margin-top:0.25rem">読み込み中…</p>
+</div>
+{% endblock %}
+
 {% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <!-- Chat -->
-  <div class="lg:col-span-2 bg-white rounded-2xl shadow p-4">
-    <div class="flex justify-between items-center mb-3">
-      <div class="flex items-center gap-2">
-        <h2 class="text-lg font-semibold">AIチャット</h2>
-        <!-- 未読バッジ -->
-        <span id="chatUnreadBadge" class="hidden bg-red-500 text-white text-xs px-2 py-0.5 rounded-full"></span>
-      </div>
-      
-      <!-- API切り替えボタン -->
-      <div class="flex items-center gap-2">
-        <label class="text-sm text-gray-600">AI:</label>
-        <select id="apiSelector" class="text-sm border rounded-lg px-3 py-1 bg-white hover:bg-gray-50 transition">
-          <option value="openai">GPT-6-luna</option>
-          <option value="ollama">Qwen3 8B</option>
-        </select>
-        <button id="btnShowMemories" class="text-sm border rounded-lg px-3 py-1 bg-white hover:bg-gray-50 transition" onclick="openMemoriesModal()">最近の要約</button>
-      </div>
-    </div>
+<!-- ステータス＋タイトルバー -->
+<div class="chat-status-bar" id="chatStatusBar">
+  <span id="chatTitleDisplay" class="chat-title-bar">AIに相談する</span>
+  <select id="apiSelector" class="api-select">
+    <option value="openai">GPT-6-luna</option>
+    <option value="ollama">Qwen3 8B</option>
+  </select>
+  <button id="riskToggleBtn" class="sidebar-footer-link" style="width:auto;padding:0.3rem 0.625rem;font-size:0.78rem;gap:0.3rem" onclick="toggleRiskDrawer()" title="リスク分析">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+    </svg>
+    分析
+  </button>
+</div>
 
-    <div id="status" class="text-xs text-gray-500 mb-2">未送信</div>
-    <div id="chat" class="h-[calc(100vh-320px)] min-h-[300px] overflow-y-auto space-y-3 border border-gray-200 rounded-xl p-3 bg-white"></div>
-
-    <!-- 入力エリア -->
-    <div class="mt-3 border border-gray-200 rounded-xl p-3 bg-white">
-      <!-- 画像プレビューエリア -->
-      <div id="imagePreviewContainer" class="mb-2 flex flex-wrap gap-2"></div>
-      
-      <!-- テキスト入力と送信ボタン -->
-      <div class="flex items-end gap-2">
-        <!-- 画像添付ボタン（左端） -->
-        <label for="imageInput" class="cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition self-end" title="画像を添付">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
-          </svg>
-          <input type="file" id="imageInput" accept="image/*" multiple class="hidden" onchange="handleImageSelect(event)">
-        </label>
-        
-        <textarea 
-          id="msg" 
-          class="flex-1 border-0 focus:outline-none resize-none p-2 min-h-[60px] max-h-[200px]" 
-          placeholder="いまの気持ちや状況を書いてください"
-          onkeydown="handleKeyDown(event)"
-        ></textarea>
-        
-        <!-- 送信ボタン（右端・90度回転） -->
-        <button 
-          id="sendBtn" 
-          onclick="sendMsg()" 
-          class="p-2 bg-[#5EA880] text-white rounded-lg hover:bg-[#4a9068] transition disabled:opacity-50 disabled:cursor-not-allowed self-end"
-          title="送信"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- AIリスクパネル -->
-  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col gap-3">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-      <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest">リスク分析</h3>
-      <span id="riskStatusBadge" class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-400">待機中</span>
-    </div>
-
-    <!-- Summary -->
-    <p id="aiSummary" class="text-xs text-gray-400 italic leading-relaxed">チャットを送信すると分析が表示されます</p>
-
-    <!-- Overall gauge (SVG semicircle) -->
-    <div class="flex flex-col items-center py-1">
-      <svg width="120" height="68" viewBox="0 0 120 68">
-        <!-- Track -->
-        <path d="M 12 63 A 48 48 0 0 1 108 63"
-              fill="none" stroke="#f3f4f6" stroke-width="10" stroke-linecap="round"/>
-        <!-- Colored fill -->
-        <path id="overallArc"
-              d="M 12 63 A 48 48 0 0 1 108 63"
-              fill="none" stroke="#22c55e" stroke-width="10" stroke-linecap="round"
-              style="stroke-dasharray:0 151;transition:stroke-dasharray 0.6s ease,stroke 0.3s ease"/>
-        <!-- Score number -->
-        <text id="riskOverallSvg" x="60" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#d1d5db">—</text>
-      </svg>
-      <span class="text-xs text-gray-400 -mt-1">総合スコア / 10</span>
-    </div>
-
-    <!-- Category bars -->
-    <div class="space-y-2">
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-400 w-9 shrink-0">健康</span>
-        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
-          <div id="riskHealthBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
-        </div>
-        <span id="riskHealth" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-400 w-9 shrink-0">家族</span>
-        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
-          <div id="riskFamilyBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
-        </div>
-        <span id="riskFamily" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-400 w-9 shrink-0">友人</span>
-        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
-          <div id="riskFriendsBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
-        </div>
-        <span id="riskFriends" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-400 w-9 shrink-0">学習</span>
-        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
-          <div id="riskLearningBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
-        </div>
-        <span id="riskLearning" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-400 w-9 shrink-0">いじめ</span>
-        <div class="flex-1 bg-gray-100 rounded-full overflow-hidden h-2">
-          <div id="riskBullyingBar" class="h-full rounded-full transition-all duration-500" style="width:0%;background:#22c55e"></div>
-        </div>
-        <span id="riskBullying" class="text-xs font-semibold w-7 text-right tabular-nums text-gray-400">—</span>
-      </div>
-    </div>
-
-    <!-- Tags -->
-    <div id="riskTags" class="flex flex-wrap gap-1.5 hidden"></div>
-
-    <!-- Reason (collapsible) -->
-    <details class="group">
-      <summary class="text-xs text-gray-400 cursor-pointer select-none list-none flex items-center gap-1 hover:text-gray-600 transition-colors">
-        <svg class="h-3 w-3 transition-transform group-open:rotate-90" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+<!-- メッセージ表示エリア -->
+<div class="chat-viewport" id="chatViewport">
+  <div class="messages-col" id="chatMessages">
+    <!-- 空状態 -->
+    <div class="chat-empty" id="chatEmpty">
+      <div class="chat-empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.741c0-1.946 1.37-3.68 3.348-3.97z" clip-rule="evenodd"/>
         </svg>
-        <span>根拠を見る</span>
-      </summary>
-      <p id="riskReason" class="text-xs text-gray-500 mt-1.5 leading-relaxed pl-4">—</p>
-    </details>
-
-    <hr class="border-gray-100">
-
-    <button id="toggleLogsBtn" class="text-xs text-indigo-400 hover:text-indigo-600 inline-flex items-center gap-1.5 transition-colors" onclick="toggleMyLogs()">
-      <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 transition-transform" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-      </svg>
-      <span>過去のログ</span>
-    </button>
-    <div id="myLogsWrapper" class="overflow-hidden transition-all duration-300" style="max-height:0; opacity:0;">
-      <div id="myLogs" class="space-y-2 text-xs p-1"></div>
+      </div>
+      <h3>AIに話しかけてみよう</h3>
+      <p>今日の気持ちや困っていることを気軽に話してください。一人で抱え込まなくていいよ。</p>
     </div>
   </div>
 </div>
 
-<!-- 最近の要約モーダル -->
-<div id="memoriesModal" class="fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-black bg-opacity-40" onclick="closeMemoriesModal()"></div>
-  <div class="absolute inset-0 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full p-4">
-      <div class="flex justify-between items-center mb-2">
-        <h3 class="text-lg font-semibold">最近の要約</h3>
-        <button class="text-gray-500 hover:text-gray-700 text-xl leading-none" onclick="closeMemoriesModal()">×</button>
-      </div>
-      <div id="memoriesList" class="space-y-2 text-sm text-gray-800">
-        <div class="text-gray-500">読み込み中…</div>
-      </div>
+<!-- 入力エリア（画面最下部固定） -->
+<div class="chat-input-dock">
+  <div class="chat-input-inner" id="chatInputInner">
+    <!-- 画像プレビュー -->
+    <div id="imgPreviewRow" class="img-preview-row" style="display:none"></div>
+
+    <label for="imageInput" class="chat-attach-btn" title="画像を添付">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+      </svg>
+      <input type="file" id="imageInput" accept="image/*" multiple class="hidden" onchange="handleImageSelect(event)">
+    </label>
+
+    <textarea
+      id="msg"
+      class="chat-textarea"
+      placeholder="いまの気持ちや状況を書いてください（Shift+Enterで改行）"
+      rows="1"
+      onkeydown="handleKeyDown(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+
+    <button id="sendBtn" class="chat-send-btn" onclick="sendMsg()" title="送信">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ==================== リスク分析ドロワー ==================== -->
+<div class="risk-drawer" id="riskDrawer">
+  <div class="risk-drawer-header">
+    <span style="font-size:0.85rem;font-weight:600;color:var(--color-text-mid)">リスク分析</span>
+    <button onclick="toggleRiskDrawer()" style="background:none;border:none;cursor:pointer;color:var(--color-text-mid);font-size:1.2rem;line-height:1">×</button>
+  </div>
+  <div style="padding:1rem;display:flex;flex-direction:column;gap:0.875rem">
+    <span id="riskStatusBadge" class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-400" style="display:inline-block;width:fit-content">待機中</span>
+    <p id="aiSummary" class="text-xs text-gray-400 italic leading-relaxed">チャットを送信すると分析が表示されます</p>
+
+    <!-- ゲージ -->
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <svg width="120" height="68" viewBox="0 0 120 68">
+        <path d="M 12 63 A 48 48 0 0 1 108 63" fill="none" stroke="#f3f4f6" stroke-width="10" stroke-linecap="round"/>
+        <path id="overallArc" d="M 12 63 A 48 48 0 0 1 108 63" fill="none" stroke="#22c55e" stroke-width="10" stroke-linecap="round" style="stroke-dasharray:0 151;transition:stroke-dasharray 0.6s ease,stroke 0.3s ease"/>
+        <text id="riskOverallSvg" x="60" y="58" text-anchor="middle" font-size="26" font-weight="700" fill="#d1d5db">—</text>
+      </svg>
+      <span style="font-size:0.7rem;color:var(--color-text-mid);margin-top:-4px">総合スコア / 10</span>
     </div>
+
+    <!-- カテゴリバー -->
+    <div style="display:flex;flex-direction:column;gap:0.5rem">
+      {% for key, label in [('Health','健康'),('Family','家族'),('Friends','友人'),('Learning','学習'),('Bullying','いじめ')] %}
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <span style="font-size:0.72rem;color:var(--color-text-mid);width:2.25rem;flex-shrink:0">{{ label }}</span>
+        <div style="flex:1;background:#f3f4f6;border-radius:9999px;overflow:hidden;height:6px">
+          <div id="risk{{ key }}Bar" style="height:100%;border-radius:9999px;width:0%;background:#22c55e;transition:width 0.5s,background 0.3s"></div>
+        </div>
+        <span id="risk{{ key }}" style="font-size:0.72rem;font-weight:600;width:1.75rem;text-align:right;color:#d1d5db">—</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 根拠 -->
+    <details class="group">
+      <summary style="font-size:0.75rem;color:var(--color-text-mid);cursor:pointer;list-style:none;display:flex;align-items:center;gap:0.25rem">
+        <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" style="transition:transform 0.2s">
+          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+        </svg>
+        根拠を見る
+      </summary>
+      <p id="riskReason" style="font-size:0.75rem;color:var(--color-text-mid);margin-top:0.375rem;padding-left:1rem;line-height:1.6">—</p>
+    </details>
   </div>
-  </div>
+</div>
+{% endblock %}
 
 <script>
-// 以下は index.html のチャットスクリプトをそのまま流用します
-let currentUserId = null;
-const chatEl = document.getElementById('chat');
-const statusEl = document.getElementById('status');
+// ==================== 状態 ====================
+let currentConvId = null;
+let selectedImages = [];
+const chatEl = document.getElementById('chatMessages');
+const viewport = document.getElementById('chatViewport');
 
-// APIセレクターの変更を監視
-document.addEventListener('DOMContentLoaded', () => {
-  const apiSelector = document.getElementById('apiSelector');
-  apiSelector.addEventListener('change', (e) => {
-    const api = e.target.value;
-    if(api === 'ollama'){
-      statusEl.textContent = 'Qwen3 8Bを使用中';
-      statusEl.className = 'text-xs text-green-600 mb-2';
-    } else {
-      statusEl.textContent = 'GPT-6-lunaを使用中';
-      statusEl.className = 'text-xs text-blue-600 mb-2';
-    }
-  });
-});
-
-// ファイルをData URLに変換するヘルパー関数
-function fileToDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.onerror = (e) => reject(e);
-    reader.readAsDataURL(file);
-  });
+// ==================== 会話管理 ====================
+async function loadConversations() {
+  const r = await fetch('/api/conversations', { credentials: 'same-origin' });
+  if (!r.ok) return;
+  const convs = await r.json();
+  renderConvList(convs);
 }
 
-function line(text, side='left', images=[]){
-  const wrap = document.createElement('div');
-  wrap.className = `flex ${side==='right'?'justify-end':''}`;
-  const bubble = document.createElement('div');
-  bubble.className = `max-w-[80%] p-2 rounded-xl ${side==='right'?'bg-[#84a59d] text-white':'bg-white border border-gray-100'} shadow whitespace-pre-wrap`;
-  
-  // 画像がある場合は画像を表示
-  if(images && images.length > 0){
-    const imgContainer = document.createElement('div');
-    imgContainer.className = 'flex flex-wrap gap-2 mb-2';
-    images.forEach(imgSrc => {
-      const img = document.createElement('img');
-      img.src = imgSrc;
-      img.className = 'max-w-[200px] max-h-[200px] rounded cursor-pointer hover:opacity-80';
-      img.onclick = () => {
-        // クリックで拡大表示
-        window.open(imgSrc, '_blank');
-      };
-      imgContainer.appendChild(img);
+function renderConvList(convs) {
+  const box = document.getElementById('convList');
+  if (!convs.length) {
+    box.innerHTML = '<p class="sidebar-section-label">会話がありません</p>';
+    return;
+  }
+
+  // 日付でグループ化
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  const groups = {};
+
+  convs.forEach(c => {
+    const d = new Date(c.created_at);
+    const key = d.toDateString() === today ? '今日' :
+                d.toDateString() === yesterday ? '昨日' :
+                `${d.getMonth() + 1}月${d.getDate()}日`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(c);
+  });
+
+  box.innerHTML = '';
+  Object.entries(groups).forEach(([label, items]) => {
+    const lbl = document.createElement('p');
+    lbl.className = 'sidebar-section-label';
+    lbl.textContent = label;
+    box.appendChild(lbl);
+    items.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'conv-item' + (c.id === currentConvId ? ' active' : '');
+      btn.dataset.id = c.id;
+      btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/>
+        </svg>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.title)}</span>
+      `;
+      btn.onclick = () => selectConversation(c.id, c.title);
+      box.appendChild(btn);
     });
-    bubble.appendChild(imgContainer);
-  }
-  
-  // テキストを表示
-  if(text){
-    const textNode = document.createElement('div');
-    textNode.textContent = text;
-    bubble.appendChild(textNode);
-  }
-  
-  wrap.appendChild(bubble);
-  chatEl.appendChild(wrap);
-  chatEl.scrollTop = chatEl.scrollHeight;
-  return bubble;
+  });
 }
 
-const GAUGE_LEN = Math.PI * 48; // semicircle arc length (r=48) ≈ 150.8
+async function newChat() {
+  const r = await fetch('/api/conversations', { method: 'POST', credentials: 'same-origin' });
+  if (!r.ok) { alert('新しいチャットを作成できませんでした'); return; }
+  const conv = await r.json();
+  currentConvId = conv.id;
+  clearChat();
+  document.getElementById('chatTitleDisplay').textContent = conv.title;
+  await loadConversations();
+}
 
-function _barColor(v){ return v >= 7 ? '#ef4444' : v >= 4 ? '#f59e0b' : '#22c55e'; }
-function _setBar(id, val){
+async function selectConversation(id, title) {
+  currentConvId = id;
+  document.getElementById('chatTitleDisplay').textContent = title;
+  clearChat();
+  // 会話のメッセージを読み込む
+  const r = await fetch(`/api/messages/me?conv_id=${id}`, { credentials: 'same-origin' });
+  if (!r.ok) return;
+  const msgs = await r.json();
+  document.getElementById('chatEmpty').style.display = 'none';
+  msgs.forEach(m => addBubble(m.text, 'user'));
+  // 会話リストのactiveを更新
+  document.querySelectorAll('.conv-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+  // モバイルではサイドバーを閉じる
+  closeSidebar();
+}
+
+function clearChat() {
+  const empty = document.getElementById('chatEmpty');
+  chatEl.innerHTML = '';
+  chatEl.appendChild(empty);
+  empty.style.display = 'flex';
+}
+
+// ==================== メッセージバブル生成 ====================
+function addBubble(text, role, images = []) {
+  document.getElementById('chatEmpty').style.display = 'none';
+
+  if (role === 'user') {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-user';
+    if (images.length) {
+      const imgRow = document.createElement('div');
+      imgRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.375rem;justify-content:flex-end;margin-bottom:0.25rem';
+      images.forEach(src => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.style.cssText = 'max-width:160px;max-height:160px;border-radius:10px;cursor:pointer';
+        img.onclick = () => window.open(src, '_blank');
+        imgRow.appendChild(img);
+      });
+      const imgWrap = document.createElement('div');
+      imgWrap.className = 'msg-user';
+      imgWrap.appendChild(imgRow);
+      chatEl.appendChild(imgWrap);
+    }
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-user-bubble';
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+    chatEl.appendChild(wrap);
+    scrollToBottom();
+    return null;
+  } else {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-ai';
+    wrap.innerHTML = `
+      <div class="ai-avatar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path fill-rule="evenodd" d="M4.848 2.771A49.144 49.144 0 0112 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 01-3.476.383.39.39 0 00-.297.17l-2.755 4.133a.75.75 0 01-1.248 0l-2.755-4.133a.39.39 0 00-.297-.17 48.9 48.9 0 01-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.741c0-1.946 1.37-3.68 3.348-3.97z" clip-rule="evenodd"/>
+        </svg>
+      </div>
+      <div class="msg-ai-text"></div>
+    `;
+    chatEl.appendChild(wrap);
+    scrollToBottom();
+    return wrap.querySelector('.msg-ai-text');
+  }
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => { viewport.scrollTop = viewport.scrollHeight; });
+}
+
+// ==================== メッセージ送信 ====================
+async function sendMsg() {
+  const text = document.getElementById('msg').value.trim();
+  if (!text && !selectedImages.length) return;
+
+  // 会話がなければ新規作成
+  if (!currentConvId) await newChat();
+
+  const imgDataUrls = [];
+  for (const f of selectedImages) {
+    imgDataUrls.push(await fileToDataURL(f));
+  }
+
+  addBubble(text, 'user', imgDataUrls);
+  document.getElementById('msg').value = '';
+  autoResize(document.getElementById('msg'));
+  const imgs = [...selectedImages];
+  clearAllImages();
+
+  const sendBtn = document.getElementById('sendBtn');
+  const origHTML = sendBtn.innerHTML;
+  sendBtn.disabled = true;
+  sendBtn.innerHTML = '<svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+  const restore = () => { sendBtn.disabled = false; sendBtn.innerHTML = origHTML; };
+
+  const aiBubbleText = addBubble('', 'ai');
+
+  const selectedApi = document.getElementById('apiSelector').value;
+  let res;
+
+  if (imgs.length) {
+    if (selectedApi === 'ollama') {
+      aiBubbleText.textContent = 'Ollamaは画像に対応していません。OpenAIを選択してください。';
+      restore(); return;
+    }
+    const fd = new FormData();
+    fd.append('text', text || '画像を送信しました');
+    imgs.forEach(f => fd.append('images', f));
+    res = await fetch('/api/chat_stream_with_images', { method: 'POST', body: fd });
+  } else {
+    const ep = selectedApi === 'ollama' ? '/api/chat_stream_local' : '/api/chat_stream';
+    res = await fetch(ep, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, conv_id: currentConvId }),
+    });
+  }
+
+  if (res.status === 401) { restore(); alert('ログインが必要です'); window.location.href = '/login'; return; }
+  if (!res.ok || !res.body) { restore(); aiBubbleText.textContent = 'サーバーエラーが発生しました。'; return; }
+
+  const reader = res.body.getReader();
+  const dec = new TextDecoder('utf-8');
+  let buf = '';
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    let idx;
+    while ((idx = buf.indexOf('\n\n')) >= 0) {
+      const chunk = buf.slice(0, idx).trim();
+      buf = buf.slice(idx + 2);
+      if (!chunk.startsWith('data:')) continue;
+      try {
+        const evt = JSON.parse(chunk.slice(5).trim());
+        if (evt.type === 'delta') { aiBubbleText.textContent += evt.text || ''; scrollToBottom(); }
+        else if (evt.type === 'final') { setRiskPanel(evt.result || {}); restore(); await loadConversations(); }
+        else if (evt.type === 'error') { aiBubbleText.textContent += `\n[エラー] ${evt.message}`; restore(); }
+      } catch (_) {}
+    }
+  }
+}
+
+// ==================== リスクパネル ====================
+const GAUGE_LEN = Math.PI * 48;
+function _barColor(v) { return v >= 7 ? '#ef4444' : v >= 4 ? '#f59e0b' : '#22c55e'; }
+function _setBar(key, val) {
   const v = Number(val ?? 0);
   const color = _barColor(v);
-  const el = document.getElementById(id);
-  const bar = document.getElementById(id + 'Bar');
-  if(el){ el.textContent = v.toFixed(1); el.style.color = color; }
-  if(bar){ bar.style.width = (v * 10) + '%'; bar.style.backgroundColor = color; }
+  const el = document.getElementById('risk' + key);
+  const bar = document.getElementById('risk' + key + 'Bar');
+  if (el) { el.textContent = v.toFixed(1); el.style.color = color; }
+  if (bar) { bar.style.width = (v * 10) + '%'; bar.style.backgroundColor = color; }
 }
 
-function setRiskPanel(res){
-  // Summary
+function setRiskPanel(res) {
   const sum = res.ai_summary ?? '';
   const summaryEl = document.getElementById('aiSummary');
   summaryEl.textContent = sum || '分析結果なし';
-  summaryEl.className = 'text-xs leading-relaxed ' + (sum ? 'text-gray-600' : 'text-gray-400 italic');
+  summaryEl.className = sum ? 'text-xs leading-relaxed' : 'text-xs text-gray-400 italic leading-relaxed';
 
-  // Overall gauge
   const overall = Number(res.ai_risk_overall || 0);
   const gaugeColor = _barColor(overall);
-  const shown = (overall / 10) * GAUGE_LEN;
   const arc = document.getElementById('overallArc');
-  if(arc){
-    arc.style.stroke = gaugeColor;
-    arc.style.strokeDasharray = `${shown.toFixed(1)} ${GAUGE_LEN.toFixed(1)}`;
-  }
+  if (arc) { arc.style.stroke = gaugeColor; arc.style.strokeDasharray = `${((overall / 10) * GAUGE_LEN).toFixed(1)} ${GAUGE_LEN.toFixed(1)}`; }
   const overallText = document.getElementById('riskOverallSvg');
-  if(overallText){ overallText.textContent = overall.toFixed(1); overallText.setAttribute('fill', gaugeColor); }
+  if (overallText) { overallText.textContent = overall.toFixed(1); overallText.setAttribute('fill', gaugeColor); }
 
-  // Status badge
   const badge = document.getElementById('riskStatusBadge');
-  if(badge){
+  if (badge) {
     const label = overall >= 7 ? '警戒' : overall >= 4 ? '注意' : '安全';
     const cls = overall >= 7 ? 'text-red-600 bg-red-50' : overall >= 4 ? 'text-amber-600 bg-amber-50' : 'text-green-600 bg-green-50';
-    badge.textContent = label;
-    badge.className = `text-xs font-medium px-2.5 py-0.5 rounded-full ${cls}`;
+    badge.textContent = label; badge.className = `text-xs font-medium px-2.5 py-0.5 rounded-full ${cls}`;
   }
 
-  // Categories
   const det = res.ai_risk_detail || {};
   const sc = det.scores || {};
-  _setBar('riskHealth',   sc.health);
-  _setBar('riskFamily',   sc.family);
-  _setBar('riskFriends',  sc.friends);
-  _setBar('riskLearning', sc.learning);
-  _setBar('riskBullying', sc.bullying);
+  _setBar('Health',   sc.health);
+  _setBar('Family',   sc.family);
+  _setBar('Friends',  sc.friends);
+  _setBar('Learning', sc.learning);
+  _setBar('Bullying', sc.bullying);
 
-  // Tags
-  const tags = det.tags || [];
-  const tagsEl = document.getElementById('riskTags');
-  if(tagsEl){
-    tagsEl.innerHTML = '';
-    if(tags.length > 0){
-      tags.forEach(t => {
-        const pill = document.createElement('span');
-        pill.className = 'text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500';
-        pill.textContent = t;
-        tagsEl.appendChild(pill);
-      });
-      tagsEl.classList.remove('hidden');
-    } else {
-      tagsEl.classList.add('hidden');
-    }
-  }
-
-  // Reason
   const reasonEl = document.getElementById('riskReason');
-  if(reasonEl) reasonEl.textContent = det.reason ?? '—';
+  if (reasonEl) reasonEl.textContent = det.reason ?? '—';
 
-  // High risk check
-  const hasHighRisk = ['health','family','friends','learning','bullying']
-    .some(k => Number(sc[k] || 0) >= 8);
-  if(hasHighRisk) showTeacherConsultationPrompt();
+  // 高リスクなら先生相談を促す
+  const hasHighRisk = ['health','family','friends','learning','bullying'].some(k => Number(sc[k] || 0) >= 8);
+  if (hasHighRisk) showTeacherPrompt();
 }
 
-function showTeacherConsultationPrompt(){
-  // チャット画面に優しく先生への相談を促すメッセージを表示
+function showTeacherPrompt() {
   const wrap = document.createElement('div');
-  wrap.className = 'flex justify-center my-4';
-  
-  const bubble = document.createElement('div');
-  bubble.className = 'max-w-[90%] p-4 rounded-xl bg-blue-50 border border-blue-200 shadow-md';
-  
-  const message = document.createElement('div');
-  message.className = 'mb-3 text-center';
-  message.innerHTML = `
-    <div class="flex items-center justify-center gap-2 mb-2">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-      </svg>
-      <span class="font-medium text-blue-700">大丈夫ですか？</span>
+  wrap.style.cssText = 'display:flex;justify-content:center;margin:0.5rem 0';
+  wrap.innerHTML = `
+    <div style="max-width:90%;padding:1rem 1.25rem;border-radius:14px;background:#eff6ff;border:1px solid #bfdbfe;font-size:0.85rem;text-align:center">
+      <p style="margin-bottom:0.625rem;line-height:1.7;color:#1e40af">つらいことがあるときは一人で抱え込まないでね。<br>先生はいつでもあなたの味方だよ。</p>
+      <a href="/chat_teacher" style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.5rem 1rem;background:#3b82f6;color:white;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.82rem">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7z" clip-rule="evenodd"/></svg>
+        先生に相談する
+      </a>
     </div>
-    <p class="text-sm text-gray-700 leading-relaxed">
-      つらいこと、心配なことがあるときは、<br>
-      一人で抱え込まずに話してみませんか？<br>
-      <br>
-      先生はいつでもあなたの味方です。<br>
-      安心して相談してくださいね。
-    </p>
   `;
-  
-  const buttonContainer = document.createElement('div');
-  buttonContainer.className = 'flex justify-center mt-3';
-  
-  const normalBtn = document.createElement('a');
-  normalBtn.href = '/chat_teacher';
-  normalBtn.className = 'px-5 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm font-medium inline-flex items-center gap-2 shadow-sm';
-  normalBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd" />
-    </svg>
-    先生に相談する
-  `;
-  
-  buttonContainer.appendChild(normalBtn);
-  
-  bubble.appendChild(message);
-  bubble.appendChild(buttonContainer);
-  wrap.appendChild(bubble);
   chatEl.appendChild(wrap);
-  chatEl.scrollTop = chatEl.scrollHeight;
+  scrollToBottom();
 }
 
-async function sendMsg(){
-  const text = document.getElementById('msg').value.trim();
-  if(!text && selectedImages.length === 0){ 
-    return; 
-  }
-
-  // 画像をData URLに変換
-  const imageDataUrls = [];
-  for(const img of selectedImages){
-    const dataUrl = await fileToDataURL(img);
-    imageDataUrls.push(dataUrl);
-  }
-
-  // メッセージを画像と一緒に表示
-  line(text, 'right', imageDataUrls);
-  
-  const imagesToSend = [...selectedImages]; // コピーを作成
-  document.getElementById('msg').value = '';
-  clearAllImages();
-  statusEl.textContent = '送信中…';
-
-  const sendBtn = document.getElementById('sendBtn');
-  const sendBtnOriginal = sendBtn.innerHTML;
-  sendBtn.disabled = true;
-  sendBtn.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
-  const _restoreBtn = () => { sendBtn.disabled = false; sendBtn.innerHTML = sendBtnOriginal; };
-
-  const aiBubble = line('', 'left');
-
-  // 選択されたAPIを取得
-  const selectedApi = document.getElementById('apiSelector').value;
-
-  // 画像がある場合はFormDataを使用（OpenAIのみ）
-  let res;
-  if(imagesToSend.length > 0){
-    if(selectedApi === 'ollama'){
-      aiBubble.textContent = 'エラー: Ollamaは画像に対応していません。OpenAIを選択してください。';
-      statusEl.textContent = '送信失敗';
-      return;
-    }
-    
-    const formData = new FormData();
-    formData.append('text', text || '画像を送信しました');
-    imagesToSend.forEach(img => {
-      formData.append('images', img);
-    });
-
-    res = await fetch('/api/chat_stream_with_images', {
-      method: 'POST',
-      body: formData,
-    });
-  } else {
-    // テキストのみの場合、選択されたAPIのエンドポイントを使用
-    const endpoint = selectedApi === 'ollama' ? '/api/chat_stream_local' : '/api/chat_stream';
-    
-    res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ text }),
-    });
-  }
-
-  if(res.status === 401){
-    _restoreBtn();
-    alert('ログインが必要です。ログインページに移動します');
-    window.location.href = '/login';
-    return;
-  }
-
-  if(!res.ok || !res.body){
-    _restoreBtn();
-    statusEl.textContent = '送信失敗';
-    aiBubble.textContent = 'サーバエラーが発生しました。';
-    return;
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder('utf-8');
-  let buffer = '';
-
-  while(true){
-    const { value, done } = await reader.read();
-    if(done) break;
-    buffer += decoder.decode(value, {stream:true});
-
-    let idx;
-    while((idx = buffer.indexOf('\n\n')) >= 0){
-      const eventChunk = buffer.slice(0, idx).trim();
-      buffer = buffer.slice(idx + 2);
-
-      if(eventChunk.startsWith('data:')){
-        const jsonStr = eventChunk.slice(5).trim();
-        if(!jsonStr) continue;
-        try{
-          const evt = JSON.parse(jsonStr);
-          if(evt.type === 'delta'){
-            aiBubble.textContent += evt.text || '';
-            chatEl.scrollTop = chatEl.scrollHeight;
-          }else if(evt.type === 'final'){
-            const result = evt.result || {};
-            setRiskPanel(result);
-            statusEl.textContent = '送信完了';
-            _restoreBtn();
-          }else if(evt.type === 'error'){
-            aiBubble.textContent += `\n[エラー] ${evt.message || '不明なエラー'}`;
-            statusEl.textContent = '送信失敗';
-            _restoreBtn();
-          }
-        }catch(_e){ }
-      }
-    }
-  }
+function toggleRiskDrawer() {
+  document.getElementById('riskDrawer').classList.toggle('open');
 }
 
-async function loadMyLogs(){
-  const r = await fetch(`/api/messages/me`, { credentials: 'same-origin' });
-  if(r.status === 401){
-    alert('ログインが必要です。ログインページに移動します');
-    window.location.href = '/login';
-    return [];
-  }
-  const data = await r.json();
-  const box = document.getElementById('myLogs');
-  box.innerHTML = '';
-  data.forEach(m=>{
-    const div = document.createElement('div');
-    div.className = 'border rounded p-2 bg-gray-50';
-    const det = m.ai_risk_detail || {};
-    const sc = det.scores || {};
-    const text = `[${m.created_at}] 総合:${m.ai_risk_overall ?? '-'} / `+
-                 `健康:${sc.health ?? '-'} 家族:${sc.family ?? '-'} 友人:${sc.friends ?? '-'} 学習:${sc.learning ?? '-'} いじめ:${sc.bullying ?? '-'}`;
-    div.textContent = text;
+// ==================== 画像処理 ====================
+function fileToDataURL(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(file); });
+}
 
-    const btn = document.createElement('button');
-    btn.className = 'ml-2 text-xs text-indigo-600 underline';
-    btn.textContent = '再現';
-    btn.onclick = (e)=>{
-      e.preventDefault();
-      replayMessage(m.text);
-    };
-    div.appendChild(btn);
-    box.appendChild(div);
+function handleImageSelect(e) {
+  Array.from(e.target.files).forEach(f => {
+    if (f.size > 5 * 1024 * 1024) { alert(`${f.name} は5MB以下にしてください`); return; }
+    if (!f.type.startsWith('image/')) return;
+    if (selectedImages.some(x => x.name === f.name && x.size === f.size)) return;
+    selectedImages.push(f);
+    const r = new FileReader();
+    r.onload = ev => addImgPreview(ev.target.result, selectedImages.length - 1);
+    r.readAsDataURL(f);
   });
-  return data;
+  e.target.value = '';
+  updateImgPreviewRow();
 }
 
-function replayMessage(text){
-  const ta = document.getElementById('msg');
-  ta.value = text;
-  setTimeout(()=>{ sendMsg(); }, 50);
-}
-
-async function toggleMyLogs(){
-  const wrapper = document.getElementById('myLogsWrapper');
-  const icon = document.getElementById('toggleIcon');
-  const isOpen = wrapper.style.maxHeight && wrapper.style.maxHeight !== '0px';
-  if(isOpen){
-    wrapper.style.maxHeight = '0';
-    wrapper.style.opacity = '0';
-    icon.style.transform = '';
-    return;
-  }
-  await loadMyLogs();
-  wrapper.style.opacity = '1';
-  requestAnimationFrame(()=>{
-    const h = wrapper.scrollHeight;
-    wrapper.style.maxHeight = h + 'px';
-    icon.style.transform = 'rotate(180deg)';
-  });
-}
-
-// 画像選択処理（複数対応）
-let selectedImages = [];
-
-function handleImageSelect(event){
-  const files = Array.from(event.target.files);
-  
-  files.forEach(file => {
-    // ファイルサイズチェック（5MB制限）
-    if(file.size > 5 * 1024 * 1024){
-      alert(`${file.name} は5MB以下にしてください`);
-      return;
-    }
-    
-    // 画像タイプチェック
-    if(!file.type.startsWith('image/')){
-      alert(`${file.name} は画像ファイルではありません`);
-      return;
-    }
-    
-    // 重複チェック
-    if(selectedImages.some(img => img.name === file.name && img.size === file.size)){
-      return;
-    }
-    
-    selectedImages.push(file);
-    
-    // プレビュー表示
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      addImagePreview(e.target.result, selectedImages.length - 1);
-    };
-    reader.readAsDataURL(file);
-  });
-  
-  // inputをリセット（同じファイルを再選択可能にする）
-  event.target.value = '';
-}
-
-function addImagePreview(src, index){
-  const container = document.getElementById('imagePreviewContainer');
-  
-  const wrapper = document.createElement('div');
-  wrapper.className = 'relative';
-  wrapper.dataset.index = index;
-  
+function addImgPreview(src, idx) {
+  const row = document.getElementById('imgPreviewRow');
+  row.style.display = 'flex';
+  const wrap = document.createElement('div');
+  wrap.className = 'img-preview-wrap';
+  wrap.dataset.idx = idx;
   const img = document.createElement('img');
   img.src = src;
-  img.className = 'w-20 h-20 object-cover rounded-lg border-2 border-gray-200';
-  
-  const removeBtn = document.createElement('button');
-  removeBtn.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 shadow-lg';
-  removeBtn.innerHTML = '×';
-  removeBtn.onclick = () => removeImage(index);
-  
-  wrapper.appendChild(img);
-  wrapper.appendChild(removeBtn);
-  container.appendChild(wrapper);
+  const btn = document.createElement('button');
+  btn.className = 'img-remove-btn';
+  btn.innerHTML = '×';
+  btn.onclick = () => { selectedImages.splice(idx, 1); updateImgPreviewRow(); };
+  wrap.appendChild(img); wrap.appendChild(btn);
+  row.appendChild(wrap);
 }
 
-function removeImage(index){
-  selectedImages.splice(index, 1);
-  updateImagePreviews();
-}
-
-function updateImagePreviews(){
-  const container = document.getElementById('imagePreviewContainer');
-  container.innerHTML = '';
-  
-  selectedImages.forEach((file, index) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      addImagePreview(e.target.result, index);
-    };
-    reader.readAsDataURL(file);
+function updateImgPreviewRow() {
+  const row = document.getElementById('imgPreviewRow');
+  row.innerHTML = '';
+  if (!selectedImages.length) { row.style.display = 'none'; return; }
+  row.style.display = 'flex';
+  selectedImages.forEach((f, i) => {
+    const r = new FileReader();
+    r.onload = e => addImgPreview(e.target.result, i);
+    r.readAsDataURL(f);
   });
 }
 
-function clearAllImages(){
-  selectedImages = [];
-  document.getElementById('imagePreviewContainer').innerHTML = '';
+function clearAllImages() { selectedImages = []; updateImgPreviewRow(); }
+
+// ==================== 入力欄 ====================
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
 }
 
-// Enterキーで送信（Shift+Enterで改行）
-function handleKeyDown(event){
-  if(event.key === 'Enter' && !event.shiftKey){
-    event.preventDefault();
-    sendMsg();
-  }
+function handleKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
 }
 
-// === chat_from_ai からのシードメッセージ対応（/chat に来たら自動送信） ===
-// 受信箱からのシード（AI最初の発話）
-let seedAiMsg = null;
-
-function seedFromInboxIfAny(){
-  const seed = sessionStorage.getItem('seed_msg');
-  if (!seed) return;
-
-  // 左側（AI側）にまず表示
-  seedAiMsg = seed;
-  line(seedAiMsg, 'left');
-
-  // 受信箱(localStorage)から一致するものを1件削除 -> バッジ更新
-  try {
-    const inbox = JSON.parse(localStorage.getItem('ai_inbox') || '[]');
-    const idx = inbox.findIndex(m => m && m.text === seed);
-    if (idx >= 0) {
-      inbox.splice(idx, 1);
-      localStorage.setItem('ai_inbox', JSON.stringify(inbox));
-      window.dispatchEvent(new CustomEvent('ai_inbox_updated'));
-    }
-  } catch(_) {}
-
-  // テキストエリアに「返信を書く」雰囲気を出す（任意）
-  const ta = document.getElementById('msg');
-  if (ta && !ta.value) ta.placeholder = 'このメッセージへの返信を書いてください';
-
-  // 使い終わったらクリア
-  sessionStorage.removeItem('seed_msg');
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// 未読件数をチェックして表示
-async function checkUnreadMessages(){
-  try {
-    const r = await fetch('/api/direct/unread_count', { credentials: 'same-origin' });
-    if(!r.ok) return;
-    const data = await r.json();
-    const count = data.count || 0;
-    
-    const badge = document.getElementById('chatUnreadBadge');
-    if(count > 0){
-      badge.textContent = `${count}件未読`;
-      badge.classList.remove('hidden');
-    } else {
-      badge.classList.add('hidden');
-    }
-  } catch(e) {
-    console.error('未読件数の取得に失敗:', e);
-  }
-}
-
-// ページ読み込み時とメッセージ送信後に未読チェック
-document.addEventListener('DOMContentLoaded', () => {
-  seedFromInboxIfAny();    
-  checkUnreadMessages();
-  // 30秒ごとに未読チェック
-  setInterval(checkUnreadMessages, 30000);
+// ==================== 初期化 ====================
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadConversations();
+  // URLパラメータで会話を自動選択
+  const params = new URLSearchParams(location.search);
+  const cid = params.get('conv');
+  if (cid) await selectConversation(cid, '');
 });
-
-// 最近の要約モーダル制御
-function openMemoriesModal(){
-  const modal = document.getElementById('memoriesModal');
-  modal.classList.remove('hidden');
-  loadMemories();
-}
-
-function closeMemoriesModal(){
-  const modal = document.getElementById('memoriesModal');
-  modal.classList.add('hidden');
-}
-
-async function loadMemories(){
-  const list = document.getElementById('memoriesList');
-  list.innerHTML = '<div class="text-gray-500">読み込み中…</div>';
-  try{
-    const r = await fetch('/api/memories/me', { credentials: 'same-origin' });
-    if(r.status === 401){
-      alert('ログインが必要です。ログインページに移動します');
-      window.location.href = '/login';
-      return;
-    }
-    if(!r.ok){
-      list.innerHTML = '<div class="text-red-600">取得に失敗しました</div>';
-      return;
-    }
-    const data = await r.json();
-    if(!data || data.length === 0){
-      list.innerHTML = '<div class="text-gray-500">要約はまだありません</div>';
-      return;
-    }
-    list.innerHTML = '';
-    data.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'border rounded p-2 bg-gray-50';
-      const date = item.created_at || '';
-      const sum = item.summary || '';
-      row.textContent = `[${date}] ${sum}`;
-      list.appendChild(row);
-    });
-  }catch(e){
-    list.innerHTML = '<div class="text-red-600">エラーが発生しました</div>';
-  }
-}
-
 </script>
-{% endblock %}

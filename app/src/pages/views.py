@@ -13,18 +13,14 @@ templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
 @router.get("/", include_in_schema=False)
 def index_page(request: Request):
-    # セッションからユーザーを取得できる場合は、会話の要約に基づくレコメンドを生成
+    uid = None
     try:
         uid = request.session.get("user_id") if hasattr(request, "session") else None
     except Exception:
-        uid = None
-    recs = get_recommendations(
-        uid, limit=10, audience=("kids" if KIDS_MODE else None), exclude_urls=None
-    )
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "recommendations": recs, "kids_mode": KIDS_MODE},
-    )
+        pass
+    if uid:
+        return RedirectResponse(url="/chat", status_code=302)
+    return RedirectResponse(url="/login", status_code=302)
 
 
 @router.get("/chat", include_in_schema=False)

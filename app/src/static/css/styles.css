@@ -1,901 +1,814 @@
-/* ==================== カスタムプロパティ（カラー変数） ==================== */
+/* ==================== カラーパレット ==================== */
 :root {
-    /* パレット: #f28482 coral / #84a59d teal / #f5cac3 blush / #f7ede2 cream / #f6bd60 gold */
-    --color-main: #84a59d;
-    --color-sub1: #f5cac3;
-    --color-accent: #f6bd60;
-    --color-background: #f7ede2;
-
-    --color-text-dark: #333;
-    --color-text-mid: #666;
-    --color-white: white;
-    --color-btn: #edf2f1;
-
-    --color-accent-transparent: rgba(246, 189, 96, 0.1);
-    --color-main-darker: #6a8f88;
-    --color-accent-darker: #d4a040;
-    --color-chat-gradient-end: #fff4ec;
-    --color-scrollbar-track: rgba(132, 165, 157, 0.2);
+    --color-main:       #84a59d;
+    --color-main-dark:  #6a8f88;
+    --color-sub1:       #f5cac3;
+    --color-accent:     #f6bd60;
+    --color-accent-dark:#d4a040;
+    --color-bg:         #f7ede2;
+    --color-bg-end:     #fff4ec;
+    --color-sidebar-bg: #f0e8de;
+    --color-text:       #3d2e1e;
+    --color-text-mid:   #7a6555;
+    --color-white:      #ffffff;
+    --color-border:     rgba(61,46,30,0.1);
+    --color-active-bg:  rgba(246,189,96,0.18);
+    --sidebar-width:    260px;
 }
 
-
-/* ==================== リセットと基本設定 ==================== */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* ==================== リセット ==================== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: var(--color-background);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans JP', sans-serif;
+    color: var(--color-text);
+    height: 100vh;
+    overflow: hidden;
+    background: var(--color-bg);
+}
+
+/* ==================== アプリシェル（サイドバー + メイン） ==================== */
+.app-shell {
+    display: flex;
     height: 100vh;
     overflow: hidden;
 }
 
-/* ==================== ヘッダー ==================== */
-.app-header {
-    background-color: var(--color-main);
-    padding: 1rem;
+/* ==================== サイドバー ==================== */
+.sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
     display: flex;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    position: relative;
+    flex-direction: column;
+    background: var(--color-sidebar-bg);
+    border-right: 1px solid var(--color-border);
+    height: 100vh;
+    overflow: hidden;
+    transition: transform 0.25s ease;
     z-index: 100;
 }
 
-.hamburger-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 10px;
+.sidebar-header {
+    padding: 1rem 0.875rem 0.75rem;
     display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    width: 40px;
-    height: 40px;
-}
-
-.hamburger-btn span {
-    display: block;
-    width: 25px;
-    height: 3px;
-    background-color: var(--color-text-dark);
-    transition: 0.3s;
-}
-
-.hamburger-btn.active span:nth-child(1) {
-    transform: rotate(45deg) translate(5px, 5px);
-}
-
-.hamburger-btn.active span:nth-child(2) {
-    opacity: 0;
-}
-
-.hamburger-btn.active span:nth-child(3) {
-    transform: rotate(-45deg) translate(7px, -6px);
-}
-
-.app-title {
-    flex: 1;
-    text-align: center;
-    color: var(--color-text-dark);
-    cursor: pointer;
-    user-select: none;
-    font-size: 1.5rem;
-}
-
-/* ==================== サイドナビゲーション ==================== */
-.side-nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    z-index: 200;
-    pointer-events: none;
-}
-
-.nav-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0,0,0,0.5);
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.nav-content {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 280px;
-    height: 100vh;
-    background-color: var(--color-sub1);
-    transform: translateX(-100%);
-    transition: transform 0.3s;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-}
-
-.side-nav.active {
-    pointer-events: auto;
-}
-
-.side-nav.active .nav-overlay {
-    opacity: 1;
-}
-
-.side-nav.active .nav-content {
-    transform: translateX(0);
-}
-
-.nav-header {
-    background-color: var(--color-main);
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid rgba(0,0,0,0.1);
+    justify-content: space-between;
+    flex-shrink: 0;
 }
 
-.nav-header h2 {
-    color: var(--color-text-dark);
-    font-size: 1.2rem;
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
 }
 
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 2rem;
+.sidebar-logo img { height: 28px; width: auto; flex-shrink: 0; }
+
+.sidebar-top-action {
+    padding: 0.25rem 0.75rem 0.75rem;
+    flex-shrink: 0;
+}
+
+.new-chat-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.6rem 0.875rem;
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    color: var(--color-text);
+    font-size: 0.875rem;
+    font-weight: 500;
     cursor: pointer;
-    color: var(--color-text-dark);
-    transition: transform 0.2s;
+    text-decoration: none;
+    transition: background 0.15s, box-shadow 0.15s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-.close-btn:hover {
-    transform: scale(1.1);
+.new-chat-btn:hover {
+    background: var(--color-accent);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-.nav-list {
-    list-style: none;
-    padding: 1rem 0;
+.new-chat-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* 会話リスト */
+.sidebar-list {
     flex: 1;
-}
-
-.nav-item {
-    width: 100%;
-    padding: 1rem 1.5rem;
-    background: none;
-    border: none;
-    text-align: left;
-    cursor: pointer;
-    font-size: 1rem;
-    color: var(--color-text-dark);
-    transition: background-color 0.3s;
-    position: relative;
-}
-
-.nav-item:hover {
-    background-color: var(--color-main);
-}
-
-.nav-item::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 0;
-    height: 2px;
-    background-color: var(--color-accent);
-    transition: width 0.3s;
-}
-
-.nav-item:hover::after {
-    width: 100%;
-}
-
-/* ==================== メインコンテンツ ==================== */
-.main-content {
-    height: calc(100vh - 73px);
     overflow-y: auto;
-    position: relative;
+    padding: 0.25rem 0;
 }
 
-.page {
-    display: none;
-    min-height: 100%;
-    animation: fadeIn 0.3s;
+.sidebar-list::-webkit-scrollbar { width: 4px; }
+.sidebar-list::-webkit-scrollbar-track { background: transparent; }
+.sidebar-list::-webkit-scrollbar-thumb { background: var(--color-main); border-radius: 4px; opacity: 0.5; }
+
+.sidebar-section-label {
+    padding: 0.5rem 0.875rem 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-text-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 }
 
-.page.active {
-    display: block;
+.conv-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.85rem;
+    color: var(--color-text);
+    cursor: pointer;
+    border-radius: 8px;
+    margin: 0 0.4rem;
+    transition: background 0.12s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: none;
+    background: none;
+    text-align: left;
+    width: calc(100% - 0.8rem);
+    text-decoration: none;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+.conv-item:hover { background: rgba(61,46,30,0.06); }
+.conv-item.active { background: var(--color-active-bg); font-weight: 500; }
+
+.conv-item svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--color-text-mid); }
+
+/* サイドバーフッター */
+.sidebar-footer {
+    flex-shrink: 0;
+    padding: 0.75rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
 }
 
-/* ==================== ホーム画面 ==================== */
-.home-page {
+.sidebar-footer-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    font-size: 0.85rem;
+    color: var(--color-text-mid);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s;
+    border: none;
+    background: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+}
+
+.sidebar-footer-link:hover { background: rgba(61,46,30,0.06); color: var(--color-text); }
+.sidebar-footer-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.25rem;
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.user-avatar-sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.user-avatar-fallback {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-main);
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
-    min-height: 100%;
-
-    /* 非アクティ愚な時のデフォルト表示を非表示にする */
-    display: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    flex-shrink: 0;
 }
 
-.home-page.active {
-    display: flex;
-}
-
-.welcome-section {
-    width: 100%;
-    max-width: 1000px;
-}
-
-.welcome-text {
-    text-align: center;
-    font-size: 2.5rem;
-    color: var(--color-text-dark);
-    margin-bottom: 3rem;
-    animation: slideDown 0.5s;
-}
-
-@keyframes slideDown {
-    from {
-        transform: translateY(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.feature-card {
-    background-color: var(--color-sub1);
-    border: none;
-    border-radius: 15px;
-    padding: 2rem;
-    cursor: pointer;
-    transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
-    text-align: center;
-    position: relative;
+.user-name-sm {
+    flex: 1;
+    font-size: 0.82rem;
+    font-weight: 500;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text);
 }
 
-.feature-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, transparent, var(--color-accent-transparent));
-    transform: translateX(-100%);
-    transition: transform 0.5s;
-}
-
-.feature-card:hover::before {
-    transform: translateX(0);
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-    background-color: var(--color-main);
-}
-
-.card-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-    0%, 100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-10px);
-    }
-}
-
-.feature-card h3 {
-    color: var(--color-text-dark);
-    margin-bottom: 0.5rem;
-    font-size: 1.2rem;
-}
-
-.feature-card p {
+.logout-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: none;
     color: var(--color-text-mid);
-    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    flex-shrink: 0;
+}
+
+.logout-icon-btn:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
+
+/* モバイル用トグルボタン */
+.sidebar-mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 200;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    background: var(--color-white);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text);
+    transition: background 0.15s;
+}
+
+.sidebar-mobile-toggle:hover { background: var(--color-accent); }
+.sidebar-mobile-toggle svg { width: 18px; height: 18px; }
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 99;
+}
+
+/* ==================== メインエリア ==================== */
+.main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--color-bg);
+    background-image:
+        radial-gradient(circle, rgba(132,165,157,0.12) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--color-bg), var(--color-bg-end));
+    background-size: 28px 28px, 100% 100%;
 }
 
 /* ==================== チャット画面 ==================== */
-.chat-page {
-    height: 100%;
-}
-
-.chat-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background-color: var(--color-background);
-}
-
-.chat-header {
-    background-color: var(--color-sub1);
-    padding: 1rem;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.chat-header h2 {
-    color: var(--color-text-dark);
-    font-size: 1.3rem;
-}
-
-.chat-messages {
+.chat-viewport {
     flex: 1;
-    padding: 1rem;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    /* グラデーションは、背景色からチャットグラデーション終点に。これは動的設定が難しいので、そのままにします。*/
-    background: linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end));
 }
 
-/* カスタムスクロールバー */
-.chat-messages::-webkit-scrollbar {
-    width: 8px;
-}
+.chat-viewport::-webkit-scrollbar { width: 6px; }
+.chat-viewport::-webkit-scrollbar-track { background: transparent; }
+.chat-viewport::-webkit-scrollbar-thumb { background: var(--color-main); border-radius: 4px; }
 
-.chat-messages::-webkit-scrollbar-track {
-    background: var(--color-scrollbar-track);
-    border-radius: 10px;
-}
-
-.chat-messages::-webkit-scrollbar-thumb {
-    background: var(--color-main);
-    border-radius: 10px;
-}
-
-.chat-messages::-webkit-scrollbar-thumb:hover {
-    background: var(--color-main-darker);
-}
-
-/* ==================== index.html 個別の上書き ==================== */
-/* 「AIからのメッセージ」ボタンの色をカスタム（既存 Tailwind を最小上書き） */
-#btnAiMessage {
-    background-color: var(--color-btn) !important; /* 例: ご希望のカラーコード */
-    border-color: var(--color-btn) !important;
-    color: #333 !important; /* 背景が明るいので文字は濃色でコントラスト確保 */
-}
-
-#btnAiMessage:hover {
-    filter: brightness(0.95);
-}
-
-/* 1) 「AIチャットで相談する」ボタン */
-#btnAiChat {
-    background-color: var(--color-btn) !important; /* 変更したい色に置き換えてください */
-    border-color: var(--color-btn) !important;
-    color: #333 !important;
-}
-#btnAiChat:hover { filter: brightness(0.95); }
-
-/* 2) 「教員/養護教諭/カウンセラーに相談する」ボタン */
-#btnTeacherChat {
-    background-color: var(--color-btn) !important; /* 変更したい色に置き換えてください */
-    border-color: var(--color-btn) !important;
-    color: #333 !important;
-}
-#btnTeacherChat:hover { filter: brightness(0.95); }
-
-/* 3) 「自分のログを見る」ボタン */
-#btnMessages {
-    background-color: var(--color-btn) !important; /* #btnAiChat と同じ色に統一 */
-    border-color: var(--color-btn) !important;
-    color: #333 !important; /* テキストも同じ基調に */
-}
-#btnMessages:hover { filter: brightness(0.95); }
-
-/* ==================== 送信ボタンの色（ページ個別） ==================== */
-/* /chat の送信ボタン */
-#sendBtn {
-    background-color: #84a59d !important;
-    border-color: #84a59d !important;
-    color: #fff !important;
-}
-#sendBtn:hover { background-color: #6a8f88 !important; filter: none; }
-
-/* /chat_teacher の送信ボタン */
-#sendBtnDirect {
-    background-color: var(--color-btn) !important; /* 変更したい色に置き換え */
-    border-color: var(--color-btn) !important;
-    color: #333 !important;
-}
-#sendBtnDirect:hover { filter: brightness(0.95); }
-
-/* ==================== login.html のログインボタン ==================== */
-#btnLoginSubmit {
-    background-color: var(--color-btn) !important;
-    border-color: var(--color-btn) !important;
-    color: #333 !important;
-}
-#btnLoginSubmit:hover { filter: brightness(0.95); }
-
-/* ==================== setup_profile.html の送信ボタン ==================== */
-#btnSetupSubmit {
-    background-color: var(--color-btn) !important;
-    border-color: var(--color-btn) !important;
-    color: #333 !important;
-}
-#btnSetupSubmit:hover { filter: brightness(0.95); }
-
-.message {
-    display: flex;
-    animation: slideIn 0.3s;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.message-content {
-    max-width: 70%;
-    padding: 0.8rem 1rem;
-    border-radius: 15px;
-    word-wrap: break-word;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    position: relative;
-}
-
-.user-message {
-    justify-content: flex-end;
-}
-
-.user-message .message-content {
-    background-color: var(--color-accent);
-    color: var(--color-white);
-    border-bottom-right-radius: 5px;
-}
-
-.bot-message .message-content {
-    background-color: var(--color-sub1);
-    color: var(--color-text-dark);
-    border-bottom-left-radius: 5px;
-}
-
-/* メッセージの吹き出しの尻尾 */
-.user-message .message-content::after {
-    content: '';
-    position: absolute;
-    right: -10px;
-    bottom: 10px;
-    width: 0;
-    height: 0;
-    border-left: 10px solid var(--color-accent);
-    border-top: 5px solid transparent;
-    border-bottom: 5px solid transparent;
-}
-
-.bot-message .message-content::after {
-    content: '';
-    position: absolute;
-    left: -10px;
-    bottom: 10px;
-    width: 0;
-    height: 0;
-    border-right: 10px solid var(--color-sub1);
-    border-top: 5px solid transparent;
-    border-bottom: 5px solid transparent;
-}
-
-.chat-input-area {
-    padding: 1rem;
-    background-color: var(--color-main);
-    display: flex;
-    gap: 0.5rem;
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-}
-
-.chat-input {
-    flex: 1;
-    padding: 0.8rem 1rem;
-    border: none;
-    border-radius: 25px;
-    font-size: 1rem;
-    background-color: var(--color-white);
-    outline: none;
-    transition: box-shadow 0.3s;
-}
-
-.chat-input:focus {
-    box-shadow: 0 0 0 2px var(--color-accent);
-}
-
-.send-btn {
-    padding: 0.8rem 1.5rem;
-    background-color: var(--color-accent);
-    color: var(--color-white);
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s, transform 0.1s;
-}
-
-.send-btn:hover {
-    background-color: var(--color-accent-darker);
-    transform: scale(1.05);
-}
-
-.send-btn:active {
-    transform: scale(0.98);
-}
-
-/* ==================== レコメンド画面 ==================== */
-.recommend-page {
-    padding: 2rem;
-    background-color: var(--color-background);
-    min-height: 100%;
-}
-
-.recommend-container h2 {
-    text-align: center;
-    color: var(--color-text-dark);
-    margin-bottom: 2rem;
-    font-size: 1.8rem;
-}
-
-.recommend-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    max-width: 1200px;
+.messages-col {
+    max-width: 720px;
+    width: 100%;
     margin: 0 auto;
+    padding: 1.5rem 1rem 1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.recommend-card {
-    background-color: var(--color-sub1);
-    padding: 2rem;
-    border-radius: 15px;
-    text-align: center;
-    transition: transform 0.3s, box-shadow 0.3s;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
+/* AIメッセージ（バブルなし） */
+.msg-ai {
+    display: flex;
+    gap: 0.625rem;
+    align-items: flex-start;
+    max-width: 85%;
+    animation: msgIn 0.2s ease;
 }
 
-.recommend-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    /* グラデーションの色の指定もカスタムプロパティに。透明度はここで設定します */
-    background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 20%, transparent), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.recommend-card:hover::before {
-    opacity: 1;
-}
-
-.recommend-card:hover {
-    transform: translateY(-5px) scale(1.02);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-}
-
-.recommend-image {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    transition: transform 0.3s;
-}
-
-.recommend-card:hover .recommend-image {
-    transform: scale(1.2);
-}
-
-.recommend-card h3 {
-    color: var(--color-text-dark);
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-}
-
-.recommend-card p {
-    color: var(--color-text-mid);
-    font-size: 0.9rem;
-}
-
-/* ==================== レスポンシブデザイン ==================== */
-@media (max-width: 768px) {
-    .feature-grid {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-    }
-
-    .welcome-text {
-        font-size: 2rem;
-    }
-
-    .message-content {
-        max-width: 85%;
-    }
-
-    .nav-content {
-        width: 250px;
-    }
-
-    .app-title {
-        font-size: 1.3rem;
-    }
-
-    .recommend-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 480px) {
-    .welcome-text {
-        font-size: 1.5rem;
-    }
-
-    .feature-card {
-        padding: 1.5rem;
-    }
-
-    .card-icon {
-        font-size: 2.5rem;
-    }
-
-    .chat-input {
-        font-size: 0.9rem;
-    }
-
-    .send-btn {
-        padding: 0.8rem 1rem;
-        font-size: 0.9rem;
-    }
-}
-
-/* ===== Tailwindユーティリティ → カラーパレット上書き（base.html専用ブリッジ） ===== */
-
-/* ページ背景と標準テキスト色 */
-/* 背景を全ページのbodyにグラデーション＋ドットグリッドで適用 */
-body.bg-gray-50 {
-    background-color: var(--color-background) !important;
-    background-image:
-        radial-gradient(circle, rgba(132, 165, 157, 0.18) 1px, transparent 1px),
-        linear-gradient(to bottom, var(--color-background), var(--color-chat-gradient-end)) !important;
-    background-size: 28px 28px, 100% 100% !important;
-}
-.text-gray-900  { color: var(--color-text-dark) !important; }
-
-/* ヘッダーのバー色（白 + 下ボーダー） */
-header.bg-indigo-600 {
-  background: rgba(255, 255, 255, 0.97) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
-  box-shadow: none !important;
-}
-
-/* ヘッダー内の文字色（白背景なので濃い文字色を維持） */
-header.bg-indigo-600,
-header.bg-indigo-600 a,
-header.bg-indigo-600 .text-white {
-  color: var(--color-text-dark) !important;
-}
-
-/* ヘッダーのログインボタン（白背景上でも視認できるよう枠線追加） */
-#btnLogin {
-    color: var(--color-accent) !important;
-    border: 1px solid rgba(0, 0, 0, 0.12) !important;
-    transition: transform 0.1s ease, box-shadow 0.15s ease, background-color 0.2s ease;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-}
-#btnLogin:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-}
-
-/* ログアウトボタンのホバー演出（ログインと同様に統一） */
-#btnLogout {
-    transition: transform 0.1s ease, box-shadow 0.15s ease, background-color 0.2s ease;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-}
-#btnLogout:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-}
-
-/* ユーザー名の視認性改善（ヘッダー右側のチップ） */
-#headerUser {
-    background: rgba(255,255,255,0.6);
-    padding: 0.25rem 0.5rem;
-    border-radius: 9999px;
-    font-weight: 600;
-    display: inline-flex;
+.ai-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-main);
+    display: flex;
     align-items: center;
-    gap: 0.35rem;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
 }
 
-/* ログアウトボタンの文字色（text-indigo-600 をアクセントへ） */
-.text-indigo-600 { color: var(--color-accent) !important; }
+.ai-avatar svg { width: 15px; height: 15px; color: white; }
 
-/* フッターの薄い文字色 */
-.text-gray-500 { color: var(--color-text-mid) !important; }
+.msg-ai-text {
+    font-size: 0.9rem;
+    line-height: 1.75;
+    color: var(--color-text);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
 
-/* ボタンの白はそのまま（保険） */
-.bg-white { background-color: var(--color-white) !important; }
+/* ユーザーメッセージ（ゴールドカード） */
+.msg-user {
+    display: flex;
+    justify-content: flex-end;
+    animation: msgIn 0.2s ease;
+}
 
-/* メイン領域の背景は透明にして、bodyのグラデーションを見せる */
-main.max-w-7xl.mx-auto.px-6.pt-8 {
+.msg-user-bubble {
+    background: var(--color-accent);
+    color: var(--color-text);
+    padding: 0.625rem 0.875rem;
+    border-radius: 16px 16px 4px 16px;
+    font-size: 0.9rem;
+    line-height: 1.65;
+    max-width: 70%;
+    white-space: pre-wrap;
+    word-break: break-word;
+    box-shadow: 0 2px 8px rgba(246,189,96,0.3);
+}
+
+@keyframes msgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 空チャット状態 */
+.chat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--color-text-mid);
+    padding: 2rem;
+    text-align: center;
+}
+
+.chat-empty-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(132,165,157,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-empty-icon svg { width: 24px; height: 24px; color: var(--color-main); }
+
+.chat-empty h3 { font-size: 1rem; font-weight: 600; color: var(--color-text); }
+.chat-empty p  { font-size: 0.85rem; max-width: 300px; line-height: 1.6; }
+
+/* ==================== 入力エリア（画面最下部固定） ==================== */
+.chat-input-dock {
+    flex-shrink: 0;
+    padding: 0.75rem 1rem 1rem;
     background: transparent;
 }
 
-/* ===== Brand styling (CareBridge) ===== */
-#brand {
-    text-decoration: none;
-    display: inline-flex; /* anchor内のロゴとテキストを横並びに */
+.chat-input-inner {
+    max-width: 700px;
+    margin: 0 auto;
+    background: var(--color-white);
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+    border: 1px solid var(--color-border);
+    padding: 0.5rem 0.625rem;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.chat-input-inner:focus-within {
+    box-shadow: 0 4px 20px rgba(132,165,157,0.25);
+    border-color: var(--color-main);
+}
+
+.chat-attach-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    color: var(--color-text-mid);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.12s, color 0.12s;
+}
+
+.chat-attach-btn:hover { background: rgba(61,46,30,0.06); color: var(--color-text); }
+.chat-attach-btn svg { width: 18px; height: 18px; }
+
+.chat-textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    font-family: inherit;
+    color: var(--color-text);
+    background: transparent;
+    min-height: 24px;
+    max-height: 160px;
+    padding: 0.25rem 0;
+}
+
+.chat-textarea::placeholder { color: var(--color-text-mid); opacity: 0.7; }
+
+.chat-send-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: var(--color-main);
+    color: white;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.chat-send-btn:hover { background: var(--color-main-dark); }
+.chat-send-btn:active { transform: scale(0.95); }
+.chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.chat-send-btn svg { width: 16px; height: 16px; }
+
+/* 画像プレビュー */
+.img-preview-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    padding: 0.375rem 0 0.25rem;
+}
+
+.img-preview-wrap {
+    position: relative;
+    width: 56px;
+    height: 56px;
+}
+
+.img-preview-wrap img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+}
+
+.img-remove-btn {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ef4444;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* ==================== ステータスバー（チャット上部） ==================== */
+.chat-status-bar {
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-    transition: transform 0.12s ease, filter 0.2s ease;
-}
-/* ロゴ画像が縮まってテキストに重ならないように */
-#brand img { flex-shrink: 0; display: block; }
-
-/* テキスト部分だけグラデーションを適用 */
-#brandText {
-    font-weight: 800;
-    letter-spacing: 0.3px;
-    background: linear-gradient(90deg, var(--color-accent), var(--color-main));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent; /* Safari系の互換補助 */
-    color: transparent !important;
-}
-#brand:hover {
-    transform: none;
-    filter: none;
-}
-#brand::after {
-    content: "";
-    display: none; /* ロゴ下のホバー下線を無効化 */
-}
-#brand:hover::after {
-    width: 0; /* 無効化（安全策） */
+    padding: 0.75rem 1rem 0;
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
 }
 
-/* ==================== UI polish: Glass card & CTA ==================== */
-.glass-card {
-    background: rgba(255, 255, 255, 0.72) !important; /* 半透明の白 */
-    -webkit-backdrop-filter: blur(10px);
+.chat-title-bar {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-mid);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.api-select {
+    font-size: 0.78rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: var(--color-white);
+    color: var(--color-text);
+    cursor: pointer;
+    outline: none;
+}
+
+/* ==================== リスクパネル（折りたたみ） ==================== */
+.risk-drawer {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    background: var(--color-white);
+    border-left: 1px solid var(--color-border);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.08);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    z-index: 150;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.risk-drawer.open { transform: translateX(0); }
+
+.risk-drawer-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.risk-toggle-btn {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    padding: 0.5rem 0.375rem;
+    cursor: pointer;
+    z-index: 149;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.06);
+    font-size: 0.65rem;
+    color: var(--color-text-mid);
+}
+
+/* ==================== 先生チャット専用 ==================== */
+.teacher-chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ==================== ダッシュボード専用 ==================== */
+.dashboard-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+.dashboard-content::-webkit-scrollbar { width: 6px; }
+.dashboard-content::-webkit-scrollbar-track { background: transparent; }
+.dashboard-content::-webkit-scrollbar-thumb { background: var(--color-main); border-radius: 4px; }
+
+/* ==================== ログインページ ==================== */
+.login-shell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--color-bg);
+    background-image:
+        radial-gradient(circle, rgba(132,165,157,0.15) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--color-bg), var(--color-bg-end));
+    background-size: 28px 28px, 100% 100%;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(255,255,255,0.85);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.08);
-    transition: transform 0.15s ease, box-shadow 0.2s ease;
-}
-.glass-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 20px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+    padding: 2.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
 }
 
-/* ホバーさせたくないカード用（ようこそ/ヘルプなど） */
-.glass-card.no-hover { transition: none; }
-.glass-card.no-hover:hover { transform: none; box-shadow: 0 10px 24px rgba(0,0,0,0.08); }
+.login-logo { display: flex; align-items: center; gap: 0.5rem; }
+.login-logo img { height: 36px; width: auto; }
 
-.section-title {
+.login-card h1 { font-size: 1.25rem; font-weight: 700; color: var(--color-text); }
+.login-card p  { font-size: 0.85rem; color: var(--color-text-mid); text-align: center; }
+
+.login-form { width: 100%; display: flex; flex-direction: column; gap: 1rem; }
+
+.form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.form-label { font-size: 0.82rem; font-weight: 600; color: var(--color-text); }
+
+.form-input {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--color-text);
+    background: var(--color-white);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-input:focus {
+    border-color: var(--color-main);
+    box-shadow: 0 0 0 3px rgba(132,165,157,0.2);
+}
+
+.btn-primary {
+    padding: 0.7rem 1rem;
+    background: var(--color-main);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 4px 12px rgba(132,165,157,0.35);
+}
+
+.btn-primary:hover { background: var(--color-main-dark); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(132,165,157,0.4); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--color-text);
+    transition: background 0.15s, box-shadow 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.btn-google:hover { background: #f8f8f8; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+.divider {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.78rem;
+    color: var(--color-text-mid);
+}
+
+.divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+}
+
+/* ==================== 先生チャット参加者リスト ==================== */
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.85rem;
+    color: var(--color-text);
+    cursor: pointer;
+    border-radius: 8px;
+    margin: 0 0.4rem;
+    transition: background 0.12s;
+    border: none;
+    background: none;
+    text-align: left;
+    width: calc(100% - 0.8rem);
     position: relative;
-    padding-left: 0.5rem;
 }
-.section-title::before {
-    content: "";
+
+.participant-item:hover { background: rgba(61,46,30,0.06); }
+.participant-item.active { background: var(--color-active-bg); font-weight: 500; }
+
+.unread-dot {
     position: absolute;
-    left: 0;
-    top: 0.2em;
-    bottom: 0.2em;
-    width: 4px;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #ef4444;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
     border-radius: 9999px;
-    background: linear-gradient(180deg, var(--color-accent), color-mix(in srgb, var(--color-accent) 30%, transparent));
+    min-width: 18px;
+    text-align: center;
 }
 
-.cta-btn {
-    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
-    transition: transform 0.1s ease, box-shadow 0.15s ease;
-}
-.cta-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.16);
-}
-
-/* 枠線タイプのメニューリンクも少しだけ浮かせる */
-.link-elevate {
-    transition: transform 0.1s ease, box-shadow 0.15s ease, background-color 0.2s ease;
-}
-.link-elevate:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.08);
-}
-.link-elevate:active {
-    transform: translateY(0);
+/* ==================== 先生チャット用メッセージ ==================== */
+.msg-teacher-left {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    max-width: 80%;
+    animation: msgIn 0.2s ease;
 }
 
-/* ==================== レスポンシブ余白圧縮（追加の上書き） ==================== */
-/* 小さな画面ほど余白が自然に小さくなるように、clamp() で fluid spacing を適用 */
-
-/* ホーム画面周り */
-.home-page {
-    padding: clamp(0.75rem, 3vw, 2rem);
-}
-.welcome-text {
-    margin-bottom: clamp(1rem, 4vw, 2rem);
-}
-.feature-grid {
-    gap: clamp(0.75rem, 2.5vw, 2rem);
-}
-.feature-card {
-    padding: clamp(1rem, 3vw, 2rem);
+.msg-teacher-bubble-left {
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    padding: 0.625rem 0.875rem;
+    border-radius: 16px 16px 16px 4px;
+    font-size: 0.9rem;
+    line-height: 1.65;
+    word-break: break-word;
+    white-space: pre-wrap;
 }
 
-/* レコメンド画面周り */
-.recommend-page {
-    padding: clamp(0.75rem, 3vw, 2rem);
-}
-.recommend-grid {
-    gap: clamp(0.75rem, 2.5vw, 2rem);
-}
-.recommend-card {
-    padding: clamp(1rem, 3vw, 2rem);
+.msg-teacher-right {
+    display: flex;
+    justify-content: flex-end;
+    animation: msgIn 0.2s ease;
 }
 
-/* チャット画面の上下余白や要素間隔も少し圧縮 */
-.chat-messages {
-    padding: clamp(0.5rem, 2vw, 1rem);
-    gap: clamp(0.5rem, 2vw, 1rem);
-}
-.chat-input-area {
-    padding: clamp(0.5rem, 2vw, 1rem);
-    gap: clamp(0.35rem, 1.5vw, 0.75rem);
+.msg-teacher-bubble-right {
+    background: var(--color-sub1);
+    padding: 0.625rem 0.875rem;
+    border-radius: 16px 16px 4px 16px;
+    font-size: 0.9rem;
+    line-height: 1.65;
+    max-width: 70%;
+    word-break: break-word;
+    white-space: pre-wrap;
+    box-shadow: 0 2px 8px rgba(245,202,195,0.4);
 }
 
-/* 画面の縦方向が低い端末（例: 小型ノートPCや横持ちスマホ）向けにさらに圧縮 */
-@media (max-height: 700px) {
-    .app-header { padding: 0.5rem; }
-    .home-page { padding: 0.75rem; }
-    .recommend-page { padding: 0.75rem; }
-    .welcome-text { margin-bottom: 1rem; }
-    .feature-card, .recommend-card { padding: 1rem; }
-    .chat-messages { padding: 0.5rem; gap: 0.5rem; }
-    .chat-input-area { padding: 0.5rem; gap: 0.5rem; }
+/* ==================== レスポンシブ ==================== */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        transform: translateX(-100%);
+        z-index: 200;
+    }
+
+    .sidebar.sidebar-open {
+        transform: translateX(0);
+        box-shadow: 4px 0 16px rgba(0,0,0,0.15);
+    }
+
+    .sidebar-overlay.active { display: block; }
+
+    .sidebar-mobile-toggle { display: flex; }
+
+    .main-area { margin-left: 0; }
+
+    .messages-col { padding: 1rem 0.75rem 0.75rem; }
+
+    .risk-toggle-btn { display: none; }
+    .risk-drawer { width: 100%; }
 }

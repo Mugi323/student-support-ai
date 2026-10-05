@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 
 
 class ChatIn(BaseModel):
     text: str = Field(..., min_length=1, max_length=2000)
+    conv_id: Optional[str] = None
 
 
 def ai_risk_schema() -> Dict[str, Any]:
