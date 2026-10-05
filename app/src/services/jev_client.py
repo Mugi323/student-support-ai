@@ -11,27 +11,43 @@ _MAX_IDX = len(_CRITERIA) - 1  # 3
 _QUESTIONS: Dict[str, object] = {
     "health": {
         "type": "score",
-        "instructions": "Evaluate physical and health risks.",
+        "instructions": (
+            "Evaluate physical and health risks based ONLY on what is directly stated "
+            "or clearly implied. If no physical or health issue is mentioned, choose 'No risk'."
+        ),
         "criteria": _CRITERIA,
     },
     "family": {
         "type": "score",
-        "instructions": "Evaluate family relationship risks.",
+        "instructions": (
+            "Evaluate family relationship risks based ONLY on what is directly stated "
+            "or clearly implied. If family issues are not mentioned, choose 'No risk'."
+        ),
         "criteria": _CRITERIA,
     },
     "friends": {
         "type": "score",
-        "instructions": "Evaluate friendship and social relationship risks.",
+        "instructions": (
+            "Evaluate friendship and peer relationship risks based ONLY on what is directly "
+            "stated or clearly implied. If friends or peer relationships are not mentioned, "
+            "choose 'No risk'."
+        ),
         "criteria": _CRITERIA,
     },
     "study": {
         "type": "score",
-        "instructions": "Evaluate academic performance and career risks.",
+        "instructions": (
+            "Evaluate academic and career risks based ONLY on what is directly stated "
+            "or clearly implied. If school, studying, or career is not mentioned, choose 'No risk'."
+        ),
         "criteria": _CRITERIA,
     },
     "bully": {
         "type": "score",
-        "instructions": "Evaluate bullying, violence, and harassment risks.",
+        "instructions": (
+            "Evaluate bullying, violence, and harassment risks based ONLY on what is directly "
+            "stated or clearly implied. If no bullying or violence is mentioned, choose 'No risk'."
+        ),
         "criteria": _CRITERIA,
     },
 }
@@ -74,6 +90,16 @@ def call_jev(text: str) -> Dict[str, float]:
     scores: Dict[str, float] = {}
     for jev_key, out_key in _KEY_MAP.items():
         entry = answers.get(jev_key) or {}
-        raw_score = entry.get("score", 0.0) if isinstance(entry, dict) else 0.0
-        scores[out_key] = _score_to_ten(raw_score)
+        if not isinstance(entry, dict):
+            scores[out_key] = 0.0
+            continue
+
+        # P(no risk) > 0.5 なら該当カテゴリは無関係と判断してスコアを 0 にする
+        probs = entry.get("probabilities") or {}
+        p_no_risk = float(probs.get("0", 0.0))
+        if p_no_risk > 0.5:
+            scores[out_key] = 0.0
+        else:
+            raw_score = entry.get("score", 0.0)
+            scores[out_key] = _score_to_ten(raw_score)
     return scores
