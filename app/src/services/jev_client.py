@@ -5,33 +5,33 @@ from src.core.config import TYPESAFE_API_KEY, JEV_MODEL
 
 _JEV_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 
-_CRITERIA = ["リスクなし", "気になる程度", "要注意", "緊急対応が必要"]
+_CRITERIA = ["No risk", "Slightly concerning", "Needs attention", "Urgent action required"]
 _MAX_IDX = len(_CRITERIA) - 1  # 3
 
 _QUESTIONS: Dict[str, object] = {
     "health": {
         "type": "score",
-        "instructions": "身体・健康リスクを評価してください",
+        "instructions": "Evaluate physical and health risks.",
         "criteria": _CRITERIA,
     },
     "family": {
         "type": "score",
-        "instructions": "家庭・家族関係のリスクを評価してください",
+        "instructions": "Evaluate family relationship risks.",
         "criteria": _CRITERIA,
     },
     "friends": {
         "type": "score",
-        "instructions": "友人・人間関係のリスクを評価してください",
+        "instructions": "Evaluate friendship and social relationship risks.",
         "criteria": _CRITERIA,
     },
     "study": {
         "type": "score",
-        "instructions": "学習・進路に関するリスクを評価してください",
+        "instructions": "Evaluate academic performance and career risks.",
         "criteria": _CRITERIA,
     },
     "bully": {
         "type": "score",
-        "instructions": "いじめ・暴力・ハラスメントリスクを評価してください",
+        "instructions": "Evaluate bullying, violence, and harassment risks.",
         "criteria": _CRITERIA,
     },
 }
