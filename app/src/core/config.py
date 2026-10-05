@@ -6,6 +6,10 @@ load_dotenv()
 
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-6-luna")
 APP_TITLE = "Student Support (OpenAI Only + Streaming)"
+
+TYPESAFE_API_KEY: str = os.getenv("TYPESAFE_API_KEY", "")
+JEV_MODEL: str = os.getenv("JEV_MODEL", "jev-latest")
+JEV_ENABLED: bool = os.getenv("JEV_ENABLED", "1").strip() in {"1", "true", "True", "yes", "on"}
 TEMPLATE_DIR = "src/templates"
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
 

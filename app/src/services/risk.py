@@ -1,9 +1,12 @@
 from __future__ import annotations
 import json
+import logging
 from typing import Dict, Any
 from .openai_client import client
-from src.core.config import OPENAI_MODEL
+from src.core.config import OPENAI_MODEL, JEV_ENABLED, TYPESAFE_API_KEY
 from src.core.schemas import ai_risk_schema
+
+logger = logging.getLogger(__name__)
 
 
 def compute_overall(scores: Dict[str, float]) -> float:
@@ -45,7 +48,7 @@ def extract_json_from_response(resp: Any) -> Dict[str, Any]:
     raise ValueError("No JSON content found in model response")
 
 
-def analyze_risk_sync(text: str) -> Dict[str, Any]:
+def _analyze_risk_with_openai(text: str) -> Dict[str, Any]:
     sys2 = (
         "あなたは学校の相談支援AI。日本語で、短く正確に要約し、"
         "健康・家族・友人・学習・いじめ の5カテゴリのリスクを0〜10で数値化します。"
@@ -93,3 +96,23 @@ def analyze_risk_sync(text: str) -> Dict[str, Any]:
         "tags": tags,
         "overall": overall,
     }
+
+
+def analyze_risk_sync(text: str) -> Dict[str, Any]:
+    use_jev = JEV_ENABLED and bool(TYPESAFE_API_KEY)
+    if use_jev:
+        try:
+            from .jev_client import call_jev
+            scores = call_jev(text)
+            overall = compute_overall(scores)
+            return {
+                "summary": "",
+                "scores": scores,
+                "reason": "",
+                "tags": [],
+                "overall": overall,
+            }
+        except Exception as exc:
+            logger.warning("Jev API failed, falling back to OpenAI: %s", exc)
+
+    return _analyze_risk_with_openai(text)
