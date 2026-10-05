@@ -23,8 +23,8 @@ oauth = OAuth(config)
 oauth.register(
     name='google',
     # configオブジェクトから環境変数名(GOOGLE_CLIENT_ID)を使って値を取得します
-    client_id=config('GOOGLE_CLIENT_ID'), 
-    client_secret=config('GOOGLE_CLIENT_SECRET'),
+    client_id=config('GOOGLE_CLIENT_ID', default=None),
+    client_secret=config('GOOGLE_CLIENT_SECRET', default=None),
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={
         'scope': 'openid email profile'
