@@ -3,200 +3,152 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>{{ title or "ココサポ" }}</title>
+  <title>{{ title or "ここサポ" }}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="{{ url_for('static', path='css/styles.css') }}">
 </head>
-<body class="bg-gray-50 text-gray-900">
-<header class="bg-indigo-600 text-white">
-  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-  <a id="brand" href="/" class="font-semibold flex items-center gap-2">
-    <img src="{{ url_for('static', path='logo_3.png') }}" alt="ココサポ" class="h-8 w-auto" />
-    <!-- 右側に追加のロゴ画像（例: logo_text.png）。未配置時は自動で非表示 -->
-    <img src="{{ url_for('static', path='logo_2.png') }}" alt="" aria-hidden="true" class="h-8 w-auto" onerror="this.style.display='none'" />
-    <span class="sr-only">ココサポ</span>
-  </a>
-    <nav class="text-sm flex items-center gap-4 relative">
-      <!-- ヘルプ（ホームの左） -->
-      <button id="btnHelp" type="button" class="flex items-center hover:opacity-80" aria-label="ヘルプ" title="ヘルプ">
-        <!-- Heroicons: question-mark-circle -->
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-          <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-.008 13.5a1.125 1.125 0 1 1 0 2.25 1.125 1.125 0 0 1 0-2.25ZM12 6.75a3 3 0 0 0-3 3 .75.75 0 1 0 1.5 0c0-.828.672-1.5 1.5-1.5s1.5.672 1.5 1.5c0 .382-.14.73-.391 1.014-.25.28-.567.468-.869.646-.286.168-.564.33-.79.56-.331.34-.45.747-.45 1.28V14.25a.75.75 0 0 0 1.5 0v-.51c0-.127.008-.172.01-.182.008-.03.03-.099.113-.184.093-.095.253-.19.485-.325.35-.205.812-.476 1.2-.911.425-.477.692-1.11.692-1.888a3 3 0 0 0-3-3Z" clip-rule="evenodd" />
-        </svg>
-        <span class="sr-only">ヘルプ</span>
-      </button>
-      <a href="/" class="flex items-center hover:opacity-80" aria-label="ホーム" title="ホーム">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-          <path d="M11.47 3.84a.75.75 0 0 1 1.06 0l7.25 7.25c.48.48.14 1.31-.53 1.31h-.47v6.1A2 2 0 0 1 16.78 20.5h-3.53a.5.5 0 0 1-.5-.5v-4.5a1.75 1.75 0 0 0-3.5 0V20a.5.5 0 0 1-.5.5H5.22A2 2 0 0 1 3.97 18.5v-6.1H3.5c-.67 0-1.01-.83-.53-1.31l7.25-7.25Z"/>
-        </svg>
-        <span class="sr-only">ホーム</span>
-      </a>
-      {% if request.session.user_id %}
-        {# --- Avatar button (Google picture if available) --- #}
-        {% set has_picture = request.session.google_picture and request.session.google_picture|length > 0 %}
-        <div class="relative" id="userMenuRoot">
-          <button id="btnAvatar" type="button" class="flex items-center justify-center w-9 h-9 rounded-full ring-2 ring-gray-200 focus:outline-none focus:ring-4 focus:ring-yellow-300 transition" aria-haspopup="true" aria-expanded="false">
-            {% if has_picture %}
-              <img src="{{ request.session.google_picture }}" alt="{{ request.session.name or 'user' }}" referrerpolicy="no-referrer" class="w-9 h-9 rounded-full object-cover" />
-            {% else %}
-              <span class="w-9 h-9 rounded-full bg-white/90 text-[#84a59d] font-semibold grid place-items-center select-none">
-                {{ (request.session.name or 'U')[:1] | upper }}
-              </span>
-            {% endif %}
-          </button>
-          {# --- Dropdown menu --- #}
-          <div id="userDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white text-gray-800 rounded-md shadow-lg ring-1 ring-black/5 z-50">
-            <div class="px-4 py-3 border-b border-gray-100">
-              <!-- <p class="text-xs text-gray-500">ログイン中</p> -->
-              <p class="text-sm font-medium truncate">{{ request.session.name or request.session.user_id }}</p>
-              <p class="text-xs text-gray-500">役割: {{ request.session.role }}</p>
-            </div>
-            <div class="py-1">
-              <a href="/chat" class="block px-4 py-2 hover:bg-gray-50">チャット</a>
-              <a href="/messages" class="block px-4 py-2 hover:bg-gray-50">メッセージ履歴</a>
-              {% if request.session.role == 'teacher' %}
-                <a href="/dashboard" class="block px-4 py-2 hover:bg-gray-50">ダッシュボード</a>
-              {% endif %}
-              <a href="/chat_from_ai" class="block px-4 py-2 hover:bg-gray-50">AIメッセージ</a>
-            </div>
-            <div class="border-t border-gray-100">
-              <form method="post" action="/logout">
-                <button id="btnLogout" class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50">ログアウト</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      {% else %}
-        <a id="btnLogin" href="/login" class="bg-white text-indigo-600 px-2 py-1 rounded text-sm inline-block">ログイン</a>
-      {% endif %}
-    </nav>
-  </div>
-</header>
-<main class="max-w-7xl mx-auto px-6 pt-8 pb-10">
-  {% block content %}{% endblock %}
-</main>
-<footer class="text-center text-xs text-gray-500 py-6">© Student Support MVP</footer>
+<body>
 
-<!-- ▼▼▼ ヘルプモーダル ▼▼▼ -->
-<div id="helpModal" class="hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
-  <!-- overlay -->
-  <div id="helpOverlay" class="absolute inset-0 bg-black/40"></div>
-  <!-- panel -->
-  <div class="absolute inset-0 flex items-center justify-center p-4">
-    <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden">
-      <div class="px-6 py-4 border-b">
-        <div class="flex items-center justify-between">
-          <h2 id="helpTitle" class="text-lg font-semibold">ヘルプ</h2>
-          <button id="btnHelpClose" type="button" class="p-1 rounded hover:bg-gray-100" aria-label="閉じる">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+{% block layout %}
+<div class="app-shell">
+
+  <!-- ==================== サイドバー ==================== -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- ロゴ -->
+    <div class="sidebar-header">
+      <a href="/chat" class="sidebar-logo">
+        <img src="{{ url_for('static', path='logo_3.png') }}" alt="ここサポ">
+        <img src="{{ url_for('static', path='logo_2.png') }}" alt="" onerror="this.style.display='none'">
+      </a>
+    </div>
+
+    <!-- ページ固有：上部アクションボタン（例: New Chat） -->
+    <div class="sidebar-top-action">
+      {% block sidebar_top_action %}{% endblock %}
+    </div>
+
+    <!-- ページ固有：リスト（会話履歴 / 参加者一覧など） -->
+    <div class="sidebar-list" id="sidebarList">
+      {% block sidebar_list %}{% endblock %}
+    </div>
+
+    <!-- フッター：ナビリンク + ユーザー情報 -->
+    <div class="sidebar-footer">
+
+      {% block sidebar_footer_links %}
+      {% if request.session.user_id %}
+        {% set role = request.session.role %}
+        {% if role == 'teacher' %}
+          <a href="/dashboard" class="sidebar-footer-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            ダッシュボード
+          </a>
+        {% endif %}
+        <a href="/chat_teacher" class="sidebar-footer-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
+          先生に相談する
+        </a>
+        <a href="/chat" class="sidebar-footer-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1 1 .03 2.71-1.42 2.42l-2.73-.55M5 14.5l-1.402 1.402c-1 1-.03 2.71 1.42 2.42l2.73-.55"/></svg>
+          AIに相談する
+        </a>
+      {% endif %}
+      {% endblock %}
+
+      <!-- ユーザーセクション -->
+      {% if request.session.user_id %}
+      <div class="sidebar-user">
+        {% set has_picture = request.session.google_picture and request.session.google_picture|length > 0 %}
+        {% if has_picture %}
+          <img src="{{ request.session.google_picture }}" alt="" class="user-avatar-sm" referrerpolicy="no-referrer">
+        {% else %}
+          <div class="user-avatar-fallback">{{ (request.session.name or 'U')[:1] | upper }}</div>
+        {% endif %}
+        <span class="user-name-sm">{{ request.session.name or request.session.user_id }}</span>
+        <form method="post" action="/logout" style="margin:0">
+          <button class="logout-icon-btn" title="ログアウト">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
             </svg>
           </button>
-        </div>
+        </form>
       </div>
-      <div class="px-6 py-5 space-y-3 text-sm text-gray-700">
-        <p>本ツールは学校の相談支援を補助する目的で設計されたAIチャットです。利用にあたっては学校のルールに従ってください。</p>
-        <hr class="my-2">
-        <h3 class="font-medium">よくある質問</h3>
-        <ul class="list-disc pl-5 space-y-1">
-          <li>チャットは匿名で利用できます（要ログイン）</li>
-          <li>教員はダッシュボードで生徒のリスクを確認できます</li>
-          <li>緊急時は学校・保護者に連絡してください</li>
-        </ul>
-      </div>
-      
-    </div>
-  </div>
-</div>
-<!-- ▲▲▲ ヘルプモーダルここまで ▲▲▲ -->
+      {% else %}
+      <a href="/login" class="sidebar-footer-link" style="font-weight:600;color:var(--color-main)">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+        ログイン
+      </a>
+      {% endif %}
 
-<!-- ▼▼▼ 変更：AIメッセージのスケジューラ（毎日15:00に1回） ▼▼▼ -->
+    </div>
+  </aside>
+
+  <!-- モバイル：サイドバートグルボタン -->
+  <button class="sidebar-mobile-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="メニュー">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/>
+    </svg>
+  </button>
+
+  <!-- モバイル：オーバーレイ -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- ==================== メインコンテンツ ==================== -->
+  <main class="main-area">
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+{% endblock %}
+
+<!-- ==================== AI受信箱スケジューラ（毎日15:00） ==================== -->
 <script>
 (() => {
   if (window.__aiGlobalPollerInitialized) return;
   window.__aiGlobalPollerInitialized = true;
-
   const ENDPOINT = "/api/chat_from_ai";
-  const KEY = "ai_inbox";                       // localStorage 保存キー
-  const LAST_SENT_KEY = "ai_inbox_last_sent";   // 直近送信日（toDateString）
-
-  // 受信箱の読み書き
-  function loadInbox() {
-    try { return JSON.parse(localStorage.getItem(KEY) || "[]"); }
-    catch { return []; }
-  }
-  function saveInbox(arr) {
-    localStorage.setItem(KEY, JSON.stringify(arr));
-  }
-  function markSentToday(d = new Date()) {
-    localStorage.setItem(LAST_SENT_KEY, d.toDateString());
-  }
-  function hasSentToday(d = new Date()) {
-    return localStorage.getItem(LAST_SENT_KEY) === d.toDateString();
-  }
-
+  const KEY = "ai_inbox";
+  const LAST_SENT_KEY = "ai_inbox_last_sent";
+  function loadInbox() { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; } }
+  function saveInbox(arr) { localStorage.setItem(KEY, JSON.stringify(arr)); }
+  function markSentToday(d = new Date()) { localStorage.setItem(LAST_SENT_KEY, d.toDateString()); }
+  function hasSentToday(d = new Date()) { return localStorage.getItem(LAST_SENT_KEY) === d.toDateString(); }
   async function fetchAndStore() {
     try {
       const r = await fetch(ENDPOINT, { method: "POST", credentials: "same-origin" });
       if (!r.ok) throw new Error("HTTP " + r.status);
       const data = await r.json();
-      const msg = {
-        text: data.message ?? "(空のメッセージ)",
-        ts: Date.now(),
-      };
+      const msg = { text: data.message ?? "(空のメッセージ)", ts: Date.now() };
       const inbox = loadInbox();
       inbox.unshift(msg);
       if (inbox.length > 200) inbox.length = 200;
       saveInbox(inbox);
       markSentToday();
-      // 開いているページに通知
       window.dispatchEvent(new CustomEvent("ai_inbox_updated"));
-    } catch (e) {
-      console.warn("[AI Inbox] fetch failed:", e);
-    }
+    } catch (e) { console.warn("[AI Inbox] fetch failed:", e); }
   }
-
-  // 次の 15:00（ローカル時刻）までの delay を計算
   function msUntilNext1500(now = new Date()) {
-    const target = new Date(now);
-    target.setHours(15, 0, 0, 0);  // 15:00:00.000
-    if (now >= target) {
-      target.setDate(target.getDate() + 1);     // すでに過ぎていれば翌日
-    }
-    return target.getTime() - now.getTime();
+    const t = new Date(now); t.setHours(15, 0, 0, 0);
+    if (now >= t) t.setDate(t.getDate() + 1);
+    return t.getTime() - now.getTime();
   }
-
   let timer = null;
   async function scheduleNext() {
     if (timer) { clearTimeout(timer); timer = null; }
-    const delay = msUntilNext1500();
     timer = setTimeout(async () => {
-      // タブが表示中なら実行。非表示なら、再表示時に補償実行（下の visibilitychange で対応）
-      if (document.visibilityState === "visible" && !hasSentToday()) {
-        await fetchAndStore();
-      }
-      // 次回（翌日）を予約
+      if (document.visibilityState === "visible" && !hasSentToday()) await fetchAndStore();
       scheduleNext();
-    }, delay);
+    }, msUntilNext1500());
   }
-
-  // 初期化：即時送信はしない。毎日15:00を待つ
   scheduleNext();
-
-  // タブ復帰時の補償：今日の15:00を過ぎていて、未送信なら即送信
   document.addEventListener("visibilitychange", async () => {
     if (document.visibilityState === "visible") {
       const now = new Date();
-      const past1500 = now.getHours() > 15 || (now.getHours() === 15 && now.getMinutes() >= 0);
-      if (past1500 && !hasSentToday()) {
-        await fetchAndStore();
-      }
-      // タイマーの再計算（端末時刻変更等にも強くする）
+      if ((now.getHours() > 15 || (now.getHours() === 15 && now.getMinutes() >= 0)) && !hasSentToday()) await fetchAndStore();
       scheduleNext();
     }
   });
-
-  // 他ページから呼べるユーティリティ（chat_from_ai.html 用）
   window.aiInboxFetchNow = fetchAndStore;
   window.aiInbox = {
     load: () => loadInbox(),
@@ -204,71 +156,25 @@
   };
 })();
 </script>
-<!-- ▲▲▲ 変更ここまで ▲▲▲ -->
 
-<!-- ▼▼▼ ユーザーアバターのドロップダウン制御 ▼▼▼ -->
+<!-- サイドバー開閉 + アクティブリンク -->
 <script>
-  (function () {
-    const root = document.getElementById('userMenuRoot');
-    if (!root) return; // 未ログイン時
-    const btn = document.getElementById('btnAvatar');
-    const menu = document.getElementById('userDropdown');
-
-    function closeMenu() {
-      if (!menu.classList.contains('hidden')) {
-        menu.classList.add('hidden');
-        btn.setAttribute('aria-expanded', 'false');
-      }
-    }
-    function openMenu() {
-      if (menu.classList.contains('hidden')) {
-        menu.classList.remove('hidden');
-        btn.setAttribute('aria-expanded', 'true');
-      }
-    }
-    function toggleMenu() {
-      if (menu.classList.contains('hidden')) openMenu(); else closeMenu();
-    }
-
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleMenu();
-    });
-    document.addEventListener('click', (e) => {
-      if (!root.contains(e.target)) closeMenu();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeMenu();
-    });
-  })();
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('sidebar-open');
+  document.getElementById('sidebarOverlay').classList.toggle('active');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('sidebar-open');
+  document.getElementById('sidebarOverlay').classList.remove('active');
+}
+// 現在のページに対応するリンクをアクティブ表示
+(function() {
+  const p = location.pathname;
+  document.querySelectorAll('.sidebar-footer-link').forEach(a => {
+    if (a.getAttribute('href') === p) a.classList.add('active');
+  });
+})();
 </script>
-<!-- ▲▲▲ ドロップダウン制御ここまで ▲▲▲ -->
-
-<!-- ▼▼▼ ヘルプモーダル制御 ▼▼▼ -->
-<script>
-  (function () {
-    const btnOpen = document.getElementById('btnHelp');
-    const modal = document.getElementById('helpModal');
-    const btnClose = document.getElementById('btnHelpClose');
-    const overlay = document.getElementById('helpOverlay');
-    if (!btnOpen || !modal) return;
-
-    function openModal() {
-      modal.classList.remove('hidden');
-      document.body.classList.add('overflow-hidden');
-    }
-    function closeModal() {
-      modal.classList.add('hidden');
-      document.body.classList.remove('overflow-hidden');
-    }
-
-    btnOpen.addEventListener('click', openModal);
-    btnClose && btnClose.addEventListener('click', closeModal);
-    overlay && overlay.addEventListener('click', closeModal);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
-  })();
-</script>
-<!-- ▲▲▲ ヘルプモーダル制御ここまで ▲▲▲ -->
 
 </body>
 </html>

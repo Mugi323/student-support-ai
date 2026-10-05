@@ -3,13 +3,14 @@ import json
 import base64
 import asyncio
 import os
+import uuid
 from typing import List
 
 from fastapi import APIRouter, Request, File, UploadFile, Form
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from src.core.schemas import ChatIn
 from src.core.config import OPENAI_MODEL
-from src.db import execute, now_iso
+from src.db import execute, query_all, now_iso
 from src.Ollama.OllamaAdapter import OllamaAdapter
 from src.services.openai_client import client
 from src.db.memory import get_memories, add_memory
@@ -19,6 +20,52 @@ from src.utils.deps import require_login
 
 
 router = APIRouter(prefix="/api")
+
+
+@router.post("/conversations")
+async def create_conversation(request: Request):
+    uid = require_login(request)
+    conv_id = str(uuid.uuid4())
+    execute(
+        "INSERT INTO conversations (id, user_id, title, created_at) VALUES (?,?,?,?)",
+        (conv_id, uid, "新しいチャット", now_iso()),
+    )
+    return JSONResponse({"id": conv_id, "title": "新しいチャット"})
+
+
+@router.get("/conversations")
+async def list_conversations(request: Request):
+    uid = require_login(request)
+    rows = query_all(
+        """
+        SELECT c.id, c.title, c.created_at FROM conversations c
+        WHERE c.user_id=?
+          AND EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id=c.id AND m.user_id=c.user_id)
+        ORDER BY c.created_at DESC LIMIT 60
+        """,
+        (uid,),
+    )
+    return JSONResponse([{"id": r[0], "title": r[1], "created_at": r[2]} for r in rows])
+
+
+@router.delete("/conversations/{conv_id}")
+async def delete_conversation(conv_id: str, request: Request):
+    uid = require_login(request)
+    execute("DELETE FROM messages WHERE conversation_id=? AND user_id=?", (conv_id, uid))
+    execute("DELETE FROM conversations WHERE id=? AND user_id=?", (conv_id, uid))
+    return JSONResponse({"ok": True})
+
+
+@router.patch("/conversations/{conv_id}/title")
+async def update_conversation_title(conv_id: str, request: Request):
+    uid = require_login(request)
+    body = await request.json()
+    title = (body.get("title") or "")[:50] or "新しいチャット"
+    execute(
+        "UPDATE conversations SET title=? WHERE id=? AND user_id=?",
+        (title, conv_id, uid),
+    )
+    return JSONResponse({"ok": True})
 
 _SUMMARY_SYS = (
     "次のユーザー発話とAI返答を、日本語で1文(60〜120文字程度)に要約してください。"
@@ -36,7 +83,9 @@ _CHAT_SYS_PROMPT = (
 )
 
 
-async def _save_and_memorize(uid: str, user_text: str, reply_text: str) -> dict:
+async def _save_and_memorize(
+    uid: str, user_text: str, reply_text: str, conv_id: str | None = None
+) -> dict:
     """リスク分析 → DB保存 → 1文メモ生成を共通化。finalイベント用の辞書を返す。"""
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, analyze_risk_sync, user_text)
@@ -47,8 +96,8 @@ async def _save_and_memorize(uid: str, user_text: str, reply_text: str) -> dict:
     ai_overall = result["overall"]
 
     execute(
-        "INSERT INTO messages (user_id, is_anonymous, text, risk_score, sentiment, tags, created_at, ai_summary, ai_risk_detail, ai_risk_overall) "
-        "VALUES (?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO messages (user_id, is_anonymous, text, risk_score, sentiment, tags, created_at, ai_summary, ai_reply, ai_risk_detail, ai_risk_overall, conversation_id) "
+        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         (
             uid,
             0,
@@ -58,13 +107,27 @@ async def _save_and_memorize(uid: str, user_text: str, reply_text: str) -> dict:
             '["general"]',
             now_iso(),
             ai_summary,
+            reply_text,
             json.dumps(
                 {"scores": ai_scores, "reason": ai_reason, "tags": ai_tags},
                 ensure_ascii=False,
             ),
             ai_overall,
+            conv_id,
         ),
     )
+
+    # 会話タイトルが未設定なら最初のメッセージから自動設定
+    if conv_id:
+        rows = query_all(
+            "SELECT title FROM conversations WHERE id=? AND user_id=?", (conv_id, uid)
+        )
+        if rows and rows[0][0] == "新しいチャット":
+            auto_title = user_text[:30] + ("…" if len(user_text) > 30 else "")
+            execute(
+                "UPDATE conversations SET title=? WHERE id=? AND user_id=?",
+                (auto_title, conv_id, uid),
+            )
 
     try:
         summary_resp = client.responses.create(
@@ -138,7 +201,7 @@ async def api_chat_stream(request: Request, payload: ChatIn):
             reply_text = ""
 
         try:
-            final_data = await _save_and_memorize(uid, payload.text, reply_text)
+            final_data = await _save_and_memorize(uid, payload.text, reply_text, payload.conv_id)
             yield sse_event({"type": "final", "result": final_data})
         except Exception as e:
             yield sse_event(
